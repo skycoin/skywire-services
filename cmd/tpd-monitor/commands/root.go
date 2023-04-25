@@ -1,4 +1,4 @@
-// Package commands cmd/dmsg-monitor/commands/root.go
+// Package commands cmd/tpd-monitor/commands/root.go
 package commands
 
 import (
@@ -16,34 +16,34 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/tcpproxy"
 	"github.com/spf13/cobra"
 
-	"github.com/SkycoinPro/skywire-services/pkg/dmsg-monitor/api"
+	"github.com/SkycoinPro/skywire-services/pkg/tpd-monitor/api"
 )
 
 var (
 	confPath            string
 	dmsgURL             string
-	utURL               string
+	arURL               string
+	tpdURL              string
 	addr                string
 	tag                 string
 	syslogAddr          string
 	sleepDeregistration time.Duration
-	batchSize           int
 )
 
 func init() {
 	rootCmd.Flags().StringVarP(&addr, "addr", "a", ":9080", "address to bind to.")
-	rootCmd.Flags().DurationVarP(&sleepDeregistration, "sleep-deregistration", "s", 10, "Sleep time for derigstration process in minutes")
-	rootCmd.Flags().IntVarP(&batchSize, "batchsize", "b", 20, "Batch size of deregistration")
+	rootCmd.Flags().DurationVarP(&sleepDeregistration, "sleep-deregistration", "s", 10, "Sleep time for deregistration process in minutes")
 	rootCmd.Flags().StringVarP(&confPath, "config", "c", "dmsg-monitor.json", "config file location.")
-	rootCmd.Flags().StringVarP(&dmsgURL, "dmsg-url", "d", "", "url to dmsg data.")
-	rootCmd.Flags().StringVarP(&utURL, "ut-url", "u", "", "url to uptime tracker visor data.")
+	rootCmd.Flags().StringVar(&dmsgURL, "dmsg-url", "", "url to dmsg data.")
+	rootCmd.Flags().StringVar(&tpdURL, "tpd-url", "", "url to transport discovery.")
+	rootCmd.Flags().StringVar(&arURL, "ar-url", "", "url to address resolver.")
 	rootCmd.Flags().StringVar(&tag, "tag", "dmsg_monitor", "logging tag")
 	rootCmd.Flags().StringVar(&syslogAddr, "syslog", "", "syslog server address. E.g. localhost:514")
 }
 
 var rootCmd = &cobra.Command{
-	Use:   "dmsg-monitor",
-	Short: "DMSG monitor of DMSG discoery.",
+	Use:   "tpd-monitor",
+	Short: "TPD monitor of transport discovery.",
 	Run: func(_ *cobra.Command, _ []string) {
 		if _, err := buildinfo.Get().WriteTo(os.Stdout); err != nil {
 			log.Printf("Failed to output build info: %v", err)
@@ -55,15 +55,19 @@ var rootCmd = &cobra.Command{
 		if dmsgURL == "" {
 			dmsgURL = conf.Dmsg.Discovery
 		}
-		if utURL == "" {
-			utURL = conf.UptimeTracker.Addr + "/uptimes"
+		if arURL == "" {
+			arURL = conf.Transport.AddressResolver
+		}
+		if tpdURL == "" {
+			tpdURL = conf.Transport.Discovery
 		}
 
 		var srvURLs api.ServicesURLs
 		srvURLs.DMSG = dmsgURL
-		srvURLs.UT = utURL
+		srvURLs.TPD = tpdURL
+		srvURLs.AR = arURL
 
-		logger := mLogger.PackageLogger("dmsg_monitor")
+		logger := mLogger.PackageLogger("tpd_monitor")
 		if syslogAddr != "" {
 			hook, err := logrussyslog.NewSyslogHook("udp", syslogAddr, syslog.LOG_INFO, tag)
 			if err != nil {
@@ -72,14 +76,13 @@ var rootCmd = &cobra.Command{
 			logging.AddHook(hook)
 		}
 
-		logger.WithField("addr", addr).Info("Serving DMSG-Monitor API...")
+		logger.WithField("addr", addr).Info("Serving TPD-Monitor API...")
 
 		monitorSign, _ := cipher.SignPayload([]byte(conf.PK.Hex()), conf.SK) //nolint
 
 		var monitorConfig api.DMSGMonitorConfig
 		monitorConfig.PK = conf.PK
 		monitorConfig.Sign = monitorSign
-		monitorConfig.BatchSize = batchSize
 
 		dmsgMonitorAPI := api.New(logger, srvURLs, monitorConfig)
 

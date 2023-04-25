@@ -23,6 +23,7 @@ declare -a images_arr=(
   "skycoinpro/vpn-monitor:${image_tag}"
   "skycoinpro/public-visor-monitor:${image_tag}"
   "skycoinpro/dmsg-monitor:${image_tag}"
+  "skycoinpro/tpd-monitor:${image_tag}"
 )
 
 for i in "${images_arr[@]}"; do

@@ -426,7 +426,7 @@ github.com/skycoin/skywire/pkg/visor/logstore
 github.com/skycoin/skywire/pkg/visor/usermanager
 github.com/skycoin/skywire/pkg/visor/visorconfig
 github.com/skycoin/skywire/pkg/visor/visorinit
-# github.com/skycoin/skywire-utilities v0.0.0-20230314131305-bdd8e27cbd46
+# github.com/skycoin/skywire-utilities v0.0.0-20230414160004-9a7ee37938b1
 ## explicit; go 1.17
 github.com/skycoin/skywire-utilities/pkg/buildinfo
 github.com/skycoin/skywire-utilities/pkg/cipher

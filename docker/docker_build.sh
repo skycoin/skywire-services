@@ -219,6 +219,13 @@ DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/dmsg-monitor/Dockerfile 
   --build-arg image_tag="$image_tag" \
   -t "$registry"/dmsg-monitor:"$image_tag" .
 
+echo "building tpd monitor image"
+DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/tpd-monitor/Dockerfile \
+  --build-arg base_image="$base_image" \
+  --build-arg build_opts="$go_buildopts" \
+  --build-arg image_tag="$image_tag" \
+  -t "$registry"/tpd-monitor:"$image_tag" .
+
 
 wait
 

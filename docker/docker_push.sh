@@ -27,6 +27,7 @@ declare -a images_arr=(
   "vpn-monitor"
   "public-visor-monitor"
   "dmsg-monitor"
+  "tpd-monitor"
 )
 
 echo "Pushing to $registry using tag: $tag"

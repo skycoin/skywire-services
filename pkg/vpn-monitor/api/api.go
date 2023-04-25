@@ -52,7 +52,7 @@ type Config struct {
 	Sign cipher.Sig
 }
 
-// ServicesURLs is struct for organizing URL's of services
+// ServicesURLs is struct for organizing URLs of services
 type ServicesURLs struct {
 	SD string
 	UT string
@@ -147,12 +147,17 @@ func (api *API) deregister() {
 	// monitoring VPNs
 	onlineVpnCount := int64(0)
 	api.deadVPNs = []string{}
-
+	var allDeadVPNs []string
 	if len(api.vpnKeys) == 0 {
 		api.logger.Warn("No VPN keys found")
 	} else {
 		for _, key := range api.vpnKeys {
 			api.testVPN(key, &onlineVpnCount)
+			if len(api.deadVPNs) >= 10 {
+				api.vpnDeregister(api.deadVPNs)
+				allDeadVPNs = append(allDeadVPNs, api.deadVPNs...)
+				api.deadVPNs = []string{}
+			}
 		}
 		api.logger.WithField("count", onlineVpnCount).Info("VPNs online.")
 
@@ -162,7 +167,7 @@ func (api *API) deregister() {
 		}
 	}
 
-	api.logger.WithField("Number of dead VPNs", len(api.deadVPNs)).WithField("PKs", api.deadVPNs).Info("VPN Deregistration completed.")
+	api.logger.WithField("Number of dead VPNs", len(allDeadVPNs)).WithField("PKs", allDeadVPNs).Info("VPN Deregistration completed.")
 }
 
 func (api *API) testVPN(key cipher.PubKey, onlineVpnCount *int64) {
@@ -233,12 +238,12 @@ func (api *API) vpnDeregister(keys []string) {
 func (api *API) deregisterRequest(keys []string, rawReqURL string) error {
 	reqURL, err := url.Parse(rawReqURL)
 	if err != nil {
-		return fmt.Errorf("Error on parsing deregistration URL : %v", err)
+		return fmt.Errorf("error on parsing deregistration URL : %v", err)
 	}
 
 	jsonData, err := json.Marshal(keys)
 	if err != nil {
-		return fmt.Errorf("Error on parsing deregistration keys : %v", err)
+		return fmt.Errorf("error on parsing deregistration keys : %v", err)
 	}
 	body := bytes.NewReader(jsonData)
 
@@ -254,12 +259,14 @@ func (api *API) deregisterRequest(keys []string, rawReqURL string) error {
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("Error on send deregistration request : %s", err)
+		return fmt.Errorf("error on send deregistration request : %s", err)
 	}
-	defer res.Body.Close() //nolint
+	defer func(Body io.ReadCloser) {
+		_ = Body.Close() //nolint
+	}(res.Body)
 
 	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("Error deregistering vpn keys: status code %v", res.StatusCode)
+		return fmt.Errorf("error deregistering vpn keys: status code %v", res.StatusCode)
 	}
 
 	return nil
@@ -297,8 +304,8 @@ func (api *API) getVPNKeys() {
 		api.logger.Warn("No vpns found... Trying again")
 	}
 	api.vpnKeys = []cipher.PubKey{}
-	for _, vpn := range vpns {
-		api.vpnKeys = append(api.vpnKeys, vpn.Addr.PubKey())
+	for _, vpnEntry := range vpns {
+		api.vpnKeys = append(api.vpnKeys, vpnEntry.Addr.PubKey())
 	}
 
 	api.logger.WithField("vpns", len(vpns)).Info("Vpn keys updated.")
