@@ -10,8 +10,8 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/logging"
 	"github.com/spf13/cobra"
 
-	"github.com/SkycoinPro/skywire-services/pkg/transport-setup/api"
-	"github.com/SkycoinPro/skywire-services/pkg/transport-setup/config"
+	"github.com/skycoin/skywire-services/pkg/transport-setup/api"
+	"github.com/skycoin/skywire-services/pkg/transport-setup/config"
 )
 
 var configFile string

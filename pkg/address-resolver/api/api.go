@@ -28,8 +28,8 @@ import (
 	"github.com/skycoin/skywire/pkg/transport/network/addrresolver"
 	"github.com/skycoin/skywire/pkg/transport/network/handshake"
 
-	"github.com/SkycoinPro/skywire-services/internal/armetrics"
-	"github.com/SkycoinPro/skywire-services/pkg/address-resolver/store"
+	"github.com/skycoin/skywire-services/internal/armetrics"
+	"github.com/skycoin/skywire-services/pkg/address-resolver/store"
 )
 
 // ErrNotConnected is returned when requested peer is not connected.

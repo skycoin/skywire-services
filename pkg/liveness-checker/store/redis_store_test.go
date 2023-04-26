@@ -11,7 +11,7 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/httputil"
 	"github.com/stretchr/testify/require"
 
-	"github.com/SkycoinPro/skywire-services/internal/lc"
+	"github.com/skycoin/skywire-services/internal/lc"
 )
 
 func testNetwork(t *testing.T, store Store) {

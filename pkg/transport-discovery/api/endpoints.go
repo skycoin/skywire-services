@@ -15,7 +15,7 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/httputil"
 	"github.com/skycoin/skywire/pkg/transport"
 
-	"github.com/SkycoinPro/skywire-services/pkg/transport-discovery/store"
+	"github.com/skycoin/skywire-services/pkg/transport-discovery/store"
 )
 
 func (api *API) registerTransport(w http.ResponseWriter, r *http.Request) {

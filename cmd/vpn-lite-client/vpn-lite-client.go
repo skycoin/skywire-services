@@ -14,7 +14,7 @@ import (
 	"github.com/skycoin/skywire/pkg/app/appevent"
 	"github.com/skycoin/skywire/pkg/app/appserver"
 
-	"github.com/SkycoinPro/skywire-services/internal/vpn"
+	"github.com/skycoin/skywire-services/internal/vpn"
 )
 
 var (

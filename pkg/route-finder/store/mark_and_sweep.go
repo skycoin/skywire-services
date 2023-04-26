@@ -6,7 +6,7 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/cipher"
 	"github.com/skycoin/skywire/pkg/transport"
 
-	"github.com/SkycoinPro/skywire-services/pkg/transport-discovery/store"
+	"github.com/skycoin/skywire-services/pkg/transport-discovery/store"
 )
 
 type vertex struct {

@@ -12,7 +12,7 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/httputil"
 	"github.com/skycoin/skywire-utilities/pkg/logging"
 
-	"github.com/SkycoinPro/skywire-services/pkg/transport-setup/config"
+	"github.com/skycoin/skywire-services/pkg/transport-setup/config"
 )
 
 // API register all the API endpoints.

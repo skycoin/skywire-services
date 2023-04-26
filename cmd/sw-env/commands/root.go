@@ -7,7 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	cfg "github.com/SkycoinPro/skywire-services/internal/config"
+	cfg "github.com/skycoin/skywire-services/internal/config"
 )
 
 var rootCmd = &cobra.Command{
