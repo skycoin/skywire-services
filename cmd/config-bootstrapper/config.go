@@ -2,7 +2,7 @@
 package main
 
 import (
-	"github.com/SkycoinPro/skywire-services/cmd/config-bootstrapper/commands"
+	"github.com/skycoin/skywire-services/cmd/config-bootstrapper/commands"
 )
 
 func main() {

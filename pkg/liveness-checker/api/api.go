@@ -26,8 +26,8 @@ import (
 	"github.com/skycoin/skywire/pkg/visor"
 	"github.com/skycoin/skywire/pkg/visor/visorconfig"
 
-	"github.com/SkycoinPro/skywire-services/internal/lc"
-	"github.com/SkycoinPro/skywire-services/pkg/liveness-checker/store"
+	"github.com/skycoin/skywire-services/internal/lc"
+	"github.com/skycoin/skywire-services/pkg/liveness-checker/store"
 )
 
 // API register all the API endpoints.

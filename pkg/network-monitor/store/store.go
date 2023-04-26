@@ -7,7 +7,7 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/cipher"
 	"github.com/skycoin/skywire-utilities/pkg/storeconfig"
 
-	"github.com/SkycoinPro/skywire-services/internal/nm"
+	"github.com/skycoin/skywire-services/internal/nm"
 )
 
 var (

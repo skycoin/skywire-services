@@ -2,7 +2,7 @@
 package main
 
 import (
-	"github.com/SkycoinPro/skywire-services/cmd/route-finder/commands"
+	"github.com/skycoin/skywire-services/cmd/route-finder/commands"
 )
 
 func main() {

@@ -19,9 +19,9 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/tcpproxy"
 	"github.com/spf13/cobra"
 
-	"github.com/SkycoinPro/skywire-services/internal/nmmetrics"
-	"github.com/SkycoinPro/skywire-services/pkg/network-monitor/api"
-	"github.com/SkycoinPro/skywire-services/pkg/network-monitor/store"
+	"github.com/skycoin/skywire-services/internal/nmmetrics"
+	"github.com/skycoin/skywire-services/pkg/network-monitor/api"
+	"github.com/skycoin/skywire-services/pkg/network-monitor/store"
 )
 
 const (

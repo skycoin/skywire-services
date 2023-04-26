@@ -28,9 +28,9 @@ import (
 	"github.com/skycoin/skywire/pkg/visor"
 	"github.com/skycoin/skywire/pkg/visor/visorconfig"
 
-	"github.com/SkycoinPro/skywire-services/internal/nm"
-	"github.com/SkycoinPro/skywire-services/internal/nmmetrics"
-	"github.com/SkycoinPro/skywire-services/pkg/network-monitor/store"
+	"github.com/skycoin/skywire-services/internal/nm"
+	"github.com/skycoin/skywire-services/internal/nmmetrics"
+	"github.com/skycoin/skywire-services/pkg/network-monitor/store"
 )
 
 // API register all the API endpoints.

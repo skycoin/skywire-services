@@ -16,8 +16,8 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/metricsutil"
 	"github.com/spf13/cobra"
 
-	"github.com/SkycoinPro/skywire-services/internal/tpdiscmetrics"
-	"github.com/SkycoinPro/skywire-services/pkg/node-visualizer/api"
+	"github.com/skycoin/skywire-services/internal/tpdiscmetrics"
+	"github.com/skycoin/skywire-services/pkg/node-visualizer/api"
 )
 
 var (

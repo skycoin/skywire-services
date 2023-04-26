@@ -25,9 +25,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/xtaci/kcp-go"
 
-	"github.com/SkycoinPro/skywire-services/internal/armetrics"
-	"github.com/SkycoinPro/skywire-services/pkg/address-resolver/api"
-	"github.com/SkycoinPro/skywire-services/pkg/address-resolver/store"
+	"github.com/skycoin/skywire-services/internal/armetrics"
+	"github.com/skycoin/skywire-services/pkg/address-resolver/api"
+	"github.com/skycoin/skywire-services/pkg/address-resolver/store"
 )
 
 const (

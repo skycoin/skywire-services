@@ -27,7 +27,7 @@ import (
 	"github.com/skycoin/skywire/pkg/visor"
 	"github.com/skycoin/skywire/pkg/visor/visorconfig"
 
-	"github.com/SkycoinPro/skywire-services/internal/vpn"
+	"github.com/skycoin/skywire-services/internal/vpn"
 )
 
 // API register all the API endpoints.

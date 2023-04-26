@@ -7,7 +7,7 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/logging"
 	"github.com/skycoin/skywire-utilities/pkg/storeconfig"
 
-	"github.com/SkycoinPro/skywire-services/internal/lc"
+	"github.com/skycoin/skywire-services/internal/lc"
 )
 
 var (

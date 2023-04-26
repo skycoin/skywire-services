@@ -21,8 +21,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 
-	"github.com/SkycoinPro/skywire-services/internal/tpdiscmetrics"
-	"github.com/SkycoinPro/skywire-services/pkg/transport-discovery/store"
+	"github.com/skycoin/skywire-services/internal/tpdiscmetrics"
+	"github.com/skycoin/skywire-services/pkg/transport-discovery/store"
 )
 
 type errorSetter interface {

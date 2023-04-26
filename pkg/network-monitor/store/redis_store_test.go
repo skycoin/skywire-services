@@ -11,7 +11,7 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/cipher"
 	"github.com/stretchr/testify/require"
 
-	"github.com/SkycoinPro/skywire-services/internal/nm"
+	"github.com/skycoin/skywire-services/internal/nm"
 )
 
 func testNetwork(t *testing.T, store Store) {

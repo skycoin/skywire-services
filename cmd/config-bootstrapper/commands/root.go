@@ -15,7 +15,7 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/tcpproxy"
 	"github.com/spf13/cobra"
 
-	"github.com/SkycoinPro/skywire-services/pkg/config-bootstrapper/api"
+	"github.com/skycoin/skywire-services/pkg/config-bootstrapper/api"
 )
 
 const (

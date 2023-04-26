@@ -5,7 +5,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/SkycoinPro/skywire-services/internal/lc"
+	"github.com/skycoin/skywire-services/internal/lc"
 )
 
 type memStore struct {

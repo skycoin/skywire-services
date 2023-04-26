@@ -2,7 +2,7 @@
 package main
 
 import (
-	"github.com/SkycoinPro/skywire-services/cmd/address-resolver/commands"
+	"github.com/skycoin/skywire-services/cmd/address-resolver/commands"
 )
 
 func main() {

@@ -22,9 +22,9 @@ import (
 	"github.com/spf13/cobra"
 	"gorm.io/gorm"
 
-	"github.com/SkycoinPro/skywire-services/internal/pg"
-	"github.com/SkycoinPro/skywire-services/pkg/route-finder/api"
-	"github.com/SkycoinPro/skywire-services/pkg/transport-discovery/store"
+	"github.com/skycoin/skywire-services/internal/pg"
+	"github.com/skycoin/skywire-services/pkg/route-finder/api"
+	"github.com/skycoin/skywire-services/pkg/transport-discovery/store"
 )
 
 const (

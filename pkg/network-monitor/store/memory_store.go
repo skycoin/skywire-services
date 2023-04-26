@@ -8,7 +8,7 @@ import (
 
 	"github.com/skycoin/skywire-utilities/pkg/cipher"
 
-	"github.com/SkycoinPro/skywire-services/internal/nm"
+	"github.com/skycoin/skywire-services/internal/nm"
 )
 
 type memStore struct {

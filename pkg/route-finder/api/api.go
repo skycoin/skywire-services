@@ -17,8 +17,8 @@ import (
 	"github.com/skycoin/skywire/pkg/routefinder/rfclient"
 	"github.com/skycoin/skywire/pkg/routing"
 
-	routeFinder "github.com/SkycoinPro/skywire-services/pkg/route-finder/store"
-	"github.com/SkycoinPro/skywire-services/pkg/transport-discovery/store"
+	routeFinder "github.com/skycoin/skywire-services/pkg/route-finder/store"
+	"github.com/skycoin/skywire-services/pkg/transport-discovery/store"
 )
 
 const maxNumberOfRoutes = 5

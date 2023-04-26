@@ -17,8 +17,8 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/logging"
 	"github.com/skycoin/skywire-utilities/pkg/metricsutil"
 
-	"github.com/SkycoinPro/skywire-services/internal/tpdiscmetrics"
-	"github.com/SkycoinPro/skywire-services/pkg/transport-discovery/store"
+	"github.com/skycoin/skywire-services/internal/tpdiscmetrics"
+	"github.com/skycoin/skywire-services/pkg/transport-discovery/store"
 )
 
 const (

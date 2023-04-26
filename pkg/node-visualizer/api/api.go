@@ -25,7 +25,7 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/metricsutil"
 	"github.com/skycoin/skywire/pkg/transport"
 
-	"github.com/SkycoinPro/skywire-services/internal/tpdiscmetrics"
+	"github.com/skycoin/skywire-services/internal/tpdiscmetrics"
 )
 
 //go:embed build/*

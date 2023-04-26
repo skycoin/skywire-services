@@ -17,7 +17,7 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/logging"
 	"github.com/spf13/cobra"
 
-	"github.com/SkycoinPro/skywire-services/pkg/uptime-tracker/store"
+	"github.com/skycoin/skywire-services/pkg/uptime-tracker/store"
 )
 
 const (

@@ -2,7 +2,7 @@
 package main
 
 import (
-	"github.com/SkycoinPro/skywire-services/cmd/keys-gen/commands"
+	"github.com/skycoin/skywire-services/cmd/keys-gen/commands"
 )
 
 func main() {

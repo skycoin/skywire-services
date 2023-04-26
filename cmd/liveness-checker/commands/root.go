@@ -16,8 +16,8 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/tcpproxy"
 	"github.com/spf13/cobra"
 
-	"github.com/SkycoinPro/skywire-services/pkg/liveness-checker/api"
-	"github.com/SkycoinPro/skywire-services/pkg/liveness-checker/store"
+	"github.com/skycoin/skywire-services/pkg/liveness-checker/api"
+	"github.com/skycoin/skywire-services/pkg/liveness-checker/store"
 )
 
 const (

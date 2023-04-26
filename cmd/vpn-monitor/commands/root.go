@@ -19,7 +19,7 @@ import (
 	"github.com/skycoin/skywire/pkg/visor/visorconfig"
 	"github.com/spf13/cobra"
 
-	"github.com/SkycoinPro/skywire-services/pkg/vpn-monitor/api"
+	"github.com/skycoin/skywire-services/pkg/vpn-monitor/api"
 )
 
 var (
