@@ -177,7 +177,7 @@ We keep docker images for both production and testing in DockerHub Registry. You
 
 ```
 // assuming you are in skywire-services. replace test with latest if you want to push to prod.
-docker build -f PATH_TO_DOCKERFILE -t skycoin/uptime-tracker:test . 
+docker build -f PATH_TO_DOCKERFILE -t skycoin/route-finder:test . 
 ```
 
 Afterwards you can push with:
