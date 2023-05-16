@@ -8,8 +8,6 @@ require (
 	github.com/docker/docker v1.13.1
 	github.com/flopp/go-staticmaps v0.0.0-20200829090108-3465b3349546
 	github.com/go-chi/chi/v5 v5.0.8-0.20220103230436-7dbe9a0bd10f
-	github.com/go-chi/httprate v0.4.0
-	github.com/go-echarts/go-echarts/v2 v2.2.4
 	github.com/go-playground/validator/v10 v10.4.1
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-redis/redis/v8 v8.11.5
