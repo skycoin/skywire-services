@@ -1,4 +1,4 @@
-module github.com/SkycoinPro/skywire-services
+module github.com/skycoin/skywire-services
 
 go 1.17
 

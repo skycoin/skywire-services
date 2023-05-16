@@ -6,7 +6,7 @@ tag="$1"
 registry="$REGISTRY"
 
 if [ -z "$registry" ]; then
-	registry="skycoinpro"
+	registry="skycoin"
 fi
 
 if [ -z "$tag" ]; then
@@ -19,7 +19,6 @@ declare -a images_arr=(
   "route-finder"
   "setup-node"
   "address-resolver"
-  "uptime-tracker"
   "network-monitor"
   "node-visualizer"
   "config-bootstrapper"

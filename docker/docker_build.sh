@@ -38,9 +38,9 @@ if [[ "$image_tag" == "e2e" ]]; then
 
   # TODO(ersonp): instead of cloning the git branch we should directly use the docker image od SD from dockerhub like we doing for dmsg 
   if [[ "$GITHUB_TOKEN" != "" ]]; then
-    git clone https://"$GITHUB_TOKEN":x-oauth-basic@github.com/SkycoinPro/skycoin-service-discovery --depth 1 --branch "$git_branch" ./tmp/skycoin-service-discovery
+    git clone https://"$GITHUB_TOKEN":x-oauth-basic@github.com/skycoin/skycoin-service-discovery --depth 1 --branch "$git_branch" ./tmp/skycoin-service-discovery
   else
-    git clone git@github.com:SkycoinPro/skycoin-service-discovery --depth 1 --branch "$git_branch" ./tmp/skycoin-service-discovery
+    git clone git@github.com:skycoin/skycoin-service-discovery --depth 1 --branch "$git_branch" ./tmp/skycoin-service-discovery
   fi
 
   if [ ! -d ./tmp/skycoin-service-discovery ]; then
@@ -149,13 +149,6 @@ DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/address-resolver/Dockerf
   --build-arg image_tag="$image_tag" \
   --build-arg base_image="$base_image" \
   -t "$registry"/address-resolver:"$image_tag" .
-
-echo "build uptime tracker image"
-DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/uptime-tracker/Dockerfile \
-  --build-arg build_opts="$go_buildopts" \
-  --build-arg image_tag="$image_tag" \
-  --build-arg base_image="$base_image" \
-  -t "$registry"/uptime-tracker:"$image_tag" .
 
 if [[ "$image_tag" == "test" ]]; then
   echo "build node visualizer DEV image"
