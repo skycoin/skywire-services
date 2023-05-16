@@ -16,8 +16,6 @@ import (
 	"github.com/golang/geo/s2"
 	"github.com/skycoin/skywire-utilities/pkg/logging"
 	"github.com/spf13/cobra"
-
-	"github.com/skycoin/skywire-services/pkg/uptime-tracker/store"
 )
 
 const (
@@ -85,7 +83,7 @@ var rootCmd = &cobra.Command{
 			logger.Fatalf("Got code %d from uptime tracker", resp.StatusCode)
 		}
 
-		var visors store.VisorsResponse
+		var visors VisorsResponse
 		if err := json.NewDecoder(resp.Body).Decode(&visors); err != nil {
 			logger.WithError(err).Fatalln("Failed to unmarshal uptime tracker response")
 		}
@@ -133,4 +131,13 @@ func Execute() {
 
 		os.Exit(statusFailure)
 	}
+}
+
+// VisorsResponse is the tracker API response format for `/visors`.
+type VisorsResponse []VisorDef
+
+// VisorDef is the item of `VisorsResponse`.
+type VisorDef struct {
+	Lat float64 `json:"lat"`
+	Lon float64 `json:"lon"`
 }
