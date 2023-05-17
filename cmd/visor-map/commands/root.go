@@ -16,6 +16,8 @@ import (
 	"github.com/golang/geo/s2"
 	"github.com/skycoin/skywire-utilities/pkg/logging"
 	"github.com/spf13/cobra"
+cc "github.com/ivanpirog/coloredcobra"
+"github.com/skycoin/skywire-utilities/pkg/buildinfo"
 
 	"github.com/skycoin/skywire-services/pkg/uptime-tracker/store"
 )
@@ -46,15 +48,29 @@ var (
 )
 
 func init() {
-	rootCmd.Flags().IntVar(&width, "width", 1200, "image width")
-	rootCmd.Flags().IntVar(&height, "height", 800, "image height")
-	rootCmd.Flags().StringVarP(&output, "output", "o", "./map"+imageExtension, "output .jpg file")
-	rootCmd.Flags().StringVar(&trackerURL, "tracker-url", defaultUptimeTrackerHost, "uptime tracker URL")
+	rootCmd.Flags().IntVar(&width, "width", 1200, "image width\033[0m")
+	rootCmd.Flags().IntVar(&height, "height", 800, "image height\033[0m")
+	rootCmd.Flags().StringVarP(&output, "output", "o", "./map"+imageExtension, "output .jpg file\033[0m")
+	rootCmd.Flags().StringVar(&trackerURL, "tracker-url", defaultUptimeTrackerHost, "uptime tracker URL\033[0m")
+	var helpflag bool
+	rootCmd.SetUsageTemplate(help)
+	rootCmd.PersistentFlags().BoolVarP(&helpflag, "help", "h", false, "help for "+rootCmd.Use)
+	rootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
+	rootCmd.PersistentFlags().MarkHidden("help") //nolint
 }
 
 var rootCmd = &cobra.Command{
 	Use:   "visor-map",
 	Short: "Utility to render visors map",
+	Long: `
+	┬  ┬┬┌─┐┌─┐┬─┐   ┌┬┐┌─┐┌─┐
+	└┐┌┘│└─┐│ │├┬┘───│││├─┤├─┘
+	 └┘ ┴└─┘└─┘┴└─   ┴ ┴┴ ┴┴  `,
+	 SilenceErrors:         true,
+	 SilenceUsage:          true,
+	 DisableSuggestions:    true,
+	 DisableFlagsInUseLine: true,
+	 Version:               buildinfo.Version(),
 	Run: func(_ *cobra.Command, _ []string) {
 		const loggerTag = "visor_map"
 		logger := logging.MustGetLogger(loggerTag)
@@ -128,9 +144,30 @@ var rootCmd = &cobra.Command{
 
 // Execute executes root CLI command.
 func Execute() {
+	cc.Init(&cc.Config{
+		RootCmd:       rootCmd,
+		Headings:      cc.HiBlue + cc.Bold, //+ cc.Underline,
+		Commands:      cc.HiBlue + cc.Bold,
+		CmdShortDescr: cc.HiBlue,
+		Example:       cc.HiBlue + cc.Italic,
+		ExecName:      cc.HiBlue + cc.Bold,
+		Flags:         cc.HiBlue + cc.Bold,
+		//FlagsDataType: cc.HiBlue,
+		FlagsDescr:      cc.HiBlue,
+		NoExtraNewlines: true,
+		NoBottomNewline: true,
+	})
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-
-		os.Exit(statusFailure)
+		log.Fatal("Failed to execute command: ", err)
 	}
 }
+
+const help = "Usage:\r\n" +
+	"  {{.UseLine}}{{if .HasAvailableSubCommands}}{{end}} {{if gt (len .Aliases) 0}}\r\n\r\n" +
+	"{{.NameAndAliases}}{{end}}{{if .HasAvailableSubCommands}}\r\n\r\n" +
+	"Available Commands:{{range .Commands}}{{if (or .IsAvailableCommand)}}\r\n  " +
+	"{{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}\r\n\r\n" +
+	"Flags:\r\n" +
+	"{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}\r\n\r\n" +
+	"Global Flags:\r\n" +
+	"{{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}\r\n\r\n"
