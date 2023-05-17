@@ -1,20 +1,17 @@
-module github.com/SkycoinPro/skywire-services
+module github.com/skycoin/skywire-services
 
-go 1.17
+go 1.18
 
 require (
 	github.com/ccding/go-stun/stun v0.0.0-20200514191101-4dc67bcdb029
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/docker/docker v1.13.1
-	github.com/flopp/go-staticmaps v0.0.0-20200829090108-3465b3349546
 	github.com/go-chi/chi/v5 v5.0.8-0.20220103230436-7dbe9a0bd10f
-	github.com/go-chi/httprate v0.4.0
-	github.com/go-echarts/go-echarts/v2 v2.2.4
 	github.com/go-playground/validator/v10 v10.4.1
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-redis/redis/v8 v8.11.5
-	github.com/golang/geo v0.0.0-20200730024412-e86565bf3f35
 	github.com/google/uuid v1.1.2
+	github.com/ivanpirog/coloredcobra v1.0.0
 	github.com/json-iterator/go v1.1.12
 	github.com/rs/cors v1.8.2
 	github.com/sirupsen/logrus v1.8.1
@@ -38,7 +35,6 @@ require (
 	github.com/Microsoft/go-winio v0.4.16 // indirect
 	github.com/StackExchange/wmi v1.2.1 // indirect
 	github.com/VictoriaMetrics/metrics v1.18.1 // indirect
-	github.com/Wessie/appdirs v0.0.0-20141031215813-6573e894f8e2 // indirect
 	github.com/bitfield/script v0.19.0 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
@@ -52,15 +48,12 @@ require (
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/fatih/color v1.13.0 // indirect
-	github.com/flopp/go-coordsparser v0.0.0-20160810104536-845bca739e26 // indirect
-	github.com/fogleman/gg v1.3.0 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-playground/locales v0.13.0 // indirect
 	github.com/go-playground/universal-translator v0.17.0 // indirect
 	github.com/gocarina/gocsv v0.0.0-20220927221512-ad3251f9fa25 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
@@ -68,7 +61,6 @@ require (
 	github.com/google/flatbuffers v1.12.1 // indirect
 	github.com/gorilla/securecookie v1.1.1 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
-	github.com/ivanpirog/coloredcobra v1.0.0 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.12.1 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
@@ -111,14 +103,12 @@ require (
 	github.com/tjfoc/gmsm v1.4.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.4 // indirect
 	github.com/tklauser/numcpus v0.2.1 // indirect
-	github.com/tkrajina/gpxgo v1.0.1 // indirect
 	github.com/valyala/fastrand v1.1.0 // indirect
 	github.com/valyala/histogram v1.2.0 // indirect
 	github.com/zcalusic/sysinfo v0.9.5 // indirect
 	go.etcd.io/bbolt v1.3.6 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa // indirect
-	golang.org/x/image v0.0.0-20210628002857-a66eb6448b8d // indirect
 	golang.org/x/mod v0.5.0 // indirect
 	golang.org/x/sys v0.0.0-20220704084225-05e143d24a9e // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
