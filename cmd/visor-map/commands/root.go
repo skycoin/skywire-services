@@ -4,9 +4,9 @@ package commands
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"image/color"
 	"image/jpeg"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -14,6 +14,8 @@ import (
 
 	sm "github.com/flopp/go-staticmaps"
 	"github.com/golang/geo/s2"
+	cc "github.com/ivanpirog/coloredcobra"
+	"github.com/skycoin/skywire-utilities/pkg/buildinfo"
 	"github.com/skycoin/skywire-utilities/pkg/logging"
 	"github.com/spf13/cobra"
 )
@@ -62,11 +64,11 @@ var rootCmd = &cobra.Command{
 	┬  ┬┬┌─┐┌─┐┬─┐   ┌┬┐┌─┐┌─┐
 	└┐┌┘│└─┐│ │├┬┘───│││├─┤├─┘
 	 └┘ ┴└─┘└─┘┴└─   ┴ ┴┴ ┴┴  `,
-	 SilenceErrors:         true,
-	 SilenceUsage:          true,
-	 DisableSuggestions:    true,
-	 DisableFlagsInUseLine: true,
-	 Version:               buildinfo.Version(),
+	SilenceErrors:         true,
+	SilenceUsage:          true,
+	DisableSuggestions:    true,
+	DisableFlagsInUseLine: true,
+	Version:               buildinfo.Version(),
 	Run: func(_ *cobra.Command, _ []string) {
 		const loggerTag = "visor_map"
 		logger := logging.MustGetLogger(loggerTag)
@@ -166,3 +168,13 @@ type VisorDef struct {
 	Lat float64 `json:"lat"`
 	Lon float64 `json:"lon"`
 }
+
+const help = "Usage:\r\n" +
+	"  {{.UseLine}}{{if .HasAvailableSubCommands}}{{end}} {{if gt (len .Aliases) 0}}\r\n\r\n" +
+	"{{.NameAndAliases}}{{end}}{{if .HasAvailableSubCommands}}\r\n\r\n" +
+	"Available Commands:{{range .Commands}}{{if (or .IsAvailableCommand)}}\r\n  " +
+	"{{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}\r\n\r\n" +
+	"Flags:\r\n" +
+	"{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}\r\n\r\n" +
+	"Global Flags:\r\n" +
+	"{{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}\r\n\r\n"

@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"time"
 
+	cc "github.com/ivanpirog/coloredcobra"
 	"github.com/skycoin/skywire-utilities/pkg/buildinfo"
 	"github.com/skycoin/skywire-utilities/pkg/cipher"
 	"github.com/skycoin/skywire-utilities/pkg/cmdutil"
@@ -18,7 +19,6 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/tcpproxy"
 	"github.com/skycoin/skywire/pkg/visor/visorconfig"
 	"github.com/spf13/cobra"
-cc "github.com/ivanpirog/coloredcobra"
 
 	"github.com/skycoin/skywire-services/pkg/vpn-monitor/api"
 )
@@ -49,11 +49,11 @@ var rootCmd = &cobra.Command{
 	┬  ┬┌─┐┌┐┌   ┌┬┐┌─┐┌┐┌┬┌┬┐┌─┐┬─┐
 	└┐┌┘├─┘│││───││││ │││││ │ │ │├┬┘
 	 └┘ ┴  ┘└┘   ┴ ┴└─┘┘└┘┴ ┴ └─┘┴└─`,
-	 SilenceErrors:         true,
-	 SilenceUsage:          true,
-	 DisableSuggestions:    true,
-	 DisableFlagsInUseLine: true,
-	 Version:               buildinfo.Version(),
+	SilenceErrors:         true,
+	SilenceUsage:          true,
+	DisableSuggestions:    true,
+	DisableFlagsInUseLine: true,
+	Version:               buildinfo.Version(),
 	Run: func(_ *cobra.Command, _ []string) {
 		visorBuildInfo := buildinfo.Get()
 		if _, err := visorBuildInfo.WriteTo(os.Stdout); err != nil {
@@ -101,7 +101,7 @@ var rootCmd = &cobra.Command{
 			logger.WithError(err).Error("Visor closed with error.")
 		}
 	},
-	}
+}
 
 func initConfig(confPath string, visorBuildInfo *buildinfo.Info, mLog *logging.MasterLogger) *visorconfig.V1 {
 	log := mLog.PackageLogger("vpn_monitor:config")
