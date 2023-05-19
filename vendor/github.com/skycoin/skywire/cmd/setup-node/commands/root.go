@@ -16,8 +16,8 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/cmdutil"
 	"github.com/skycoin/skywire-utilities/pkg/logging"
 	"github.com/skycoin/skywire-utilities/pkg/metricsutil"
-	"github.com/skycoin/skywire/pkg/setup"
-	"github.com/skycoin/skywire/pkg/setup/setupmetrics"
+	"github.com/skycoin/skywire/pkg/router"
+	"github.com/skycoin/skywire/pkg/router/setupmetrics"
 	"github.com/skycoin/skywire/pkg/syslog"
 )
 
@@ -29,13 +29,14 @@ var (
 )
 
 func init() {
-	rootCmd.Flags().StringVarP(&metricsAddr, "metrics", "m", "", "address to bind metrics API to")
-	rootCmd.Flags().StringVar(&syslogAddr, "syslog", "", "syslog server address. E.g. localhost:514")
-	rootCmd.Flags().StringVar(&tag, "tag", "setup_node", "logging tag")
-	rootCmd.Flags().BoolVarP(&cfgFromStdin, "stdin", "i", false, "read config from STDIN")
+	RootCmd.Flags().StringVarP(&metricsAddr, "metrics", "m", "", "address to bind metrics API to")
+	RootCmd.Flags().StringVar(&syslogAddr, "syslog", "", "syslog server address. E.g. localhost:514")
+	RootCmd.Flags().StringVar(&tag, "tag", "setup_node", "logging tag")
+	RootCmd.Flags().BoolVarP(&cfgFromStdin, "stdin", "i", false, "read config from STDIN")
 }
 
-var rootCmd = &cobra.Command{
+// RootCmd is the root command for setup node
+var RootCmd = &cobra.Command{
 	Use:   "setup-node [config.json]",
 	Short: "Route Setup Node for skywire",
 	Long: `
@@ -78,7 +79,7 @@ var rootCmd = &cobra.Command{
 			rdr = bufio.NewReader(os.Stdin)
 		}
 
-		conf := &setup.Config{}
+		conf := &router.SetupConfig{}
 
 		raw, err := io.ReadAll(rdr)
 		if err != nil {
@@ -91,7 +92,7 @@ var rootCmd = &cobra.Command{
 
 		log.Infof("Config: %#v", conf)
 
-		sn, err := setup.NewNode(conf)
+		sn, err := router.NewNode(conf)
 		if err != nil {
 			log.Fatal("Failed to create a setup node: ", err)
 		}
@@ -124,7 +125,7 @@ func prepareMetrics(log logrus.FieldLogger) setupmetrics.Metrics {
 // Execute executes root CLI command.
 func Execute() {
 	cc.Init(&cc.Config{
-		RootCmd:         rootCmd,
+		RootCmd:         RootCmd,
 		Headings:        cc.HiBlue + cc.Bold,
 		Commands:        cc.HiBlue + cc.Bold,
 		CmdShortDescr:   cc.HiBlue,
@@ -136,7 +137,7 @@ func Execute() {
 		NoExtraNewlines: true,
 		NoBottomNewline: true,
 	})
-	if err := rootCmd.Execute(); err != nil {
+	if err := RootCmd.Execute(); err != nil {
 		panic(err)
 	}
 }

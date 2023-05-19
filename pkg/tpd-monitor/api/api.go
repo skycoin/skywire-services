@@ -22,7 +22,6 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/logging"
 	utilenv "github.com/skycoin/skywire-utilities/pkg/skyenv"
 	"github.com/skycoin/skywire/pkg/app/appserver"
-	"github.com/skycoin/skywire/pkg/restart"
 	"github.com/skycoin/skywire/pkg/transport"
 	"github.com/skycoin/skywire/pkg/transport/network"
 	"github.com/skycoin/skywire/pkg/visor"
@@ -340,7 +339,7 @@ func (api *API) deregisterRequest(keys []string, rawReqURL, service string) erro
 
 func (api *API) startVisor(ctx context.Context, conf *visorconfig.V1) {
 	conf.SetLogger(logging.NewMasterLogger())
-	v, ok := visor.NewVisor(ctx, conf, restart.CaptureContext(), false, "", "")
+	v, ok := visor.NewVisor(ctx, conf)
 	if !ok {
 		api.logger.Fatal("Failed to start visor.")
 	}
