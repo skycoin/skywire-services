@@ -4,9 +4,9 @@ package commands
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"image/color"
 	"image/jpeg"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -14,12 +14,10 @@ import (
 
 	sm "github.com/flopp/go-staticmaps"
 	"github.com/golang/geo/s2"
+	cc "github.com/ivanpirog/coloredcobra"
+	"github.com/skycoin/skywire-utilities/pkg/buildinfo"
 	"github.com/skycoin/skywire-utilities/pkg/logging"
 	"github.com/spf13/cobra"
-cc "github.com/ivanpirog/coloredcobra"
-"github.com/skycoin/skywire-utilities/pkg/buildinfo"
-
-	"github.com/skycoin/skywire-services/pkg/uptime-tracker/store"
 )
 
 const (
@@ -66,11 +64,11 @@ var rootCmd = &cobra.Command{
 	┬  ┬┬┌─┐┌─┐┬─┐   ┌┬┐┌─┐┌─┐
 	└┐┌┘│└─┐│ │├┬┘───│││├─┤├─┘
 	 └┘ ┴└─┘└─┘┴└─   ┴ ┴┴ ┴┴  `,
-	 SilenceErrors:         true,
-	 SilenceUsage:          true,
-	 DisableSuggestions:    true,
-	 DisableFlagsInUseLine: true,
-	 Version:               buildinfo.Version(),
+	SilenceErrors:         true,
+	SilenceUsage:          true,
+	DisableSuggestions:    true,
+	DisableFlagsInUseLine: true,
+	Version:               buildinfo.Version(),
 	Run: func(_ *cobra.Command, _ []string) {
 		const loggerTag = "visor_map"
 		logger := logging.MustGetLogger(loggerTag)
@@ -101,7 +99,7 @@ var rootCmd = &cobra.Command{
 			logger.Fatalf("Got code %d from uptime tracker", resp.StatusCode)
 		}
 
-		var visors store.VisorsResponse
+		var visors VisorsResponse
 		if err := json.NewDecoder(resp.Body).Decode(&visors); err != nil {
 			logger.WithError(err).Fatalln("Failed to unmarshal uptime tracker response")
 		}
@@ -160,6 +158,15 @@ func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatal("Failed to execute command: ", err)
 	}
+}
+
+// VisorsResponse is the tracker API response format for `/visors`.
+type VisorsResponse []VisorDef
+
+// VisorDef is the item of `VisorsResponse`.
+type VisorDef struct {
+	Lat float64 `json:"lat"`
+	Lon float64 `json:"lon"`
 }
 
 const help = "Usage:\r\n" +

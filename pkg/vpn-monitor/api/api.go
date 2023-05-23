@@ -20,7 +20,6 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/httputil"
 	"github.com/skycoin/skywire-utilities/pkg/logging"
 	"github.com/skycoin/skywire/pkg/app/appserver"
-	"github.com/skycoin/skywire/pkg/restart"
 	"github.com/skycoin/skywire/pkg/servicedisc"
 	"github.com/skycoin/skywire/pkg/skyenv"
 	"github.com/skycoin/skywire/pkg/transport/network"
@@ -313,7 +312,7 @@ func (api *API) getVPNKeys() {
 
 func (api *API) startVisor(ctx context.Context, conf *visorconfig.V1) {
 	conf.SetLogger(logging.NewMasterLogger())
-	v, ok := visor.NewVisor(ctx, conf, restart.CaptureContext(), false, "", "")
+	v, ok := visor.NewVisor(ctx, conf)
 	if !ok {
 		api.logger.Fatal("Failed to start visor.")
 	}

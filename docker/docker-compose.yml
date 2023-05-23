@@ -326,6 +326,28 @@ services:
     stdin_open: true # docker run -i
     tty: true        # docker run -t
 
+  transport-setup:
+    privileged: true
+    image: "${REGISTRY}/transport-setup:${DOCKER_TAG}"
+    hostname: transport-setup
+    container_name: "transport-setup"
+    networks:
+      srv:
+        ipv4_address: 175.0.0.16
+      intra:
+        ipv4_address: 174.0.0.16
+    depends_on:
+      - dmsg-server
+    restart: on-failure
+    entrypoint: /release/transport-setup -c /release/transport-setup.json
+    volumes:
+      - type: bind
+        source: ../docker/integration/transport-setup.json
+        target: /release/transport-setup.json
+        read_only: true
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t
+
   # node-visualizer:
   #   image: "${REGISTRY}/node-visualizer:${DOCKER_TAG}"
   #   hostname: node-visualizer

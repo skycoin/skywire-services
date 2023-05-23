@@ -46,8 +46,9 @@ type Error struct {
 
 // Config contains the list of stun servers and setup-nodes
 type Config struct {
-	StunServers []string       `json:"stun_servers"`
-	SetupNodes  cipher.PubKeys `json:"setup_nodes"`
+	StunServers     []string       `json:"stun_servers"`
+	SetupNodes      cipher.PubKeys `json:"setup_nodes"`
+	SurveyWhitelist []string       `json:"survey_whitelist"`
 }
 
 // New creates a new api.
@@ -68,6 +69,7 @@ func New(log *logging.Logger, conf Config, domain string) *API {
 		ServiceDiscovery:   sd,
 		StunServers:        conf.StunServers,
 		DNSServer:          skyenv.DNSServer,
+		SurveyWhitelist:    conf.SurveyWhitelist,
 	}
 
 	api := &API{

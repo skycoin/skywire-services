@@ -7,7 +7,6 @@ import (
 	"github.com/skycoin/skywire/pkg/app/appserver"
 	"github.com/skycoin/skywire/pkg/routefinder/rfclient"
 	"github.com/skycoin/skywire/pkg/router"
-	"github.com/skycoin/skywire/pkg/setup/setupclient"
 	"github.com/skycoin/skywire/pkg/skyenv"
 )
 
@@ -38,7 +37,7 @@ var (
 	}
 	// ErrSetupNode is setupclient.ErrSetupNode error wrapped in appserver.RPCErr
 	ErrSetupNode = appserver.RPCErr{
-		Err: setupclient.ErrSetupNode.Error(),
+		Err: router.ErrSetupNode.Error(),
 	}
 	// ErrServerOffline is sent by server visor when the vpn-server is offline
 	ErrServerOffline = appserver.RPCErr{

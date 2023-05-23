@@ -23,7 +23,8 @@ Install the following dependencies:
 ### **Clone**
 Clone the following repositories into adjacent directories before proceeding  
 - [Skywire](https://github.com/skycoin/skywire)  
-- [Service Discovery](https://github.com/SkycoinPro/skycoin-service-discovery)   
+- [Service Discovery](https://github.com/skycoin/skycoin-service-discovery)   
+- [Uptime Tracker](https://github.com/skycoin/skywire-ut)
 - [dmsg](https://github.com/skycoin/dmsg)  
 - [skywire-utilities](https://github.com/skycoin/skywire-utilities)  
 

@@ -21,6 +21,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/skycoin/dmsg/pkg/dmsg"
 	"github.com/skycoin/dmsg/pkg/dmsgpty"
+	coincipher "github.com/skycoin/skycoin/src/cipher"
 
 	"github.com/skycoin/skywire-utilities/pkg/buildinfo"
 	"github.com/skycoin/skywire-utilities/pkg/cipher"
@@ -29,10 +30,9 @@ import (
 	"github.com/skycoin/skywire/pkg/app/appcommon"
 	"github.com/skycoin/skywire/pkg/app/appserver"
 	"github.com/skycoin/skywire/pkg/routing"
-	"github.com/skycoin/skywire/pkg/skyenv"
 	"github.com/skycoin/skywire/pkg/transport"
 	"github.com/skycoin/skywire/pkg/visor/dmsgtracker"
-	"github.com/skycoin/skywire/pkg/visor/hypervisorconfig"
+	"github.com/skycoin/skywire/pkg/visor/rewardconfig"
 	"github.com/skycoin/skywire/pkg/visor/usermanager"
 	"github.com/skycoin/skywire/pkg/visor/visorconfig"
 )
@@ -56,7 +56,7 @@ type Conn struct {
 
 // Hypervisor manages visors.
 type Hypervisor struct {
-	c            hypervisorconfig.Config
+	c            visorconfig.HypervisorConfig
 	visor        *Visor
 	remoteVisors map[cipher.PubKey]Conn // connected remote visors to hypervisor
 	dmsgC        *dmsg.Client
@@ -66,8 +66,8 @@ type Hypervisor struct {
 	logger       *logging.Logger
 }
 
-// New creates a new Hypervisor.
-func New(config hypervisorconfig.Config, visor *Visor, dmsgC *dmsg.Client) (*Hypervisor, error) {
+// NewHypervisor creates a new Hypervisor.
+func NewHypervisor(config visorconfig.HypervisorConfig, visor *Visor, dmsgC *dmsg.Client) (*Hypervisor, error) {
 	config.Cookies.TLS = config.EnableTLS
 
 	boltUserDB, err := usermanager.NewBoltUserStore(config.DBPath)
@@ -132,7 +132,7 @@ func (hv *Hypervisor) ServeRPC(ctx context.Context, dmsgPort uint16) error {
 		visorConn := &Conn{
 			Addr:  addr,
 			SrvPK: conn.ServerPK(),
-			API:   NewRPCClient(log, conn, RPCPrefix, skyenv.RPCTimeout),
+			API:   NewRPCClient(log, conn, RPCPrefix, visorconfig.RPCTimeout),
 			PtyUI: setupDmsgPtyUI(hv.dmsgC, addr.PK),
 		}
 		if hv.visor.isDTMReady() {
@@ -260,16 +260,15 @@ func (hv *Hypervisor) makeMux() chi.Router {
 				r.Delete("/visors/{pk}/routes/", hv.deleteRoutes())
 				r.Get("/visors/{pk}/routegroups", hv.getRouteGroups())
 				r.Post("/visors/{pk}/restart", hv.restart())
-				r.Post("/visors/{pk}/exec", hv.exec())
 				r.Get("/visors/{pk}/runtime-logs", hv.getRuntimeLogs())
 				r.Post("/visors/{pk}/min-hops", hv.postMinHops())
 				r.Get("/visors/{pk}/persistent-transports", hv.getPersistentTransports())
 				r.Put("/visors/{pk}/persistent-transports", hv.putPersistentTransports())
 				r.Get("/visors/{pk}/log/rotation", hv.getLogRotationInterval())
 				r.Put("/visors/{pk}/log/rotation", hv.putLogRotationInterval())
-				//r.Get("/visors/{pk}/privacy", hv.getPrivacy())
-				//r.Put("/visors/{pk}/privacy", hv.putPrivacy())
-
+				r.Get("/visors/{pk}/reward", hv.getRewardAddress())
+				r.Put("/visors/{pk}/reward", hv.putRewardAddress())
+				r.Delete("/visors/{pk}/reward", hv.deleteRewardAddress())
 			})
 		})
 
@@ -596,20 +595,21 @@ func (hv *Hypervisor) getAppStats() http.HandlerFunc {
 func (hv *Hypervisor) putApp() http.HandlerFunc {
 	return hv.withCtx(hv.appCtx, func(w http.ResponseWriter, r *http.Request, ctx *httpCtx) {
 		type req struct {
-			AutoStart  *bool          `json:"autostart,omitempty"`
-			Killswitch *bool          `json:"killswitch,omitempty"`
-			Secure     *bool          `json:"secure,omitempty"`
-			Status     *int           `json:"status,omitempty"`
-			Passcode   *string        `json:"passcode,omitempty"`
-			NetIfc     *string        `json:"netifc,omitempty"`
-			DNSAddr    *string        `json:"dns,omitempty"`
-			PK         *cipher.PubKey `json:"pk,omitempty"`
+			AutoStart     *bool             `json:"autostart,omitempty"`
+			Killswitch    *bool             `json:"killswitch,omitempty"`
+			Secure        *bool             `json:"secure,omitempty"`
+			Status        *int              `json:"status,omitempty"`
+			Passcode      *string           `json:"passcode,omitempty"`
+			NetIfc        *string           `json:"netifc,omitempty"`
+			DNSAddr       *string           `json:"dns,omitempty"`
+			PK            *cipher.PubKey    `json:"pk,omitempty"`
+			CustomSetting map[string]string `json:"custom_setting,omitempty"`
 		}
 
 		shouldRestartApp := func(r req) bool {
 			// we restart the app if one of these fields was changed
 			return r.Killswitch != nil || r.Secure != nil || r.Passcode != nil ||
-				r.PK != nil || r.NetIfc != nil
+				r.PK != nil || r.NetIfc != nil || r.CustomSetting != nil
 		}
 
 		var reqBody req
@@ -674,6 +674,13 @@ func (hv *Hypervisor) putApp() http.HandlerFunc {
 			}
 		}
 
+		if reqBody.CustomSetting != nil {
+			if err := ctx.API.DoCustomSetting(ctx.App.Name, reqBody.CustomSetting); err != nil {
+				httputil.WriteJSON(w, r, http.StatusInternalServerError, err)
+				return
+			}
+		}
+
 		if shouldRestartApp(reqBody) {
 			if err := ctx.API.RestartApp(ctx.App.Name); err != nil {
 				httputil.WriteJSON(w, r, http.StatusInternalServerError, err)
@@ -694,7 +701,7 @@ func (hv *Hypervisor) putApp() http.HandlerFunc {
 					return
 				}
 				appStatus := appserver.AppDetailedStatusStarting
-				if ctx.App.Name == skyenv.VPNClientName {
+				if ctx.App.Name == visorconfig.VPNClientName {
 					appStatus = appserver.AppDetailedStatusVPNConnecting
 				}
 				if err := ctx.API.SetAppDetailedStatus(ctx.App.Name, appStatus); err != nil {
@@ -1143,37 +1150,6 @@ func (hv *Hypervisor) restart() http.HandlerFunc {
 	})
 }
 
-// executes a command and returns its output
-func (hv *Hypervisor) exec() http.HandlerFunc {
-	return hv.withCtx(hv.visorCtx, func(w http.ResponseWriter, r *http.Request, ctx *httpCtx) {
-		var reqBody struct {
-			Command string `json:"command"`
-		}
-
-		if err := httputil.ReadJSON(r, &reqBody); err != nil {
-			if err != io.EOF {
-				hv.log(r).Warnf("exec request: %v", err)
-			}
-
-			httputil.WriteJSON(w, r, http.StatusBadRequest, usermanager.ErrMalformedRequest)
-
-			return
-		}
-
-		out, err := ctx.API.Exec(reqBody.Command)
-		if err != nil {
-			httputil.WriteJSON(w, r, http.StatusInternalServerError, err)
-			return
-		}
-
-		output := struct {
-			Output string `json:"output"`
-		}{strings.TrimSpace(string(out))}
-
-		httputil.WriteJSON(w, r, http.StatusOK, output)
-	})
-}
-
 func (hv *Hypervisor) getRuntimeLogs() http.HandlerFunc {
 	return hv.withCtx(hv.visorCtx, func(w http.ResponseWriter, r *http.Request, ctx *httpCtx) {
 		logs, err := ctx.API.RuntimeLogs()
@@ -1276,42 +1252,53 @@ func (hv *Hypervisor) getLogRotationInterval() http.HandlerFunc {
 	})
 }
 
-//func (hv *Hypervisor) putPrivacy() http.HandlerFunc {
-//	return hv.withCtx(hv.visorCtx, func(w http.ResponseWriter, r *http.Request, ctx *httpCtx) {
-//		var reqBody *privacyconfig.Privacy
-//
-//		if err := httputil.ReadJSON(r, &reqBody); err != nil {
-//			if err != io.EOF {
-//				hv.log(r).Warnf("putPersistentTransports request: %v", err)
-//			}
-//			httputil.WriteJSON(w, r, http.StatusBadRequest, usermanager.ErrMalformedRequest)
-//			return
-//		}
-//
-//		_, err := coincipher.DecodeBase58Address(reqBody.RewardAddress)
-//		if err != nil {
-//			httputil.WriteJSON(w, r, http.StatusInternalServerError, err)
-//			return
-//		}
-//		pConf, err := ctx.API.SetPrivacy(reqBody)
-//		if err != nil {
-//			httputil.WriteJSON(w, r, http.StatusInternalServerError, err)
-//			return
-//		}
-//		httputil.WriteJSON(w, r, http.StatusOK, pConf)
-//	})
-//}
+func (hv *Hypervisor) getRewardAddress() http.HandlerFunc {
+	return hv.withCtx(hv.visorCtx, func(w http.ResponseWriter, r *http.Request, ctx *httpCtx) {
+		pts, err := ctx.API.GetRewardAddress()
+		if err != nil {
+			httputil.WriteJSON(w, r, http.StatusInternalServerError, err)
+			return
+		}
+		httputil.WriteJSON(w, r, http.StatusOK, pts)
+	})
+}
 
-//func (hv *Hypervisor) getPrivacy() http.HandlerFunc {
-//	return hv.withCtx(hv.visorCtx, func(w http.ResponseWriter, r *http.Request, ctx *httpCtx) {
-//		pts, err := ctx.API.GetPrivacy()
-//		if err != nil {
-//			httputil.WriteJSON(w, r, http.StatusInternalServerError, err)
-//			return
-//		}
-//		httputil.WriteJSON(w, r, http.StatusOK, pts)
-//	})
-//}
+func (hv *Hypervisor) putRewardAddress() http.HandlerFunc {
+	return hv.withCtx(hv.visorCtx, func(w http.ResponseWriter, r *http.Request, ctx *httpCtx) {
+		var reqBody *rewardconfig.Reward
+
+		if err := httputil.ReadJSON(r, &reqBody); err != nil {
+			if err != io.EOF {
+				hv.log(r).Warnf("putRewardAddress request: %v", err)
+			}
+			httputil.WriteJSON(w, r, http.StatusBadRequest, usermanager.ErrMalformedRequest)
+			return
+		}
+
+		_, err := coincipher.DecodeBase58Address(reqBody.RewardAddress)
+		if err != nil {
+			httputil.WriteJSON(w, r, http.StatusInternalServerError, err)
+			return
+		}
+		pConf, err := ctx.API.SetRewardAddress(reqBody.RewardAddress)
+		if err != nil {
+			httputil.WriteJSON(w, r, http.StatusInternalServerError, err)
+			return
+		}
+		httputil.WriteJSON(w, r, http.StatusOK, pConf)
+	})
+}
+
+func (hv *Hypervisor) deleteRewardAddress() http.HandlerFunc {
+	return hv.withCtx(hv.visorCtx, func(w http.ResponseWriter, r *http.Request, ctx *httpCtx) {
+		err := ctx.API.DeleteRewardAddress()
+		if err != nil {
+			httputil.WriteJSON(w, r, http.StatusInternalServerError, err)
+			return
+		}
+		httputil.WriteJSON(w, r, http.StatusOK, struct{}{})
+	})
+}
 
 /*
 	<<< Helper functions >>>
@@ -1521,7 +1508,7 @@ type dmsgPtyUI struct {
 }
 
 func setupDmsgPtyUI(dmsgC *dmsg.Client, visorPK cipher.PubKey) *dmsgPtyUI {
-	ptyDialer := dmsgpty.DmsgUIDialer(dmsgC, dmsg.Addr{PK: visorPK, Port: skyenv.DmsgPtyPort})
+	ptyDialer := dmsgpty.DmsgUIDialer(dmsgC, dmsg.Addr{PK: visorPK, Port: visorconfig.DmsgPtyPort})
 	return &dmsgPtyUI{
 		PtyUI: dmsgpty.NewUI(ptyDialer, dmsgpty.DefaultUIConfig()),
 	}
@@ -1530,7 +1517,7 @@ func setupDmsgPtyUI(dmsgC *dmsg.Client, visorPK cipher.PubKey) *dmsgPtyUI {
 func (hv *Hypervisor) getPty() http.HandlerFunc {
 	return hv.withCtx(hv.visorCtx, func(w http.ResponseWriter, r *http.Request, ctx *httpCtx) {
 		customCommand := make(map[string][]string)
-		customCommand["update"] = skyenv.UpdateCommand()
+		customCommand["update"] = visorconfig.UpdateCommand()
 		ctx.PtyUI.PtyUI.Handler(customCommand)(w, r)
 	})
 }

@@ -1,5 +1,5 @@
 {
-	"version": "v1.3.6-180-g7326eaec",
+	"version": "v1.3.7",
 	"sk": "da4f48916e99aa3de794bffe1b5ecd465335e38b55457a9f78b411eb8585e36f",
 	"pk": "0348c941c5015a05c455ff238af2e57fb8f914c399aab604e9abb5b32b91a4c1fe",
 	"dmsg": {
@@ -16,7 +16,9 @@
 		"discovery": "http://transport-discovery:9091",
 		"address_resolver": "http://address-resolver:9093",
 		"public_autoconnect": false,
-		"transport_setup_nodes": null
+		"transport_setup_nodes": null,
+		"stcpr_port": 40551,
+		"sudph_port": 40561
 	},
 	"routing": {
 		"setup_nodes": [

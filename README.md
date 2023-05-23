@@ -49,7 +49,7 @@ Pushing to `develop` deploys changes to test on skywire.dev subdomains.
 
 Logs can be retrieved through `kubectl` or grafana.skycoin.com.
 
-Check the [docs](docs/Deployments.md) for more documentation on the deployments. Check [Skywire Devops](https://github.com/SkycoinPro/skywire-devops) for more in depth info on our deployment setup.
+Check the [docs](docs/Deployments.md) for more documentation on the deployments. Check [Skywire Devops](https://github.com/skycoin/skywire-devops) for more in depth info on our deployment setup.
 
 ## Documentation
 
@@ -70,4 +70,4 @@ Check the [docs](docs/Deployments.md) for more documentation on the deployments.
 - [Vpn Monitor](cmd/vpn-monitor/README.md)
 - [Dmsg Discovery](https://github.com/skycoin/dmsg/blob/develop/cmd/dmsg-discovery/README.md)
 - [Dmsg Server](https://github.com/skycoin/dmsg/blob/develop/cmd/dmsg-server/README.md)
-- [Service Discovery](https://github.com/SkycoinPro/skycoin-service-discovery/blob/master/README.md#http-api)
+- [Service Discovery](https://github.com/skycoin/skycoin-service-discovery/blob/master/README.md#http-api)
