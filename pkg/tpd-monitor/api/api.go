@@ -366,7 +366,7 @@ func InitConfig(confPath string, mLog *logging.MasterLogger) *visorconfig.V1 {
 		TransportDiscovery: oldConf.Transport.Discovery,
 		AddressResolver:    oldConf.Transport.AddressResolver,
 		RouteFinder:        oldConf.Routing.RouteFinder,
-		RouteSetupNodes:         oldConf.Routing.RouteSetupNodes,
+		RouteSetupNodes:    oldConf.Routing.RouteSetupNodes,
 		UptimeTracker:      oldConf.UptimeTracker.Addr,
 		ServiceDiscovery:   oldConf.Launcher.ServiceDisc,
 	}
