@@ -46,7 +46,7 @@ func (env *EnvConfig) AddVisor(visorName string, apps []appserver.AppConfig, rpc
 	visorCfg.Dmsg.Discovery = env.Skywire.DmsgDiscovery.Address
 	visorCfg.Transport.Discovery = env.Skywire.TransportDiscovery.Address
 	visorCfg.Routing.RouteFinder = env.Skywire.RouteFinder.Address
-	visorCfg.Routing.SetupNodes = []cipher.PubKey{env.Skywire.SetupNode.PubKey}
+	visorCfg.Routing.RouteSetupNodes = []cipher.PubKey{env.Skywire.SetupNode.PubKey}
 	visorCfg.Launcher = &visorconfig.Launcher{
 		Apps: apps,
 	}
@@ -94,7 +94,7 @@ func DefaultPublicVisorConfig() *visorconfig.V1 {
 	}
 
 	conf.Routing = &visorconfig.Routing{
-		SetupNodes:  []cipher.PubKey{sPK},
+		RouteSetupNodes:  []cipher.PubKey{sPK},
 		RouteFinder: PublicRouteFinder,
 	}
 
