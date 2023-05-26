@@ -366,7 +366,7 @@ func InitConfig(confPath string, mLog *logging.MasterLogger) *visorconfig.V1 {
 		TransportDiscovery: oldConf.Transport.Discovery,
 		AddressResolver:    oldConf.Transport.AddressResolver,
 		RouteFinder:        oldConf.Routing.RouteFinder,
-		SetupNodes:         oldConf.Routing.SetupNodes,
+		RouteSetupNodes:         oldConf.Routing.RouteSetupNodes,
 		UptimeTracker:      oldConf.UptimeTracker.Addr,
 		ServiceDiscovery:   oldConf.Launcher.ServiceDisc,
 	}
@@ -408,13 +408,13 @@ func InitConfig(confPath string, mLog *logging.MasterLogger) *visorconfig.V1 {
 
 func whitelistedPKs() map[string]bool {
 	whitelistedPKs := make(map[string]bool)
-	for _, pk := range strings.Split(utilenv.NetworkMonitorPK, ",") {
+	for _, pk := range strings.Split(utilenv.NetworkMonitorPKs, ",") {
 		whitelistedPKs[pk] = true
 	}
-	for _, pk := range strings.Split(utilenv.TestNetworkMonitorPK, ",") {
+	for _, pk := range strings.Split(utilenv.TestNetworkMonitorPKs, ",") {
 		whitelistedPKs[pk] = true
 	}
-	whitelistedPKs[utilenv.SetupPK] = true
-	whitelistedPKs[utilenv.TestSetupPK] = true
+	whitelistedPKs[utilenv.RouteSetupPKs] = true
+	whitelistedPKs[utilenv.TestRouteSetupPKs] = true
 	return whitelistedPKs
 }
