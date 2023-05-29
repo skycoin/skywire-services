@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
+	cc "github.com/ivanpirog/coloredcobra"
 	"github.com/skycoin/skywire-utilities/pkg/buildinfo"
 	"github.com/skycoin/skywire-utilities/pkg/cipher"
 	"github.com/skycoin/skywire-utilities/pkg/cmdutil"
@@ -17,7 +18,6 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/tcpproxy"
 	"github.com/skycoin/skywire/pkg/visor/visorconfig"
 	"github.com/spf13/cobra"
-cc "github.com/ivanpirog/coloredcobra"
 
 	"github.com/skycoin/skywire-services/pkg/public-visor-monitor/api"
 )
@@ -98,7 +98,7 @@ var rootCmd = &cobra.Command{
 			logger.WithError(err).Error("Visor closed with error.")
 		}
 	},
-	}
+}
 
 func initConfig(confPath string, visorBuildInfo *buildinfo.Info, mLog *logging.MasterLogger) *visorconfig.V1 {
 	log := mLog.PackageLogger("public_visor_monitor:config")
@@ -143,6 +143,7 @@ func Execute() {
 		log.Fatal("Failed to execute command: ", err)
 	}
 }
+
 const help = "Usage:\r\n" +
 	"  {{.UseLine}}{{if .HasAvailableSubCommands}}{{end}} {{if gt (len .Aliases) 0}}\r\n\r\n" +
 	"{{.NameAndAliases}}{{end}}{{if .HasAvailableSubCommands}}\r\n\r\n" +

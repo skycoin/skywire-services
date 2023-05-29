@@ -7,10 +7,10 @@ import (
 	"net/http"
 	"time"
 
+	cc "github.com/ivanpirog/coloredcobra"
+	"github.com/skycoin/skywire-utilities/pkg/buildinfo"
 	"github.com/skycoin/skywire-utilities/pkg/logging"
 	"github.com/spf13/cobra"
-cc "github.com/ivanpirog/coloredcobra"
-"github.com/skycoin/skywire-utilities/pkg/buildinfo"
 
 	"github.com/skycoin/skywire-services/pkg/transport-setup/api"
 	"github.com/skycoin/skywire-services/pkg/transport-setup/config"
@@ -38,11 +38,11 @@ var rootCmd = &cobra.Command{
 	┌┬┐┬─┐┌─┐┌┐┌┌─┐┌─┐┌─┐┬─┐┌┬┐  ┌─┐┌─┐┌┬┐┬ ┬┌─┐
 	 │ ├┬┘├─┤│││└─┐├─┘│ │├┬┘ │───└─┐├┤  │ │ │├─┘
 	 ┴ ┴└─┴ ┴┘└┘└─┘┴  └─┘┴└─ ┴   └─┘└─┘ ┴ └─┘┴  `,
-	 SilenceErrors:         true,
-	 SilenceUsage:          true,
-	 DisableSuggestions:    true,
-	 DisableFlagsInUseLine: true,
-	 Version:               buildinfo.Version(),
+	SilenceErrors:         true,
+	SilenceUsage:          true,
+	DisableSuggestions:    true,
+	DisableFlagsInUseLine: true,
+	Version:               buildinfo.Version(),
 	Run: func(_ *cobra.Command, args []string) {
 		// local config of the client
 		const loggerTag = "transport_setup"
@@ -80,6 +80,7 @@ func Execute() {
 		log.Fatal("Failed to execute command: ", err)
 	}
 }
+
 const help = "Usage:\r\n" +
 	"  {{.UseLine}}{{if .HasAvailableSubCommands}}{{end}} {{if gt (len .Aliases) 0}}\r\n\r\n" +
 	"{{.NameAndAliases}}{{end}}{{if .HasAvailableSubCommands}}\r\n\r\n" +
