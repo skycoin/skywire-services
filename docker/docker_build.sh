@@ -37,11 +37,7 @@ if [[ "$image_tag" == "e2e" ]]; then
   fi
 
   # TODO(ersonp): instead of cloning the git branch we should directly use the docker image od SD from dockerhub like we doing for dmsg 
-  if [[ "$GITHUB_TOKEN" != "" ]]; then
-    git clone https://"$GITHUB_TOKEN":x-oauth-basic@github.com/skycoin/skycoin-service-discovery --depth 1 --branch "$git_branch" ./tmp/skycoin-service-discovery
-  else
-    git clone git@github.com:skycoin/skycoin-service-discovery --depth 1 --branch "$git_branch" ./tmp/skycoin-service-discovery
-  fi
+  git clone https://github.com/skycoin/skycoin-service-discovery --depth 1 --branch "$git_branch" ./tmp/skycoin-service-discovery
 
   if [ ! -d ./tmp/skycoin-service-discovery ]; then
     echo "failed to clone skycoin-service-discovery" &&
