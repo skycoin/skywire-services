@@ -34,4 +34,3 @@ jobs:
       - name: Clean e2e
         run: |
           make e2e-stop
-          make e2e-clean
