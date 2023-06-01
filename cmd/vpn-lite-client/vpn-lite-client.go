@@ -17,6 +17,7 @@ cc "github.com/ivanpirog/coloredcobra"
 	"github.com/skycoin/skywire-services/internal/vpn"
 	"github.com/skycoin/skywire-utilities/pkg/buildinfo"
 
+	"github.com/skycoin/skywire-services/internal/vpn"
 )
 
 var (
