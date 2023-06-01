@@ -50,7 +50,7 @@ if [[ "$image_tag" == "e2e" ]]; then
   # else
   #   git clone git@github.com:skycoin/skywire-ut --depth 1 --branch "$git_branch" ./tmp/skywire-ut
   # fi
-  git clone https://"$GIT_TOKEN":x-oauth-basic@github.com/skycoin/skywire-ut --depth 1 --branch "$git_branch" ./tmp/skywire-ut
+  git clone https://"$GIT_USER":"$GIT_TOKEN"@github.com/skycoin/skywire-ut --depth 1 --branch "$git_branch" ./tmp/skywire-ut
 
   if [ ! -d ./tmp/skywire-ut ]; then
     echo "failed to clone skywire-ut" &&
