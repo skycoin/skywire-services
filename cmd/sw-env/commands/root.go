@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"log"
 
+	cc "github.com/ivanpirog/coloredcobra"
+	"github.com/skycoin/skywire-utilities/pkg/buildinfo"
 	"github.com/spf13/cobra"
-cc "github.com/ivanpirog/coloredcobra"
-"github.com/skycoin/skywire-utilities/pkg/buildinfo"
 
 	cfg "github.com/skycoin/skywire-services/internal/config"
 )
@@ -103,6 +103,7 @@ func Execute() {
 		log.Fatal("Failed to execute command: ", err)
 	}
 }
+
 const help = "Usage:\r\n" +
 	"  {{.UseLine}}{{if .HasAvailableSubCommands}}{{end}} {{if gt (len .Aliases) 0}}\r\n\r\n" +
 	"{{.NameAndAliases}}{{end}}{{if .HasAvailableSubCommands}}\r\n\r\n" +

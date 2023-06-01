@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	cc "github.com/ivanpirog/coloredcobra"
 	logrussyslog "github.com/sirupsen/logrus/hooks/syslog"
 	"github.com/skycoin/skywire-utilities/pkg/buildinfo"
 	"github.com/skycoin/skywire-utilities/pkg/cipher"
@@ -15,7 +16,6 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/logging"
 	"github.com/skycoin/skywire-utilities/pkg/tcpproxy"
 	"github.com/spf13/cobra"
-cc "github.com/ivanpirog/coloredcobra"
 
 	"github.com/skycoin/skywire-services/pkg/tpd-monitor/api"
 )
@@ -54,11 +54,11 @@ var rootCmd = &cobra.Command{
 	┌┬┐┌─┐┌┬┐   ┌┬┐┌─┐┌┐┌┬┌┬┐┌─┐┬─┐
 	 │ ├─┘ ││───││││ │││││ │ │ │├┬┘
 	 ┴ ┴  ─┴┘   ┴ ┴└─┘┘└┘┴ ┴ └─┘┴└─`,
-	 SilenceErrors:         true,
-	 SilenceUsage:          true,
-	 DisableSuggestions:    true,
-	 DisableFlagsInUseLine: true,
-	 Version:               buildinfo.Version(),
+	SilenceErrors:         true,
+	SilenceUsage:          true,
+	DisableSuggestions:    true,
+	DisableFlagsInUseLine: true,
+	Version:               buildinfo.Version(),
 	Run: func(_ *cobra.Command, _ []string) {
 		if _, err := buildinfo.Get().WriteTo(os.Stdout); err != nil {
 			log.Printf("Failed to output build info: %v", err)
@@ -118,7 +118,7 @@ var rootCmd = &cobra.Command{
 			logger.WithError(err).Error("Visor closed with error.")
 		}
 	},
-	}
+}
 
 // Execute executes root CLI command.
 func Execute() {
@@ -139,6 +139,7 @@ func Execute() {
 		log.Fatal("Failed to execute command: ", err)
 	}
 }
+
 const help = "Usage:\r\n" +
 	"  {{.UseLine}}{{if .HasAvailableSubCommands}}{{end}} {{if gt (len .Aliases) 0}}\r\n\r\n" +
 	"{{.NameAndAliases}}{{end}}{{if .HasAvailableSubCommands}}\r\n\r\n" +

@@ -5,15 +5,14 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/skycoin/skywire-utilities/pkg/cipher"
 	"github.com/skycoin/skywire-utilities/pkg/buildinfo"
+	"github.com/skycoin/skywire-utilities/pkg/cipher"
 
+	cc "github.com/ivanpirog/coloredcobra"
 	"github.com/spf13/cobra"
-cc "github.com/ivanpirog/coloredcobra"
 )
 
-
-func init(){
+func init() {
 	var helpflag bool
 	rootCmd.SetUsageTemplate(help)
 	rootCmd.PersistentFlags().BoolVarP(&helpflag, "help", "h", false, "help for "+rootCmd.Use)
@@ -59,6 +58,7 @@ func Execute() {
 		log.Fatal("Failed to execute command: ", err)
 	}
 }
+
 const help = "Usage:\r\n" +
 	"  {{.UseLine}}{{if .HasAvailableSubCommands}}{{end}} {{if gt (len .Aliases) 0}}\r\n\r\n" +
 	"{{.NameAndAliases}}{{end}}{{if .HasAvailableSubCommands}}\r\n\r\n" +

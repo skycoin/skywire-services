@@ -4,20 +4,19 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
-	"log"
+
+	cc "github.com/ivanpirog/coloredcobra"
+	"github.com/skycoin/skywire-services/internal/vpn"
+	"github.com/skycoin/skywire-utilities/pkg/buildinfo"
 	"github.com/skycoin/skywire-utilities/pkg/cipher"
 	"github.com/skycoin/skywire/pkg/app"
 	"github.com/skycoin/skywire/pkg/app/appevent"
 	"github.com/skycoin/skywire/pkg/app/appserver"
 	"github.com/spf13/cobra"
-cc "github.com/ivanpirog/coloredcobra"
-	"github.com/skycoin/skywire-services/internal/vpn"
-	"github.com/skycoin/skywire-utilities/pkg/buildinfo"
-
-	"github.com/skycoin/skywire-services/internal/vpn"
 )
 
 var (
@@ -25,7 +24,7 @@ var (
 )
 
 func init() {
-	rootCmd.Flags().StringVarP(&serverPKStr, "srv","k", "", "PubKey of the server to connect to\033[0m")
+	rootCmd.Flags().StringVarP(&serverPKStr, "srv", "k", "", "PubKey of the server to connect to\033[0m")
 	var helpflag bool
 	rootCmd.SetUsageTemplate(help)
 	rootCmd.PersistentFlags().BoolVarP(&helpflag, "help", "h", false, "help for "+rootCmd.Use)
@@ -47,54 +46,54 @@ var rootCmd = &cobra.Command{
 	Version:               buildinfo.Version(),
 	Run: func(_ *cobra.Command, _ []string) {
 
-	eventSub := appevent.NewSubscriber()
+		eventSub := appevent.NewSubscriber()
 
-	appCl := app.NewClient(eventSub)
-	defer appCl.Close()
+		appCl := app.NewClient(eventSub)
+		defer appCl.Close()
 
-	if serverPKStr == "" {
-		err := errors.New("VPN server pub key is missing")
-		print(fmt.Sprintf("%v\n", err))
-		setAppErr(appCl, err)
-		os.Exit(1)
-	}
+		if serverPKStr == "" {
+			err := errors.New("VPN server pub key is missing")
+			print(fmt.Sprintf("%v\n", err))
+			setAppErr(appCl, err)
+			os.Exit(1)
+		}
 
-	serverPK := cipher.PubKey{}
-	if err := serverPK.UnmarshalText([]byte(serverPKStr)); err != nil {
-		print(fmt.Sprintf("Invalid local SK: %v\n", err))
-		setAppErr(appCl, err)
-		os.Exit(1)
-	}
+		serverPK := cipher.PubKey{}
+		if err := serverPK.UnmarshalText([]byte(serverPKStr)); err != nil {
+			print(fmt.Sprintf("Invalid local SK: %v\n", err))
+			setAppErr(appCl, err)
+			os.Exit(1)
+		}
 
-	fmt.Printf("Connecting to VPN server %s\n", serverPK.String())
+		fmt.Printf("Connecting to VPN server %s\n", serverPK.String())
 
-	vpnLiteClientCfg := vpn.ClientConfig{
-		ServerPK: serverPK,
-	}
-	vpnLiteClient, err := vpn.NewLiteClient(vpnLiteClientCfg, appCl)
-	if err != nil {
-		print(fmt.Sprintf("Error creating VPN lite client: %v\n", err))
-		setAppErr(appCl, err)
-	}
+		vpnLiteClientCfg := vpn.ClientConfig{
+			ServerPK: serverPK,
+		}
+		vpnLiteClient, err := vpn.NewLiteClient(vpnLiteClientCfg, appCl)
+		if err != nil {
+			print(fmt.Sprintf("Error creating VPN lite client: %v\n", err))
+			setAppErr(appCl, err)
+		}
 
-	osSigs := make(chan os.Signal, 2)
-	sigs := []os.Signal{syscall.SIGTERM, syscall.SIGINT}
-	for _, sig := range sigs {
-		signal.Notify(osSigs, sig)
-	}
+		osSigs := make(chan os.Signal, 2)
+		sigs := []os.Signal{syscall.SIGTERM, syscall.SIGINT}
+		for _, sig := range sigs {
+			signal.Notify(osSigs, sig)
+		}
 
-	go func() {
-		<-osSigs
-		vpnLiteClient.Close()
-	}()
+		go func() {
+			<-osSigs
+			vpnLiteClient.Close()
+		}()
 
-	defer setAppStatus(appCl, appserver.AppDetailedStatusStopped)
+		defer setAppStatus(appCl, appserver.AppDetailedStatusStopped)
 
-	if err := vpnLiteClient.Serve(); err != nil {
-		print(fmt.Sprintf("Failed to serve VPN lite client: %v\n", err))
-	}
+		if err := vpnLiteClient.Serve(); err != nil {
+			print(fmt.Sprintf("Failed to serve VPN lite client: %v\n", err))
+		}
 
-},
+	},
 }
 
 func setAppErr(appCl *app.Client, err error) {
@@ -112,6 +111,7 @@ func setAppStatus(appCl *app.Client, status appserver.AppDetailedStatus) {
 func main() {
 	Execute()
 }
+
 // Execute executes root CLI command.
 func Execute() {
 	cc.Init(&cc.Config{
@@ -131,6 +131,7 @@ func Execute() {
 		log.Fatal("Failed to execute command: ", err)
 	}
 }
+
 const help = "Usage:\r\n" +
 	"  {{.UseLine}}{{if .HasAvailableSubCommands}}{{end}} {{if gt (len .Aliases) 0}}\r\n\r\n" +
 	"{{.NameAndAliases}}{{end}}{{if .HasAvailableSubCommands}}\r\n\r\n" +

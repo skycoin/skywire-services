@@ -1,5 +1,5 @@
 {
-	"version": "v1.3.7",
+	"version": "v1.3.9",
 	"sk": "0e17cd505d81f998950e22864ae4692249124441bd9148b801f76f1595ac688f",
 	"pk": "031b80cd5773143a39d940dc0710b93dcccc262a85108018a7a95ab9af734f8055",
 	"dmsg": {
@@ -10,7 +10,8 @@
 	"dmsgpty": {
 		"dmsg_port": 22,
 		"cli_network": "unix",
-		"cli_address": "/tmp/dmsgpty.sock"
+		"cli_address": "/tmp/dmsgpty.sock",
+		"whitelist": null
 	},
 	"skywire-tcp": {
 		"pk_table": null,
@@ -20,12 +21,17 @@
 		"discovery": "http://transport-discovery:9091",
 		"address_resolver": "http://address-resolver:9093",
 		"public_autoconnect": false,
-		"transport_setup_nodes": null,
+		"transport_setup": null,
+		"log_store": {
+			"type": "file",
+			"location": "./local/transport_logs",
+			"rotation_interval": "168h0m0s"
+		},
 		"stcpr_port": 40552,
 		"sudph_port": 40562
 	},
 	"routing": {
-		"setup_nodes": [
+		"route_setup_nodes": [
 			"02603d53d49b6575a0b8cee05b70dd23c86e42cd6cba99af769d61a6196ea2bcb1"
 		],
 		"route_finder": "http://route-finder:9092",
@@ -79,14 +85,17 @@
 			}
 		],
 		"server_addr": ":5507",
-		"bin_path": "/apps"
+		"bin_path": "/apps",
+		"display_node_ip": false
 	},
+	"survey_whitelist": null,
 	"hypervisors": [
 		"0348c941c5015a05c455ff238af2e57fb8f914c399aab604e9abb5b32b91a4c1fe"
 	],
 	"cli_addr": "0.0.0.0:3435",
 	"log_level": "info",
 	"local_path": "./local",
+	"dmsghttp_server_path": "./local/custom",
 	"stun_servers": null,
 	"shutdown_timeout": "30s",
 	"restart_check_delay": "1s",

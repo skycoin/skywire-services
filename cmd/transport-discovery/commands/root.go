@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 
+	cc "github.com/ivanpirog/coloredcobra"
 	logrussyslog "github.com/sirupsen/logrus/hooks/syslog"
 	"github.com/skycoin/dmsg/pkg/direct"
 	"github.com/skycoin/dmsg/pkg/dmsg"
@@ -22,7 +23,6 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/storeconfig"
 	"github.com/skycoin/skywire-utilities/pkg/tcpproxy"
 	"github.com/spf13/cobra"
-cc "github.com/ivanpirog/coloredcobra"
 	"gorm.io/gorm"
 
 	"github.com/skycoin/skywire-services/internal/pg"
@@ -78,11 +78,11 @@ var rootCmd = &cobra.Command{
 	┌┬┐┬─┐┌─┐┌┐┌┌─┐┌─┐┌─┐┬─┐┌┬┐ ┌┬┐┬┌─┐┌─┐┌─┐┬  ┬┌─┐┬─┐┬ ┬
 	 │ ├┬┘├─┤│││└─┐├─┘│ │├┬┘ │───│││└─┐│  │ │└┐┌┘├┤ ├┬┘└┬┘
 	 ┴ ┴└─┴ ┴┘└┘└─┘┴  └─┘┴└─ ┴  ─┴┘┴└─┘└─┘└─┘ └┘ └─┘┴└─ ┴ `,
-	 SilenceErrors:         true,
-	 SilenceUsage:          true,
-	 DisableSuggestions:    true,
-	 DisableFlagsInUseLine: true,
-	 Version:               buildinfo.Version(),
+	SilenceErrors:         true,
+	SilenceUsage:          true,
+	DisableSuggestions:    true,
+	DisableFlagsInUseLine: true,
+	Version:               buildinfo.Version(),
 	Run: func(_ *cobra.Command, _ []string) {
 		if _, err := buildinfo.Get().WriteTo(os.Stdout); err != nil {
 			log.Printf("Failed to output build info: %v", err)
@@ -223,6 +223,7 @@ func Execute() {
 		log.Fatal("Failed to execute command: ", err)
 	}
 }
+
 const help = "Usage:\r\n" +
 	"  {{.UseLine}}{{if .HasAvailableSubCommands}}{{end}} {{if gt (len .Aliases) 0}}\r\n\r\n" +
 	"{{.NameAndAliases}}{{end}}{{if .HasAvailableSubCommands}}\r\n\r\n" +

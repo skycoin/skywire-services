@@ -94,8 +94,8 @@ func DefaultPublicVisorConfig() *visorconfig.V1 {
 	}
 
 	conf.Routing = &visorconfig.Routing{
-		RouteSetupNodes:  []cipher.PubKey{sPK},
-		RouteFinder: PublicRouteFinder,
+		RouteSetupNodes: []cipher.PubKey{sPK},
+		RouteFinder:     PublicRouteFinder,
 	}
 
 	conf.Hypervisors = make([]cipher.PubKey, 0)

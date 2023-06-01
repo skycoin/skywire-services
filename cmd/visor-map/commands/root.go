@@ -23,7 +23,6 @@ import (
 const (
 	defaultUptimeTrackerHost = "http://uptime-tracker.skywire.skycoin.com"
 	imageExtension           = ".jpg"
-	statusFailure            = 1
 
 	mapMarkerSize = 25.0
 
@@ -116,7 +115,7 @@ var rootCmd = &cobra.Command{
 			latLng := s2.LatLngFromDegrees(v.Lat, v.Lon)
 			marker := sm.NewMarker(latLng, mapMarkerColor, mapMarkerSize)
 
-			mapCtx.AddMarker(marker)
+			mapCtx.AddMarker(marker) //nolint
 		}
 
 		img, err := mapCtx.Render()

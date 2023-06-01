@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	cc "github.com/ivanpirog/coloredcobra"
 	logrussyslog "github.com/sirupsen/logrus/hooks/syslog"
 	"github.com/skycoin/dmsg/pkg/direct"
 	"github.com/skycoin/dmsg/pkg/dmsg"
@@ -22,7 +23,6 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/storeconfig"
 	"github.com/skycoin/skywire-utilities/pkg/tcpproxy"
 	"github.com/spf13/cobra"
-cc "github.com/ivanpirog/coloredcobra"
 	"github.com/xtaci/kcp-go"
 
 	"github.com/skycoin/skywire-services/internal/armetrics"
@@ -31,9 +31,8 @@ cc "github.com/ivanpirog/coloredcobra"
 )
 
 const (
-	statusFailure = 1
-	redisPrefix   = "address-resolver"
-	redisScheme   = "redis://"
+	redisPrefix = "address-resolver"
+	redisScheme = "redis://"
 )
 
 var (
@@ -229,11 +228,12 @@ func Execute() {
 		NoExtraNewlines: true,
 		NoBottomNewline: true,
 	})
-  if err := rootCmd.Execute(); err != nil {
+	if err := rootCmd.Execute(); err != nil {
 		log.Fatal("Failed to execute command: ", err)
 
 	}
 }
+
 const help = "Usage:\r\n" +
 	"  {{.UseLine}}{{if .HasAvailableSubCommands}}{{end}} {{if gt (len .Aliases) 0}}\r\n\r\n" +
 	"{{.NameAndAliases}}{{end}}{{if .HasAvailableSubCommands}}\r\n\r\n" +
