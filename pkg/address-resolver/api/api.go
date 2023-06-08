@@ -71,7 +71,7 @@ type API struct {
 type HealthCheckResponse struct {
 	BuildInfo *buildinfo.Info `json:"build_info,omitempty"`
 	StartedAt time.Time       `json:"started_at"`
-	DmsgAddr  string          `json:"dmsg_address"`
+	DmsgAddr  string          `json:"dmsg_address,omitempty"`
 }
 
 // ArData has all the visors that have registered with sudph or stcpr transport
