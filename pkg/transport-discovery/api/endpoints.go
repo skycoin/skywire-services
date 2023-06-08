@@ -207,6 +207,7 @@ func (api *API) health(w http.ResponseWriter, r *http.Request) {
 	api.writeJSON(w, r, http.StatusOK, HealthCheckResponse{
 		BuildInfo: info,
 		StartedAt: api.startedAt,
+		DmsgAddr:  api.dmsgAddr,
 	})
 }
 
