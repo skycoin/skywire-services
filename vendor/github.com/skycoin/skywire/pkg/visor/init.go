@@ -2,11 +2,14 @@
 package visor
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"mime"
 	"net"
 	"net/http"
 	"os"
@@ -40,7 +43,6 @@ import (
 	"github.com/skycoin/skywire/pkg/router"
 	"github.com/skycoin/skywire/pkg/routing"
 	"github.com/skycoin/skywire/pkg/servicedisc"
-	"github.com/skycoin/skywire/pkg/setup/setupclient"
 	"github.com/skycoin/skywire/pkg/skyenv"
 	"github.com/skycoin/skywire/pkg/transport"
 	"github.com/skycoin/skywire/pkg/transport/network"
@@ -116,14 +118,20 @@ var (
 	dmsgCtrl vinit.Module
 	// Dmsg http log server module
 	dmsgHTTPLogServer vinit.Module
+	// System survey module
+	systemSurvey vinit.Module
 	// Dmsg http module
 	dmsgHTTP vinit.Module
 	// Dmsg trackers module
 	dmsgTrackers vinit.Module
+	// Skywire Forwarding conn module
+	skyFwd vinit.Module
 	// Ping module
 	pi vinit.Module
 	// visor that groups all modules together
 	vis vinit.Module
+	// config initialization
+//	visorConfig vinit.Module
 )
 
 // register all modules: instantiate modules with correct names and dependencies, wrap init
@@ -134,6 +142,7 @@ func registerModules(logger *logging.MasterLogger) {
 	maker := func(name string, f initFn, deps ...*vinit.Module) vinit.Module {
 		return vinit.MakeModule(name, withInitCtx(f), logger, deps...)
 	}
+	//	visorConfig = maker("visor_config", initVisorConfig)
 	dmsgHTTP = maker("dmsg_http", initDmsgHTTP)
 	ebc = maker("event_broadcaster", initEventBroadcaster)
 	ar = maker("address_resolver", initAddressResolver, &dmsgHTTP)
@@ -147,6 +156,7 @@ func registerModules(logger *logging.MasterLogger) {
 	dmsgC = maker("dmsg", initDmsg, &ebc, &dmsgHTTP)
 	dmsgCtrl = maker("dmsg_ctrl", initDmsgCtrl, &dmsgC, &tr)
 	dmsgHTTPLogServer = maker("dmsghttp_logserver", initDmsgHTTPLogServer, &dmsgC, &tr)
+	systemSurvey = maker("system_survey", initSystemSurvey, &dmsgHTTPLogServer)
 	dmsgTrackers = maker("dmsg_trackers", initDmsgTrackers, &dmsgC)
 
 	pty = maker("dmsg_pty", initDmsgpty, &dmsgC)
@@ -159,16 +169,30 @@ func registerModules(logger *logging.MasterLogger) {
 	trs = maker("transport_setup", initTransportSetup, &dmsgC, &tr)
 	tm = vinit.MakeModule("transports", vinit.DoNothing, logger, &sc, &sudphC, &dmsgCtrl, &dmsgHTTPLogServer, &dmsgTrackers, &launch)
 	pvs = maker("public_visor", initPublicVisor, &tr, &ar, &disc, &stcprC)
+	skyFwd = maker("sky_forward_conn", initSkywireForwardConn, &dmsgC, &dmsgCtrl, &tr, &launch)
 	pi = maker("ping", initPing, &dmsgC, &tm)
 	vis = vinit.MakeModule("visor", vinit.DoNothing, logger, &ebc, &ar, &disc, &pty,
-		&tr, &rt, &launch, &cli, &hvs, &ut, &pv, &pvs, &trs, &stcpC, &stcprC, &pi)
+		&tr, &rt, &launch, &cli, &hvs, &ut, &pv, &pvs, &trs, &stcpC, &stcprC, &skyFwd, &pi, &systemSurvey)
 
 	hv = maker("hypervisor", initHypervisor, &vis)
 }
 
 type initFn func(context.Context, *Visor, *logging.Logger) error
 
-func initDmsgHTTP(ctx context.Context, v *Visor, log *logging.Logger) error {
+/*
+func initVisorConfig(ctx context.Context, v *Visor, log *logging.Logger) error {
+	const ebcTimeout = time.Second
+	ebc := appevent.NewBroadcaster(log, ebcTimeout)
+	v.pushCloseStack("event_broadcaster", ebc.Close)
+
+	v.initLock.Lock()
+	v.ebc = ebc
+	v.initLock.Unlock()
+	return nil
+}
+*/
+
+func initDmsgHTTP(ctx context.Context, v *Visor, log *logging.Logger) error { //nolint:all
 	var keys cipher.PubKeys
 	servers := v.conf.Dmsg.Servers
 
@@ -202,7 +226,7 @@ func initDmsgHTTP(ctx context.Context, v *Visor, log *logging.Logger) error {
 	return nil
 }
 
-func initEventBroadcaster(ctx context.Context, v *Visor, log *logging.Logger) error {
+func initEventBroadcaster(ctx context.Context, v *Visor, log *logging.Logger) error { //nolint:all
 	const ebcTimeout = time.Second
 	ebc := appevent.NewBroadcaster(log, ebcTimeout)
 	v.pushCloseStack("event_broadcaster", ebc.Close)
@@ -246,7 +270,7 @@ func initAddressResolver(ctx context.Context, v *Visor, log *logging.Logger) err
 	return nil
 }
 
-func initDiscovery(ctx context.Context, v *Visor, log *logging.Logger) error {
+func initDiscovery(ctx context.Context, v *Visor, log *logging.Logger) error { //nolint:all
 	// Prepare app discovery factory.
 	factory := appdisc.Factory{
 		Log:  v.MasterLogger().PackageLogger("app_discovery"),
@@ -280,7 +304,7 @@ func initDiscovery(ctx context.Context, v *Visor, log *logging.Logger) error {
 	return nil
 }
 
-func initStunClient(ctx context.Context, v *Visor, log *logging.Logger) error {
+func initStunClient(ctx context.Context, v *Visor, log *logging.Logger) error { //nolint:all
 
 	sc := network.GetStunDetails(v.conf.StunServers, log)
 	v.initLock.Lock()
@@ -290,7 +314,7 @@ func initStunClient(ctx context.Context, v *Visor, log *logging.Logger) error {
 	return nil
 }
 
-func initDmsg(ctx context.Context, v *Visor, log *logging.Logger) (err error) {
+func initDmsg(ctx context.Context, v *Visor, log *logging.Logger) (err error) { //nolint:all
 	if v.conf.Dmsg == nil {
 		return fmt.Errorf("cannot initialize dmsg: empty configuration")
 	}
@@ -343,7 +367,7 @@ func initDmsgCtrl(ctx context.Context, v *Visor, _ *logging.Logger) error {
 		v.tpM.InitDmsgClient(ctx, dmsgC)
 	}
 	// dmsgctrl setup
-	cl, err := dmsgC.Listen(skyenv.DmsgCtrlPort)
+	cl, err := dmsgC.Listen(visorconfig.DmsgCtrlPort)
 	if err != nil {
 		return err
 	}
@@ -353,7 +377,7 @@ func initDmsgCtrl(ctx context.Context, v *Visor, _ *logging.Logger) error {
 	return nil
 }
 
-func initDmsgHTTPLogServer(ctx context.Context, v *Visor, log *logging.Logger) error {
+func initDmsgHTTPLogServer(ctx context.Context, v *Visor, log *logging.Logger) error { //nolint:all
 	dmsgC := v.dmsgC
 	if dmsgC == nil {
 		return fmt.Errorf("cannot initialize dmsg log server: dmsg not configured")
@@ -365,9 +389,23 @@ func initDmsgHTTPLogServer(ctx context.Context, v *Visor, log *logging.Logger) e
 		printLog = true
 	}
 
-	lsAPI := logserver.New(logger, v.conf.Transport.LogStore.Location, v.conf.LocalPath, v.conf.CustomDmsgHTTPPath, printLog)
+	//whitelist access to the surveys for the hypervisor, dmsggpty whitelist, and for the surveywhitelist of keys which is fetched from the conf service
+	var whitelistedPKs []cipher.PubKey
+	if v.conf.SurveyWhitelist != nil {
+		whitelistedPKs = append(whitelistedPKs, v.conf.SurveyWhitelist...)
+	}
+	if v.conf.Hypervisors != nil {
+		whitelistedPKs = append(whitelistedPKs, v.conf.Hypervisors...)
+	}
+	if v.conf.Dmsgpty != nil {
+		if v.conf.Dmsgpty.Whitelist != nil {
+			whitelistedPKs = append(whitelistedPKs, v.conf.Dmsgpty.Whitelist...)
+		}
+	}
 
-	lis, err := dmsgC.Listen(skyenv.DmsgHTTPPort)
+	lsAPI := logserver.New(logger, v.conf.Transport.LogStore.Location, v.conf.LocalPath, v.conf.DmsgHTTPServerPath, whitelistedPKs, v.conf.PK, printLog)
+
+	lis, err := dmsgC.Listen(visorconfig.DmsgHTTPPort)
 	if err != nil {
 		return err
 	}
@@ -378,7 +416,7 @@ func initDmsgHTTPLogServer(ctx context.Context, v *Visor, log *logging.Logger) e
 		}
 	}()
 
-	log.WithField("dmsg_addr", fmt.Sprintf("dmsg://%v", lis.Addr().String())).
+	logger.WithField("dmsg_addr", fmt.Sprintf("dmsg://%v", lis.Addr().String())).
 		Debug("Serving...")
 	srv := &http.Server{
 		ReadHeaderTimeout: 2 * time.Second,
@@ -399,7 +437,6 @@ func initDmsgHTTPLogServer(ctx context.Context, v *Visor, log *logging.Logger) e
 			logger.WithError(err).Error("Logserver exited with error.")
 		}
 	}()
-
 	v.pushCloseStack("dmsghttp.logserver", func() error {
 		if err := srv.Close(); err != nil {
 			return err
@@ -411,7 +448,12 @@ func initDmsgHTTPLogServer(ctx context.Context, v *Visor, log *logging.Logger) e
 	return nil
 }
 
-func initDmsgTrackers(ctx context.Context, v *Visor, _ *logging.Logger) error {
+func initSystemSurvey(ctx context.Context, v *Visor, log *logging.Logger) error { //nolint:all
+	go visorconfig.GenerateSurvey(v.conf, log, true)
+	return nil
+}
+
+func initDmsgTrackers(ctx context.Context, v *Visor, _ *logging.Logger) error { //nolint:all
 	dmsgC := v.dmsgC
 
 	dtm := dmsgtracker.NewDmsgTrackerManager(v.MasterLogger(), dmsgC, 0, 0)
@@ -434,24 +476,25 @@ func initSudphClient(ctx context.Context, v *Visor, log *logging.Logger) error {
 		log.Info("SUDPH transport wont be available under dmsghttp")
 		return nil
 	}
-
-	switch v.stunClient.NATType {
-	case stun.NATSymmetric, stun.NATSymmetricUDPFirewall:
-		log.Warnf("SUDPH transport wont be available as visor is under %v", v.stunClient.NATType.String())
-	default:
-		v.tpM.InitClient(ctx, network.SUDPH)
+	if v.stunClient != nil {
+		switch v.stunClient.NATType {
+		case stun.NATSymmetric, stun.NATSymmetricUDPFirewall:
+			log.Warnf("SUDPH transport wont be available as visor is under %v", v.stunClient.NATType.String())
+		default:
+			v.tpM.InitClient(ctx, network.SUDPH, v.conf.Transport.SudphPort)
+		}
 	}
 	return nil
 }
 
-func initStcprClient(ctx context.Context, v *Visor, log *logging.Logger) error {
-	v.tpM.InitClient(ctx, network.STCPR)
+func initStcprClient(ctx context.Context, v *Visor, log *logging.Logger) error { //nolint:all
+	v.tpM.InitClient(ctx, network.STCPR, v.conf.Transport.StcprPort)
 	return nil
 }
 
-func initStcpClient(ctx context.Context, v *Visor, log *logging.Logger) error {
+func initStcpClient(ctx context.Context, v *Visor, log *logging.Logger) error { //nolint:all
 	if v.conf.STCP != nil {
-		v.tpM.InitClient(ctx, network.STCP)
+		v.tpM.InitClient(ctx, network.STCP, 0)
 	}
 	return nil
 }
@@ -539,7 +582,7 @@ func initTransportSetup(ctx context.Context, v *Visor, log *logging.Logger) erro
 	ctx, cancel := context.WithCancel(ctx)
 	// To remove the block set by NewTransportListener if dmsg is not initialized
 	go func() {
-		ts, err := ts.NewTransportListener(ctx, v.conf, v.dmsgC, v.tpM, v.MasterLogger())
+		ts, err := ts.NewTransportListener(ctx, v.conf.PK, v.conf.Transport.TransportSetupPKs, v.dmsgC, v.tpM, v.MasterLogger())
 		if err != nil {
 			log.Warn(err)
 			cancel()
@@ -561,6 +604,182 @@ func initTransportSetup(ctx context.Context, v *Visor, log *logging.Logger) erro
 	return nil
 }
 
+func initSkywireForwardConn(ctx context.Context, v *Visor, log *logging.Logger) error {
+	ctx, cancel := context.WithCancel(ctx)
+	// waiting for at least one transport to initialize
+	<-v.tpM.Ready()
+	connApp := appnet.Addr{
+		Net:    appnet.TypeSkynet,
+		PubKey: v.conf.PK,
+		Port:   routing.Port(skyenv.SkyForwardingServerPort),
+	}
+	l, err := appnet.ListenContext(ctx, connApp)
+	if err != nil {
+		cancel()
+		return err
+	}
+
+	v.pushCloseStack("sky_forwarding", func() error {
+		cancel()
+		if cErr := l.Close(); cErr != nil {
+			log.WithError(cErr).Error("Error closing listener.")
+		}
+		return nil
+	})
+
+	go func() {
+		for {
+			log.Debug("Accepting sky forwarding conn...")
+			conn, err := l.Accept()
+			if err != nil {
+				if !errors.Is(appnet.ErrClosedConn, err) {
+					log.WithError(err).Error("Failed to accept conn")
+				}
+				return
+			}
+			log.Debug("Accepted sky forwarding conn")
+
+			v.pushCloseStack("sky_forwarding", func() error {
+				cancel()
+				if cErr := conn.Close(); cErr != nil {
+					log.WithError(cErr).Error("Error closing conn.")
+				}
+				return nil
+			})
+
+			log.Debug("Wrapping conn...")
+			wrappedConn, err := appnet.WrapConn(conn)
+			if err != nil {
+				log.WithError(err).Error("Failed to wrap conn")
+				return
+			}
+
+			rAddr := wrappedConn.RemoteAddr().(appnet.Addr)
+			log.Debugf("Accepted sky forwarding conn on %s from %s", wrappedConn.LocalAddr(), rAddr.PubKey)
+			go handleServerConn(log, wrappedConn, v)
+		}
+	}()
+
+	return nil
+}
+
+func handleServerConn(log *logging.Logger, remoteConn net.Conn, v *Visor) {
+	buf := make([]byte, 32*1024)
+	n, err := remoteConn.Read(buf)
+	if err != nil {
+		log.WithError(err).Error("Failed to read packet")
+		return
+	}
+
+	var cMsg clientMsg
+	err = json.Unmarshal(buf[:n], &cMsg)
+	if err != nil {
+		log.WithError(err).Error("Failed to marshal json")
+		sendError(log, remoteConn, err)
+		return
+	}
+	log.Debugf("Received: %v", cMsg)
+
+	lHost := fmt.Sprintf("localhost:%v", cMsg.Port)
+	ok := isPortRegistered(cMsg.Port, v)
+	if !ok {
+		log.Errorf("Port :%v not registered", cMsg.Port)
+		sendError(log, remoteConn, fmt.Errorf("Port :%v not registered", cMsg.Port))
+		return
+	}
+
+	ok = isPortAvailable(log, cMsg.Port)
+	if ok {
+		log.Errorf("Failed to dial port %v", cMsg.Port)
+		sendError(log, remoteConn, fmt.Errorf("Failed to dial port %v", cMsg.Port))
+		return
+	}
+
+	log.Debugf("Forwarding %s", lHost)
+
+	// send nil error to indicate to the remote connection that everything is ok
+	sendError(log, remoteConn, nil)
+
+	go forward(log, remoteConn, lHost)
+}
+
+// forward reads a http.Request from the remote conn of the requesting visor forwards that request
+// to the requested local server and forwards the http.Response from the local server to the requesting
+// visor via the remote conn
+func forward(log *logging.Logger, remoteConn net.Conn, lHost string) {
+	for {
+		buf := make([]byte, 32*1024)
+		n, err := remoteConn.Read(buf)
+		if err != nil {
+			log.WithError(err).Error("Failed to read packet")
+			closeConn(log, remoteConn)
+			return
+		}
+		req, err := http.ReadRequest(bufio.NewReader(bytes.NewBuffer(buf[:n])))
+		if err != nil {
+			log.WithError(err).Error("Failed to ReadRequest")
+			closeConn(log, remoteConn)
+			return
+		}
+		req.RequestURI = ""
+		req.URL.Scheme = "http"
+		req.URL.Host = lHost
+		client := http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			log.WithError(err).Error("Failed to Do req")
+			closeConn(log, remoteConn)
+			return
+		}
+		err = resp.Write(remoteConn)
+		if err != nil {
+			log.WithError(err).Error("Failed to Write")
+			closeConn(log, remoteConn)
+			return
+		}
+	}
+}
+
+func sendError(log *logging.Logger, remoteConn net.Conn, sendErr error) {
+	var sReply serverReply
+	if sendErr != nil {
+		sErr := sendErr.Error()
+		sReply = serverReply{
+			Error: &sErr,
+		}
+	}
+
+	srvReply, err := json.Marshal(sReply)
+	if err != nil {
+		log.WithError(err).Error("Failed to unmarshal json")
+	}
+
+	_, err = remoteConn.Write([]byte(srvReply))
+	if err != nil {
+		log.WithError(err).Error("Failed write server msg")
+	}
+
+	log.Debugf("Server reply sent %s", srvReply)
+	// close conn if we send an error
+	if sendErr != nil {
+		closeConn(log, remoteConn)
+	}
+}
+
+func closeConn(log *logging.Logger, conn net.Conn) {
+	if err := conn.Close(); err != nil {
+		log.WithError(err).Errorf("Error closing client %s connection", conn.RemoteAddr())
+	}
+}
+
+type clientMsg struct {
+	Port int `json:"port"`
+}
+
+type serverReply struct {
+	Error *string `json:"error,omitempty"`
+}
+
 func initPing(ctx context.Context, v *Visor, log *logging.Logger) error {
 	ctx, cancel := context.WithCancel(ctx)
 	// waiting for at least one transport to initialize
@@ -578,7 +797,7 @@ func initPing(ctx context.Context, v *Visor, log *logging.Logger) error {
 		return err
 	}
 
-	v.pushCloseStack("skywire_proxy", func() error {
+	v.pushCloseStack("skywire_ping", func() error {
 		cancel()
 		if cErr := l.Close(); cErr != nil {
 			log.WithError(cErr).Error("Error closing listener.")
@@ -588,15 +807,15 @@ func initPing(ctx context.Context, v *Visor, log *logging.Logger) error {
 
 	go func() {
 		for {
-			log.Debug("Accepting sky proxy conn...")
+			log.Debug("Accepting sky ping conn...")
 			conn, err := l.Accept()
 			if err != nil {
-				if !errors.Is(err, appnet.ErrConnClosed) {
+				if !errors.Is(err, appnet.ErrClosedConn) {
 					log.WithError(err).Error("Failed to accept ping conn")
 				}
 				return
 			}
-			log.Debug("Accepted sky proxy conn")
+			log.Debug("Accepted sky ping conn")
 			log.Debug("Wrapping conn...")
 			wrappedConn, err := appnet.WrapConn(conn)
 			if err != nil {
@@ -605,7 +824,7 @@ func initPing(ctx context.Context, v *Visor, log *logging.Logger) error {
 			}
 
 			rAddr := wrappedConn.RemoteAddr().(appnet.Addr)
-			log.Debugf("Accepted sky proxy conn on %s from %s", wrappedConn.LocalAddr(), rAddr.PubKey)
+			log.Debugf("Accepted sky ping conn on %s from %s", wrappedConn.LocalAddr(), rAddr.PubKey)
 			go handlePingConn(log, wrappedConn, v)
 		}
 	}()
@@ -766,8 +985,8 @@ func initRouter(ctx context.Context, v *Visor, log *logging.Logger) error {
 		SecKey:           v.conf.SK,
 		TransportManager: v.tpM,
 		RouteFinder:      rfClient,
-		RouteGroupDialer: setupclient.NewSetupNodeDialer(),
-		SetupNodes:       conf.SetupNodes,
+		RouteGroupDialer: router.NewSetupNodeDialer(),
+		SetupNodes:       conf.RouteSetupNodes,
 		RulesGCInterval:  0, // TODO
 		MinHops:          v.conf.Routing.MinHops,
 	}
@@ -799,11 +1018,11 @@ func initRouter(ctx context.Context, v *Visor, log *logging.Logger) error {
 	return nil
 }
 
-func initLauncher(ctx context.Context, v *Visor, log *logging.Logger) error {
+func initLauncher(ctx context.Context, v *Visor, log *logging.Logger) error { //nolint:all
 	conf := v.conf.Launcher
 
 	// Prepare proc manager.
-	procM, err := appserver.NewProcManager(v.MasterLogger(), &v.serviceDisc, v.ebc, conf.ServerAddr)
+	procM, err := appserver.NewProcManager(v.MasterLogger(), &v.serviceDisc, v.ebc, conf.ServerAddr, v.conf.LocalPath)
 	if err != nil {
 		err := fmt.Errorf("failed to start proc_manager: %w", err)
 		return err
@@ -812,7 +1031,7 @@ func initLauncher(ctx context.Context, v *Visor, log *logging.Logger) error {
 	v.pushCloseStack("launcher.proc_manager", procM.Close)
 
 	// Prepare launcher.
-	launchConf := launcher.Config{
+	launchConf := launcher.AppLauncherConfig{
 		VisorPK:       v.conf.PK,
 		Apps:          conf.Apps,
 		ServerAddr:    conf.ServerAddr,
@@ -830,8 +1049,8 @@ func initLauncher(ctx context.Context, v *Visor, log *logging.Logger) error {
 	}
 
 	err = launch.AutoStart(launcher.EnvMap{
-		skyenv.VPNClientName: vpnEnvMaker(v.conf, v.dmsgC, v.dmsgDC, v.tpM.STCPRRemoteAddrs()),
-		skyenv.VPNServerName: vpnEnvMaker(v.conf, v.dmsgC, v.dmsgDC, nil),
+		visorconfig.VPNClientName: vpnEnvMaker(v.conf, v.dmsgC, v.dmsgDC, v.tpM.STCPRRemoteAddrs()),
+		visorconfig.VPNServerName: vpnEnvMaker(v.conf, v.dmsgC, v.dmsgDC, nil),
 	})
 
 	if err != nil {
@@ -909,7 +1128,7 @@ func vpnEnvMaker(conf *visorconfig.V1, dmsgC, dmsgDC *dmsg.Client, tpRemoteAddrs
 	}
 }
 
-func initCLI(ctx context.Context, v *Visor, log *logging.Logger) error {
+func initCLI(ctx context.Context, v *Visor, log *logging.Logger) error { //nolint:all
 	if v.conf.CLIAddr == "" {
 		v.log.Debug("'cli_addr' is not configured, skipping.")
 		return nil
@@ -932,7 +1151,8 @@ func initCLI(ctx context.Context, v *Visor, log *logging.Logger) error {
 	return nil
 }
 
-func initHypervisors(ctx context.Context, v *Visor, log *logging.Logger) error {
+func initHypervisors(ctx context.Context, v *Visor, log *logging.Logger) error { //nolint:all
+
 	hvErrs := make(map[cipher.PubKey]chan error, len(v.conf.Hypervisors))
 	for _, hv := range v.conf.Hypervisors {
 		hvErrs[hv] = make(chan error, 1)
@@ -941,7 +1161,7 @@ func initHypervisors(ctx context.Context, v *Visor, log *logging.Logger) error {
 	for hvPK, hvErrs := range hvErrs {
 		log := v.MasterLogger().PackageLogger("hypervisor_client").WithField("hypervisor_pk", hvPK)
 
-		addr := dmsg.Addr{PK: hvPK, Port: skyenv.DmsgHypervisorPort}
+		addr := dmsg.Addr{PK: hvPK, Port: visorconfig.DmsgHypervisorPort}
 		rpcS, err := newRPCServer(v, addr.PK.String()[:shortHashLen])
 		if err != nil {
 			err := fmt.Errorf("failed to start RPC server for hypervisor %s: %w", hvPK, err)
@@ -954,15 +1174,16 @@ func initHypervisors(ctx context.Context, v *Visor, log *logging.Logger) error {
 
 		go func(hvErrs chan error) {
 			defer wg.Done()
-			var autoPeerIP string
-			if v.autoPeer {
-				autoPeerIP = v.autoPeerIP
-			} else {
-				autoPeerIP = ""
-			}
+			//			var autoPeerIP string
+			//			if v.autoPeer {
+			//				autoPeerIP = v.autoPeerIP
+			//			} else {
+			//				autoPeerIP = ""
+			//			}
 			defer delete(v.connectedHypervisors, hvPK)
 			v.connectedHypervisors[hvPK] = true
-			ServeRPCClient(ctx, log, autoPeerIP, v.dmsgC, rpcS, addr, hvErrs)
+			ServeRPCClient(ctx, log, v.dmsgC, rpcS, addr, hvErrs)
+			//			ServeRPCClient(ctx, log, autoPeerIP, v.dmsgC, rpcS, addr, hvErrs)
 
 		}(hvErrs)
 
@@ -1007,7 +1228,7 @@ func initUptimeTracker(ctx context.Context, v *Visor, log *logging.Logger) error
 	go func() {
 		for range ticker.C {
 			c := context.Background()
-			if err := ut.UpdateVisorUptime(c); err != nil {
+			if err := ut.UpdateVisorUptime(c, v.conf.Version); err != nil {
 				v.isServicesHealthy.unset()
 				log.WithError(err).Warn("Failed to update visor uptime.")
 			} else {
@@ -1030,7 +1251,7 @@ func initUptimeTracker(ctx context.Context, v *Visor, log *logging.Logger) error
 
 // advertise this visor as public in service discovery
 // this service is not considered critical and always returns true
-func initPublicVisor(_ context.Context, v *Visor, log *logging.Logger) error {
+func initPublicVisor(_ context.Context, v *Visor, log *logging.Logger) error { //nolint:all
 	if !v.conf.IsPublic {
 		// call Stop() method to clean service discovery for the situation that
 		// visor was public, then stop (not normal shutdown), then start as non-public
@@ -1096,11 +1317,16 @@ func initDmsgpty(ctx context.Context, v *Visor, log *logging.Logger) error {
 
 	wl := dmsgpty.NewMemoryWhitelist()
 
+	// Initialize the dmsgpty whitelist
+	if err := wl.Add(v.conf.Dmsgpty.Whitelist...); err != nil {
+		return err
+	}
+
 	// Ensure hypervisors are added to the whitelist.
 	if err := wl.Add(v.conf.Hypervisors...); err != nil {
 		return err
 	}
-	// add itself to the whitelist to allow local pty
+	// add the visor's own public key to the whitelist to allow local pty
 	if err := wl.Add(v.conf.PK); err != nil {
 		v.log.Errorf("Cannot add itself to the pty whitelist: %s", err)
 	}
@@ -1211,8 +1437,11 @@ func initPublicAutoconnect(ctx context.Context, v *Visor, log *logging.Logger) e
 	return nil
 }
 
-func initHypervisor(_ context.Context, v *Visor, log *logging.Logger) error {
-
+func initHypervisor(_ context.Context, v *Visor, log *logging.Logger) error { //nolint:all
+	if v.conf.Hypervisor == nil {
+		v.log.Error("hypervisor config = nil")
+		return nil
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 
 	conf := *v.conf.Hypervisor
@@ -1221,7 +1450,7 @@ func initHypervisor(_ context.Context, v *Visor, log *logging.Logger) error {
 	conf.DmsgDiscovery = v.conf.Dmsg.Discovery
 
 	// Prepare hypervisor.
-	hv, err := New(conf, v, v.dmsgC)
+	hv, err := NewHypervisor(conf, v, v.dmsgC)
 	if err != nil {
 		v.log.Fatalln("Failed to start hypervisor:", err)
 	}
@@ -1229,32 +1458,44 @@ func initHypervisor(_ context.Context, v *Visor, log *logging.Logger) error {
 	hv.serveDmsg(ctx, v.log)
 
 	// Serve HTTP(s).
+
+	// Needed to work with modern browsers when serving from windows, which need the correct mime type for javascript.
+	if err := mime.AddExtensionType(".js", "application/javascript"); err != nil {
+		log.Fatalln("Unable to register js mime type.")
+	}
+
 	v.log.WithField("addr", conf.HTTPAddr).
 		WithField("tls", conf.EnableTLS).
 		Info("Serving hypervisor...")
+	tls := ""
+	if conf.EnableTLS {
+		tls = "s"
+	}
+	v.log.Info(fmt.Sprintf("Hypervisor UI: http%s://127.0.0.1%s", tls, conf.HTTPAddr))
+
+	handler := hv.HTTPHandler()
+	srv := &http.Server{ //nolint gosec
+		Addr:         conf.HTTPAddr,
+		Handler:      handler,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	}
 
 	go func() {
-		handler := hv.HTTPHandler()
-		srv := &http.Server{ //nolint gosec
-			Addr:         conf.HTTPAddr,
-			Handler:      handler,
-			ReadTimeout:  5 * time.Second,
-			WriteTimeout: 10 * time.Second,
-		}
 		if conf.EnableTLS {
 			err = srv.ListenAndServeTLS(conf.TLSCertFile, conf.TLSKeyFile)
 		} else {
 			err = srv.ListenAndServe()
 		}
 
-		if err != nil {
-			v.log.WithError(err).Fatal("Hypervisor exited with error.")
+		// don't print error if local server is closed
+		if !errors.Is(err, http.ErrServerClosed) {
+			v.log.WithError(err).Error("Hypervisor exited with error.")
 		}
-
-		cancel()
 	}()
 
 	v.pushCloseStack("hypervisor", func() error {
+		err := srv.Shutdown(ctx) //nolint
 		cancel()
 		return err
 	})
@@ -1358,7 +1599,7 @@ func getHTTPClient(ctx context.Context, v *Visor, service string) (*http.Client,
 		// get delegated servers and add them to the client entry
 		servers, err := v.dClient.AvailableServers(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("Error getting AvailableServers: %w", err)
+			return nil, fmt.Errorf("error getting AvailableServers: %w", err)
 		}
 
 		for _, server := range servers {
@@ -1374,7 +1615,7 @@ func getHTTPClient(ctx context.Context, v *Visor, service string) (*http.Client,
 
 		err = v.dClient.PostEntry(ctx, clientEntry)
 		if err != nil {
-			return nil, fmt.Errorf("Error saving clientEntry: %w", err)
+			return nil, fmt.Errorf("error saving clientEntry: %w", err)
 		}
 		return v.dmsgHTTP, nil
 	}

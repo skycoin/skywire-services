@@ -6,8 +6,8 @@ set -e -x
 # Clone from master
 rm -rf /tmp/skywire-services &> /dev/null
 cd /tmp
-git clone https://"$GITHUB_TOKEN":x-oauth-basic@github.com/SkycoinPro/skywire-services.git --depth 1 --branch master
-# git clone git@github.com:SkycoinPro/skywire-services.git --depth 1
+git clone https://"$GITHUB_TOKEN":x-oauth-basic@github.com/skycoin/skywire-services.git --depth 1 --branch master
+# git clone git@github.com:skycoin/skywire-services.git --depth 1
 cd skywire-services
 
 # Checking build 

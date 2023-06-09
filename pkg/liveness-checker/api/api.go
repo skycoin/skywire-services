@@ -21,7 +21,6 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/logging"
 	utilenv "github.com/skycoin/skywire-utilities/pkg/skyenv"
 	"github.com/skycoin/skywire/pkg/app/appserver"
-	"github.com/skycoin/skywire/pkg/restart"
 	"github.com/skycoin/skywire/pkg/utclient"
 	"github.com/skycoin/skywire/pkg/visor"
 	"github.com/skycoin/skywire/pkg/visor/visorconfig"
@@ -150,7 +149,7 @@ func (api *API) log(r *http.Request) logrus.FieldLogger {
 
 func (api *API) startVisor(ctx context.Context, conf *visorconfig.V1) {
 	conf.SetLogger(logging.NewMasterLogger())
-	v, ok := visor.NewVisor(ctx, conf, restart.CaptureContext(), false, "", "")
+	v, ok := visor.NewVisor(ctx, conf)
 	if !ok {
 		api.logger.Fatal("Failed to start visor.")
 	}
@@ -177,7 +176,7 @@ func InitConfig(confPath string, mLog *logging.MasterLogger) (*visorconfig.V1, *
 		TransportDiscovery: oldConf.Transport.Discovery,
 		AddressResolver:    oldConf.Transport.AddressResolver,
 		RouteFinder:        oldConf.Routing.RouteFinder,
-		SetupNodes:         oldConf.Routing.SetupNodes,
+		RouteSetupNodes:    oldConf.Routing.RouteSetupNodes,
 		UptimeTracker:      oldConf.UptimeTracker.Addr,
 		ServiceDiscovery:   oldConf.Launcher.ServiceDisc,
 		StunServers:        oldConf.StunServers,
@@ -493,7 +492,7 @@ func (api *API) checkUptimeTracker(ctx context.Context) {
 		api.logger.WithError(err).Warn("failed to create uptime tracker client.")
 	}
 
-	err = ut.UpdateVisorUptime(ctx)
+	err = ut.UpdateVisorUptime(ctx, "")
 	if err != nil {
 		online = false
 		errs = append(errs, err.Error())

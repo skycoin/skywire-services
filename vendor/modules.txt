@@ -21,15 +21,33 @@ github.com/StackExchange/wmi
 # github.com/VictoriaMetrics/metrics v1.18.1
 ## explicit; go 1.12
 github.com/VictoriaMetrics/metrics
-# github.com/Wessie/appdirs v0.0.0-20141031215813-6573e894f8e2
-## explicit
-github.com/Wessie/appdirs
 # github.com/bitfield/script v0.19.0
 ## explicit; go 1.12
 github.com/bitfield/script
 # github.com/blang/semver/v4 v4.0.0
 ## explicit; go 1.14
 github.com/blang/semver/v4
+# github.com/bytedance/sonic v1.8.0
+## explicit; go 1.15
+github.com/bytedance/sonic
+github.com/bytedance/sonic/ast
+github.com/bytedance/sonic/decoder
+github.com/bytedance/sonic/encoder
+github.com/bytedance/sonic/internal/caching
+github.com/bytedance/sonic/internal/cpu
+github.com/bytedance/sonic/internal/jit
+github.com/bytedance/sonic/internal/loader
+github.com/bytedance/sonic/internal/native
+github.com/bytedance/sonic/internal/native/avx
+github.com/bytedance/sonic/internal/native/avx2
+github.com/bytedance/sonic/internal/native/sse
+github.com/bytedance/sonic/internal/native/types
+github.com/bytedance/sonic/internal/resolver
+github.com/bytedance/sonic/internal/rt
+github.com/bytedance/sonic/loader
+github.com/bytedance/sonic/option
+github.com/bytedance/sonic/unquote
+github.com/bytedance/sonic/utf8
 # github.com/ccding/go-stun/stun v0.0.0-20200514191101-4dc67bcdb029
 ## explicit; go 1.14
 github.com/ccding/go-stun/stun
@@ -39,6 +57,9 @@ github.com/cespare/xxhash
 # github.com/cespare/xxhash/v2 v2.1.2
 ## explicit; go 1.11
 github.com/cespare/xxhash/v2
+# github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311
+## explicit; go 1.15
+github.com/chenzhuoyu/base64x
 # github.com/creack/pty v1.1.15
 ## explicit; go 1.13
 github.com/creack/pty
@@ -100,46 +121,48 @@ github.com/dustin/go-humanize
 # github.com/fatih/color v1.13.0
 ## explicit; go 1.13
 github.com/fatih/color
-# github.com/flopp/go-coordsparser v0.0.0-20160810104536-845bca739e26
+# github.com/flopp/go-coordsparser v0.0.0-20201115094714-8baaeb7062d5
 ## explicit
 github.com/flopp/go-coordsparser
-# github.com/flopp/go-staticmaps v0.0.0-20200829090108-3465b3349546
-## explicit; go 1.12
+# github.com/flopp/go-staticmaps v0.0.0-20220221183018-c226716bec53
+## explicit; go 1.16
 github.com/flopp/go-staticmaps
 # github.com/fogleman/gg v1.3.0
 ## explicit
 github.com/fogleman/gg
+# github.com/gen2brain/dlgs v0.0.0-20210911090025-cbd38e821b98
+## explicit
+github.com/gen2brain/dlgs
 # github.com/ghodss/yaml v1.0.0
 ## explicit
 github.com/ghodss/yaml
+# github.com/gin-contrib/sse v0.1.0
+## explicit; go 1.12
+github.com/gin-contrib/sse
+# github.com/gin-gonic/gin v1.9.0
+## explicit; go 1.18
+github.com/gin-gonic/gin
+github.com/gin-gonic/gin/binding
+github.com/gin-gonic/gin/internal/bytesconv
+github.com/gin-gonic/gin/internal/json
+github.com/gin-gonic/gin/render
 # github.com/go-chi/chi/v5 v5.0.8-0.20220103230436-7dbe9a0bd10f
 ## explicit; go 1.14
 github.com/go-chi/chi/v5
 github.com/go-chi/chi/v5/middleware
-# github.com/go-chi/httprate v0.4.0
-## explicit; go 1.14
-github.com/go-chi/httprate
-# github.com/go-echarts/go-echarts/v2 v2.2.4
-## explicit; go 1.15
-github.com/go-echarts/go-echarts/v2/charts
-github.com/go-echarts/go-echarts/v2/datasets
-github.com/go-echarts/go-echarts/v2/opts
-github.com/go-echarts/go-echarts/v2/render
-github.com/go-echarts/go-echarts/v2/templates
-github.com/go-echarts/go-echarts/v2/types
 # github.com/go-ole/go-ole v1.2.6
 ## explicit; go 1.12
 github.com/go-ole/go-ole
 github.com/go-ole/go-ole/oleutil
-# github.com/go-playground/locales v0.13.0
-## explicit; go 1.13
+# github.com/go-playground/locales v0.14.1
+## explicit; go 1.17
 github.com/go-playground/locales
 github.com/go-playground/locales/currency
-# github.com/go-playground/universal-translator v0.17.0
-## explicit; go 1.13
+# github.com/go-playground/universal-translator v0.18.1
+## explicit; go 1.18
 github.com/go-playground/universal-translator
-# github.com/go-playground/validator/v10 v10.4.1
-## explicit; go 1.13
+# github.com/go-playground/validator/v10 v10.11.2
+## explicit; go 1.18
 github.com/go-playground/validator/v10
 # github.com/go-redis/redis v6.15.9+incompatible
 ## explicit
@@ -163,6 +186,22 @@ github.com/go-redis/redis/v8/internal/util
 # github.com/gocarina/gocsv v0.0.0-20220927221512-ad3251f9fa25
 ## explicit; go 1.13
 github.com/gocarina/gocsv
+# github.com/goccy/go-json v0.10.0
+## explicit; go 1.12
+github.com/goccy/go-json
+github.com/goccy/go-json/internal/decoder
+github.com/goccy/go-json/internal/encoder
+github.com/goccy/go-json/internal/encoder/vm
+github.com/goccy/go-json/internal/encoder/vm_color
+github.com/goccy/go-json/internal/encoder/vm_color_indent
+github.com/goccy/go-json/internal/encoder/vm_indent
+github.com/goccy/go-json/internal/errors
+github.com/goccy/go-json/internal/runtime
+# github.com/godbus/dbus/v5 v5.1.0
+## explicit; go 1.12
+github.com/godbus/dbus/v5
+github.com/godbus/dbus/v5/introspect
+github.com/godbus/dbus/v5/prop
 # github.com/gogo/protobuf v1.3.2
 ## explicit; go 1.15
 github.com/gogo/protobuf/proto
@@ -170,8 +209,8 @@ github.com/gogo/protobuf/proto
 ## explicit
 github.com/golang/freetype/raster
 github.com/golang/freetype/truetype
-# github.com/golang/geo v0.0.0-20200730024412-e86565bf3f35
-## explicit; go 1.12
+# github.com/golang/geo v0.0.0-20230421003525-6adc56603217
+## explicit; go 1.18
 github.com/golang/geo/r1
 github.com/golang/geo/r2
 github.com/golang/geo/r3
@@ -195,6 +234,9 @@ github.com/google/flatbuffers/go
 # github.com/google/uuid v1.1.2
 ## explicit
 github.com/google/uuid
+# github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1
+## explicit
+github.com/gopherjs/gopherjs/js
 # github.com/gorilla/securecookie v1.1.1
 ## explicit
 github.com/gorilla/securecookie
@@ -235,8 +277,8 @@ github.com/jackc/pgx/v4/stdlib
 # github.com/james-barrow/golang-ipc v0.0.0-20210227130457-95e7cc81f5e2
 ## explicit; go 1.15
 github.com/james-barrow/golang-ipc
-# github.com/jaypipes/ghw v0.9.0
-## explicit; go 1.15
+# github.com/jaypipes/ghw v0.10.0
+## explicit; go 1.18
 github.com/jaypipes/ghw
 github.com/jaypipes/ghw/pkg/baseboard
 github.com/jaypipes/ghw/pkg/bios
@@ -280,13 +322,16 @@ github.com/klauspost/compress/zstd/internal/xxhash
 # github.com/klauspost/cpuid v1.2.4
 ## explicit
 github.com/klauspost/cpuid
+# github.com/klauspost/cpuid/v2 v2.1.0
+## explicit; go 1.15
+github.com/klauspost/cpuid/v2
 # github.com/klauspost/reedsolomon v1.9.9
 ## explicit; go 1.14
 github.com/klauspost/reedsolomon
 # github.com/konsorten/go-windows-terminal-sequences v1.0.2
 ## explicit
 github.com/konsorten/go-windows-terminal-sequences
-# github.com/leodido/go-urn v1.2.0
+# github.com/leodido/go-urn v1.2.1
 ## explicit; go 1.13
 github.com/leodido/go-urn
 # github.com/lib/pq v1.10.7
@@ -297,8 +342,8 @@ github.com/lib/pq/scram
 # github.com/mattn/go-colorable v0.1.12
 ## explicit; go 1.13
 github.com/mattn/go-colorable
-# github.com/mattn/go-isatty v0.0.14
-## explicit; go 1.12
+# github.com/mattn/go-isatty v0.0.17
+## explicit; go 1.15
 github.com/mattn/go-isatty
 # github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d
 ## explicit
@@ -330,6 +375,16 @@ github.com/modern-go/reflect2
 # github.com/opencontainers/go-digest v1.0.0
 ## explicit; go 1.13
 github.com/opencontainers/go-digest
+# github.com/orandin/lumberjackrus v1.0.1
+## explicit
+github.com/orandin/lumberjackrus
+# github.com/pelletier/go-toml/v2 v2.0.6
+## explicit; go 1.16
+github.com/pelletier/go-toml/v2
+github.com/pelletier/go-toml/v2/internal/characters
+github.com/pelletier/go-toml/v2/internal/danger
+github.com/pelletier/go-toml/v2/internal/tracker
+github.com/pelletier/go-toml/v2/unstable
 # github.com/pires/go-proxyproto v0.6.2
 ## explicit; go 1.13
 github.com/pires/go-proxyproto
@@ -353,7 +408,7 @@ github.com/shirou/gopsutil/v3/process
 ## explicit; go 1.13
 github.com/sirupsen/logrus
 github.com/sirupsen/logrus/hooks/syslog
-# github.com/skycoin/dmsg v1.2.1-0.20221225152341-8062711bcd6e
+# github.com/skycoin/dmsg v1.3.0-rc1.0.20230224131835-1c194ef9791e
 ## explicit; go 1.16
 github.com/skycoin/dmsg/internal/servermetrics
 github.com/skycoin/dmsg/pkg/direct
@@ -377,8 +432,8 @@ github.com/skycoin/skycoin/src/cipher/ripemd160
 github.com/skycoin/skycoin/src/cipher/secp256k1-go
 github.com/skycoin/skycoin/src/cipher/secp256k1-go/secp256k1-go2
 github.com/skycoin/skycoin/src/util/logging
-# github.com/skycoin/skywire v1.2.1-0.20221227145050-ecd8f8fa8f68
-## explicit; go 1.17
+# github.com/skycoin/skywire v1.3.8-0.20230526150732-0a8555564495
+## explicit; go 1.18
 github.com/skycoin/skywire/cmd/setup-node/commands
 github.com/skycoin/skywire/internal/httpauth
 github.com/skycoin/skywire/internal/packetfilter
@@ -395,12 +450,9 @@ github.com/skycoin/skywire/pkg/dmsgc
 github.com/skycoin/skywire/pkg/restart
 github.com/skycoin/skywire/pkg/routefinder/rfclient
 github.com/skycoin/skywire/pkg/router
-github.com/skycoin/skywire/pkg/router/routerclient
+github.com/skycoin/skywire/pkg/router/setupmetrics
 github.com/skycoin/skywire/pkg/routing
 github.com/skycoin/skywire/pkg/servicedisc
-github.com/skycoin/skywire/pkg/setup
-github.com/skycoin/skywire/pkg/setup/setupclient
-github.com/skycoin/skywire/pkg/setup/setupmetrics
 github.com/skycoin/skywire/pkg/skyenv
 github.com/skycoin/skywire/pkg/syslog
 github.com/skycoin/skywire/pkg/transport
@@ -420,13 +472,14 @@ github.com/skycoin/skywire/pkg/util/rename
 github.com/skycoin/skywire/pkg/util/rpcutil
 github.com/skycoin/skywire/pkg/visor
 github.com/skycoin/skywire/pkg/visor/dmsgtracker
-github.com/skycoin/skywire/pkg/visor/hypervisorconfig
 github.com/skycoin/skywire/pkg/visor/logserver
 github.com/skycoin/skywire/pkg/visor/logstore
+github.com/skycoin/skywire/pkg/visor/rewardconfig
 github.com/skycoin/skywire/pkg/visor/usermanager
 github.com/skycoin/skywire/pkg/visor/visorconfig
 github.com/skycoin/skywire/pkg/visor/visorinit
-# github.com/skycoin/skywire-utilities v0.0.0-20230314131305-bdd8e27cbd46
+github.com/skycoin/skywire/static/icons
+# github.com/skycoin/skywire-utilities v0.0.0-20230522105416-0c3b75e1fef4
 ## explicit; go 1.17
 github.com/skycoin/skywire-utilities/pkg/buildinfo
 github.com/skycoin/skywire-utilities/pkg/cipher
@@ -441,6 +494,11 @@ github.com/skycoin/skywire-utilities/pkg/networkmonitor
 github.com/skycoin/skywire-utilities/pkg/skyenv
 github.com/skycoin/skywire-utilities/pkg/storeconfig
 github.com/skycoin/skywire-utilities/pkg/tcpproxy
+# github.com/skycoin/systray v1.10.0
+## explicit; go 1.17
+github.com/skycoin/systray
+github.com/skycoin/systray/internal/generated/menu
+github.com/skycoin/systray/internal/generated/notifier
 # github.com/skycoin/yamux v0.0.0-20200803175205-571ceb89da9f
 ## explicit; go 1.13
 github.com/skycoin/yamux
@@ -453,10 +511,10 @@ github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5
 ## explicit; go 1.12
 github.com/spf13/pflag
-# github.com/stretchr/objx v0.4.0
+# github.com/stretchr/objx v0.5.0
 ## explicit; go 1.12
 github.com/stretchr/objx
-# github.com/stretchr/testify v1.8.0
+# github.com/stretchr/testify v1.8.1
 ## explicit; go 1.13
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/mock
@@ -480,9 +538,34 @@ github.com/tklauser/go-sysconf
 # github.com/tklauser/numcpus v0.2.1
 ## explicit; go 1.11
 github.com/tklauser/numcpus
-# github.com/tkrajina/gpxgo v1.0.1
-## explicit
+# github.com/tkrajina/gpxgo v1.1.2
+## explicit; go 1.16
 github.com/tkrajina/gpxgo/gpx
+# github.com/toqueteos/webbrowser v1.2.0
+## explicit; go 1.12
+github.com/toqueteos/webbrowser
+# github.com/twitchyliquid64/golang-asm v0.15.1
+## explicit; go 1.13
+github.com/twitchyliquid64/golang-asm/asm/arch
+github.com/twitchyliquid64/golang-asm/bio
+github.com/twitchyliquid64/golang-asm/dwarf
+github.com/twitchyliquid64/golang-asm/goobj
+github.com/twitchyliquid64/golang-asm/obj
+github.com/twitchyliquid64/golang-asm/obj/arm
+github.com/twitchyliquid64/golang-asm/obj/arm64
+github.com/twitchyliquid64/golang-asm/obj/mips
+github.com/twitchyliquid64/golang-asm/obj/ppc64
+github.com/twitchyliquid64/golang-asm/obj/riscv
+github.com/twitchyliquid64/golang-asm/obj/s390x
+github.com/twitchyliquid64/golang-asm/obj/wasm
+github.com/twitchyliquid64/golang-asm/obj/x86
+github.com/twitchyliquid64/golang-asm/objabi
+github.com/twitchyliquid64/golang-asm/src
+github.com/twitchyliquid64/golang-asm/sys
+github.com/twitchyliquid64/golang-asm/unsafeheader
+# github.com/ugorji/go/codec v1.2.9
+## explicit; go 1.11
+github.com/ugorji/go/codec
 # github.com/valyala/fastrand v1.1.0
 ## explicit
 github.com/valyala/fastrand
@@ -506,7 +589,10 @@ go.opencensus.io/internal
 go.opencensus.io/trace
 go.opencensus.io/trace/internal
 go.opencensus.io/trace/tracestate
-# golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa
+# golang.org/x/arch v0.0.0-20210923205945-b76863e36670
+## explicit; go 1.17
+golang.org/x/arch/x86/x86asm
+# golang.org/x/crypto v0.5.0
 ## explicit; go 1.17
 golang.org/x/crypto/blake2b
 golang.org/x/crypto/blake2s
@@ -516,8 +602,8 @@ golang.org/x/crypto/chacha20
 golang.org/x/crypto/chacha20poly1305
 golang.org/x/crypto/curve25519
 golang.org/x/crypto/curve25519/internal/field
+golang.org/x/crypto/internal/alias
 golang.org/x/crypto/internal/poly1305
-golang.org/x/crypto/internal/subtle
 golang.org/x/crypto/pbkdf2
 golang.org/x/crypto/salsa20
 golang.org/x/crypto/salsa20/salsa
@@ -533,14 +619,22 @@ golang.org/x/image/font
 golang.org/x/image/font/basicfont
 golang.org/x/image/math/f64
 golang.org/x/image/math/fixed
-# golang.org/x/mod v0.5.0
+# golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4
 ## explicit; go 1.17
 golang.org/x/mod/semver
-# golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2
+# golang.org/x/net v0.7.0
 ## explicit; go 1.17
 golang.org/x/net/bpf
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
+golang.org/x/net/html
+golang.org/x/net/html/atom
+golang.org/x/net/html/charset
+golang.org/x/net/http/httpguts
+golang.org/x/net/http2
+golang.org/x/net/http2/h2c
+golang.org/x/net/http2/hpack
+golang.org/x/net/idna
 golang.org/x/net/internal/iana
 golang.org/x/net/internal/socket
 golang.org/x/net/internal/socks
@@ -549,7 +643,7 @@ golang.org/x/net/ipv4
 golang.org/x/net/ipv6
 golang.org/x/net/proxy
 golang.org/x/net/trace
-# golang.org/x/sys v0.0.0-20220704084225-05e143d24a9e
+# golang.org/x/sys v0.5.0
 ## explicit; go 1.17
 golang.org/x/sys/cpu
 golang.org/x/sys/execabs
@@ -558,16 +652,27 @@ golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 golang.org/x/sys/windows/registry
-# golang.org/x/term v0.0.0-20210927222741-03fcf44c2211
+# golang.org/x/term v0.5.0
 ## explicit; go 1.17
 golang.org/x/term
-# golang.org/x/text v0.3.7
+# golang.org/x/text v0.7.0
 ## explicit; go 1.17
 golang.org/x/text/cases
+golang.org/x/text/encoding
+golang.org/x/text/encoding/charmap
+golang.org/x/text/encoding/htmlindex
+golang.org/x/text/encoding/internal
+golang.org/x/text/encoding/internal/identifier
+golang.org/x/text/encoding/japanese
+golang.org/x/text/encoding/korean
+golang.org/x/text/encoding/simplifiedchinese
+golang.org/x/text/encoding/traditionalchinese
+golang.org/x/text/encoding/unicode
 golang.org/x/text/internal
 golang.org/x/text/internal/language
 golang.org/x/text/internal/language/compact
 golang.org/x/text/internal/tag
+golang.org/x/text/internal/utf8internal
 golang.org/x/text/language
 golang.org/x/text/runes
 golang.org/x/text/secure/bidirule
@@ -576,11 +681,12 @@ golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
 golang.org/x/text/width
-# golang.org/x/tools v0.1.5
-## explicit; go 1.17
+# golang.org/x/tools v0.1.12
+## explicit; go 1.18
 golang.org/x/tools/go/gcexportdata
 golang.org/x/tools/go/internal/gcimporter
 golang.org/x/tools/go/internal/packagesdriver
+golang.org/x/tools/go/internal/pkgbits
 golang.org/x/tools/go/packages
 golang.org/x/tools/internal/event
 golang.org/x/tools/internal/event/core
@@ -588,11 +694,8 @@ golang.org/x/tools/internal/event/keys
 golang.org/x/tools/internal/event/label
 golang.org/x/tools/internal/gocommand
 golang.org/x/tools/internal/packagesinternal
+golang.org/x/tools/internal/typeparams
 golang.org/x/tools/internal/typesinternal
-# golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
-## explicit; go 1.11
-golang.org/x/xerrors
-golang.org/x/xerrors/internal
 # golang.zx2c4.com/wireguard v0.0.20200320
 ## explicit; go 1.12
 golang.zx2c4.com/wireguard/rwcancel
@@ -603,8 +706,8 @@ golang.zx2c4.com/wireguard/tun/wintun/namespaceapi
 golang.zx2c4.com/wireguard/tun/wintun/nci
 golang.zx2c4.com/wireguard/tun/wintun/registry
 golang.zx2c4.com/wireguard/tun/wintun/setupapi
-# google.golang.org/protobuf v1.27.1
-## explicit; go 1.9
+# google.golang.org/protobuf v1.28.1
+## explicit; go 1.11
 google.golang.org/protobuf/encoding/prototext
 google.golang.org/protobuf/encoding/protowire
 google.golang.org/protobuf/internal/descfmt
@@ -632,6 +735,9 @@ google.golang.org/protobuf/reflect/protoregistry
 google.golang.org/protobuf/runtime/protoiface
 google.golang.org/protobuf/runtime/protoimpl
 google.golang.org/protobuf/types/descriptorpb
+# gopkg.in/natefinch/lumberjack.v2 v2.2.1
+## explicit; go 1.13
+gopkg.in/natefinch/lumberjack.v2
 # gopkg.in/yaml.v2 v2.4.0
 ## explicit; go 1.15
 gopkg.in/yaml.v2
@@ -660,6 +766,3 @@ nhooyr.io/websocket/internal/bpool
 nhooyr.io/websocket/internal/errd
 nhooyr.io/websocket/internal/wsjs
 nhooyr.io/websocket/internal/xsync
-# periph.io/x/periph v3.6.8+incompatible
-## explicit
-periph.io/x/periph/host/distro

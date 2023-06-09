@@ -4,7 +4,7 @@ import (
 	msg "github.com/skycoin/dmsg/pkg/dmsgserver"
 	"github.com/skycoin/skywire-utilities/pkg/cipher"
 	"github.com/skycoin/skywire/pkg/dmsgc"
-	"github.com/skycoin/skywire/pkg/setup"
+	"github.com/skycoin/skywire/pkg/router"
 )
 
 const (
@@ -85,10 +85,10 @@ type RouteFinderConfig struct {
 
 // SetupNodeConfig defines configuration of setup-node
 type SetupNodeConfig struct {
-	Name   string        `json:"name,omitempty"`
-	PubKey cipher.PubKey `json:"pk,omitempty"`
-	Config *setup.Config `json:"config,omitempty"`
-	Cmd    string        `json:"cmd,omitempty"`
+	Name   string              `json:"name,omitempty"`
+	PubKey cipher.PubKey       `json:"pk,omitempty"`
+	Config *router.SetupConfig `json:"config,omitempty"`
+	Cmd    string              `json:"cmd,omitempty"`
 }
 
 // AddressResolverConfig defines configuration of address-resolver
@@ -164,7 +164,7 @@ func (env *EnvConfig) AddSetupNode(name string) *EnvConfig {
 	pk, sk := cipher.GenerateKeyPair()
 	env.Skywire.SetupNode = SetupNodeConfig{
 		PubKey: pk,
-		Config: &setup.Config{
+		Config: &router.SetupConfig{
 			PK: pk,
 			SK: sk,
 			Dmsg: dmsgc.DmsgConfig{
@@ -189,10 +189,10 @@ func (env *EnvConfig) AddAddressResolver(name string, address string) *EnvConfig
 }
 
 // EmptySetupNodeConfig return empty configuration for setup-node
-func EmptySetupNodeConfig() setup.Config {
+func EmptySetupNodeConfig() router.SetupConfig {
 	pk, sk := cipher.GenerateKeyPair()
 
-	return setup.Config{
+	return router.SetupConfig{
 		PK: pk,
 		SK: sk,
 		Dmsg: dmsgc.DmsgConfig{

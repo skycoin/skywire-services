@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 
+	cc "github.com/ivanpirog/coloredcobra"
 	logrussyslog "github.com/sirupsen/logrus/hooks/syslog"
 	"github.com/skycoin/dmsg/pkg/direct"
 	"github.com/skycoin/dmsg/pkg/dmsg"
@@ -51,23 +52,37 @@ var (
 )
 
 func init() {
-	rootCmd.Flags().StringVarP(&addr, "addr", "a", ":9091", "address to bind to")
-	rootCmd.Flags().StringVarP(&metricsAddr, "metrics", "m", "", "address to bind metrics API to")
-	rootCmd.Flags().StringVar(&redisURL, "redis", "redis://localhost:6379", "connections string for a redis store")
-	rootCmd.Flags().IntVar(&redisPoolSize, "redis-pool-size", 10, "redis connection pool size")
-	rootCmd.Flags().StringVar(&pgHost, "pg-host", "localhost", "host of postgres")
-	rootCmd.Flags().StringVar(&pgPort, "pg-port", "5432", "port of postgres")
-	rootCmd.Flags().BoolVarP(&logEnabled, "log", "l", true, "enable request logging")
-	rootCmd.Flags().StringVar(&syslogAddr, "syslog", "", "syslog server address. E.g. localhost:514")
-	rootCmd.Flags().StringVar(&tag, "tag", "transport_discovery", "logging tag")
-	rootCmd.Flags().BoolVarP(&testing, "testing", "t", false, "enable testing to start without redis")
-	rootCmd.Flags().StringVar(&dmsgDisc, "dmsg-disc", "http://dmsgd.skywire.skycoin.com", "url of dmsg-discovery")
-	rootCmd.Flags().Var(&sk, "sk", "dmsg secret key")
+	rootCmd.Flags().StringVarP(&addr, "addr", "a", ":9091", "address to bind to\033[0m")
+	rootCmd.Flags().StringVarP(&metricsAddr, "metrics", "m", "", "address to bind metrics API to\033[0m")
+	rootCmd.Flags().StringVar(&redisURL, "redis", "redis://localhost:6379", "connections string for a redis store\033[0m")
+	rootCmd.Flags().IntVar(&redisPoolSize, "redis-pool-size", 10, "redis connection pool size\033[0m")
+	rootCmd.Flags().StringVar(&pgHost, "pg-host", "localhost", "host of postgres\033[0m")
+	rootCmd.Flags().StringVar(&pgPort, "pg-port", "5432", "port of postgres\033[0m")
+	rootCmd.Flags().BoolVarP(&logEnabled, "log", "l", true, "enable request logging\033[0m")
+	rootCmd.Flags().StringVar(&syslogAddr, "syslog", "", "syslog server address. E.g. localhost:514\033[0m")
+	rootCmd.Flags().StringVar(&tag, "tag", "transport_discovery", "logging tag\033[0m")
+	rootCmd.Flags().BoolVarP(&testing, "testing", "t", false, "enable testing to start without redis\033[0m")
+	rootCmd.Flags().StringVar(&dmsgDisc, "dmsg-disc", "http://dmsgd.skywire.skycoin.com", "url of dmsg-discovery\033[0m")
+	rootCmd.Flags().Var(&sk, "sk", "dmsg secret key\r")
+	var helpflag bool
+	rootCmd.SetUsageTemplate(help)
+	rootCmd.PersistentFlags().BoolVarP(&helpflag, "help", "h", false, "help for "+rootCmd.Use)
+	rootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
+	rootCmd.PersistentFlags().MarkHidden("help") //nolint
 }
 
 var rootCmd = &cobra.Command{
 	Use:   "transport-discovery",
 	Short: "Transport Discovery Server for skywire",
+	Long: `
+	┌┬┐┬─┐┌─┐┌┐┌┌─┐┌─┐┌─┐┬─┐┌┬┐ ┌┬┐┬┌─┐┌─┐┌─┐┬  ┬┌─┐┬─┐┬ ┬
+	 │ ├┬┘├─┤│││└─┐├─┘│ │├┬┘ │───│││└─┐│  │ │└┐┌┘├┤ ├┬┘└┬┘
+	 ┴ ┴└─┴ ┴┘└┘└─┘┴  └─┘┴└─ ┴  ─┴┘┴└─┘└─┘└─┘ └┘ └─┘┴└─ ┴ `,
+	SilenceErrors:         true,
+	SilenceUsage:          true,
+	DisableSuggestions:    true,
+	DisableFlagsInUseLine: true,
+	Version:               buildinfo.Version(),
 	Run: func(_ *cobra.Command, _ []string) {
 		if _, err := buildinfo.Get().WriteTo(os.Stdout); err != nil {
 			log.Printf("Failed to output build info: %v", err)
@@ -191,7 +206,30 @@ var rootCmd = &cobra.Command{
 
 // Execute executes root CLI command.
 func Execute() {
+	cc.Init(&cc.Config{
+		RootCmd:       rootCmd,
+		Headings:      cc.HiBlue + cc.Bold, //+ cc.Underline,
+		Commands:      cc.HiBlue + cc.Bold,
+		CmdShortDescr: cc.HiBlue,
+		Example:       cc.HiBlue + cc.Italic,
+		ExecName:      cc.HiBlue + cc.Bold,
+		Flags:         cc.HiBlue + cc.Bold,
+		//FlagsDataType: cc.HiBlue,
+		FlagsDescr:      cc.HiBlue,
+		NoExtraNewlines: true,
+		NoBottomNewline: true,
+	})
 	if err := rootCmd.Execute(); err != nil {
-		log.Fatal(err)
+		log.Fatal("Failed to execute command: ", err)
 	}
 }
+
+const help = "Usage:\r\n" +
+	"  {{.UseLine}}{{if .HasAvailableSubCommands}}{{end}} {{if gt (len .Aliases) 0}}\r\n\r\n" +
+	"{{.NameAndAliases}}{{end}}{{if .HasAvailableSubCommands}}\r\n\r\n" +
+	"Available Commands:{{range .Commands}}{{if (or .IsAvailableCommand)}}\r\n  " +
+	"{{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}\r\n\r\n" +
+	"Flags:\r\n" +
+	"{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}\r\n\r\n" +
+	"Global Flags:\r\n" +
+	"{{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}\r\n\r\n"

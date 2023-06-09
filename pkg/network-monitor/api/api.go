@@ -23,7 +23,6 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/metricsutil"
 	utilenv "github.com/skycoin/skywire-utilities/pkg/skyenv"
 	"github.com/skycoin/skywire/pkg/app/appserver"
-	"github.com/skycoin/skywire/pkg/restart"
 	"github.com/skycoin/skywire/pkg/transport/network"
 	"github.com/skycoin/skywire/pkg/visor"
 	"github.com/skycoin/skywire/pkg/visor/visorconfig"
@@ -514,7 +513,7 @@ func (api *API) getVisorKeys() {
 
 func (api *API) startVisor(ctx context.Context, conf *visorconfig.V1) {
 	conf.SetLogger(logging.NewMasterLogger())
-	v, ok := visor.NewVisor(ctx, conf, restart.CaptureContext(), false, "", "")
+	v, ok := visor.NewVisor(ctx, conf)
 	if !ok {
 		api.logger.Fatal("Failed to start visor.")
 	}
@@ -541,7 +540,7 @@ func InitConfig(confPath string, mLog *logging.MasterLogger) *visorconfig.V1 {
 		TransportDiscovery: oldConf.Transport.Discovery,
 		AddressResolver:    oldConf.Transport.AddressResolver,
 		RouteFinder:        oldConf.Routing.RouteFinder,
-		SetupNodes:         oldConf.Routing.SetupNodes,
+		RouteSetupNodes:    oldConf.Routing.RouteSetupNodes,
 		UptimeTracker:      oldConf.UptimeTracker.Addr,
 		ServiceDiscovery:   oldConf.Launcher.ServiceDisc,
 	}
@@ -583,13 +582,13 @@ func InitConfig(confPath string, mLog *logging.MasterLogger) *visorconfig.V1 {
 
 func whitelistedPKs() map[string]bool {
 	whitelistedPKs := make(map[string]bool)
-	for _, pk := range strings.Split(utilenv.NetworkMonitorPK, ",") {
+	for _, pk := range strings.Split(utilenv.NetworkMonitorPKs, ",") {
 		whitelistedPKs[pk] = true
 	}
-	for _, pk := range strings.Split(utilenv.TestNetworkMonitorPK, ",") {
+	for _, pk := range strings.Split(utilenv.TestNetworkMonitorPKs, ",") {
 		whitelistedPKs[pk] = true
 	}
-	whitelistedPKs[utilenv.SetupPK] = true
-	whitelistedPKs[utilenv.TestSetupPK] = true
+	whitelistedPKs[utilenv.RouteSetupPKs] = true
+	whitelistedPKs[utilenv.TestRouteSetupPKs] = true
 	return whitelistedPKs
 }

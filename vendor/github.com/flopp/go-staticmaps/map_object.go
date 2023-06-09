@@ -12,9 +12,14 @@ import (
 
 // MapObject is the interface for all objects on the map
 type MapObject interface {
-	bounds() s2.Rect
-	extraMarginPixels() float64
-	draw(dc *gg.Context, trans *transformer)
+	// Bounds returns the geographical boundary rect (excluding the actual pixel dimensions).
+	Bounds() s2.Rect
+
+	// ExtraMarginPixels returns the left, top, right, bottom pixel margin of the object.
+	ExtraMarginPixels() (float64, float64, float64, float64)
+
+	// Draw draws the object in the given graphical context.
+	Draw(dc *gg.Context, trans *Transformer)
 }
 
 // CanDisplay checks if pos is generally displayable (i.e. its latitude is in [-85,85])

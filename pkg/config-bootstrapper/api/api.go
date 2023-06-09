@@ -46,8 +46,10 @@ type Error struct {
 
 // Config contains the list of stun servers and setup-nodes
 type Config struct {
-	StunServers []string       `json:"stun_servers"`
-	SetupNodes  cipher.PubKeys `json:"setup_nodes"`
+	StunServers       []string        `json:"stun_servers"`
+	SetupNodes        []cipher.PubKey `json:"route_setup_nodes"`
+	SurveyWhitelist   []cipher.PubKey `json:"survey_whitelist"`
+	TransportSetupPKs []cipher.PubKey `json:"transport_setup"`
 }
 
 // New creates a new api.
@@ -63,11 +65,13 @@ func New(log *logging.Logger, conf Config, domain string) *API {
 		TransportDiscovery: strings.Replace(skyenv.TpDiscAddr, "skywire.skycoin.com", domain, -1),
 		AddressResolver:    strings.Replace(skyenv.AddressResolverAddr, "skywire.skycoin.com", domain, -1),
 		RouteFinder:        strings.Replace(skyenv.RouteFinderAddr, "skywire.skycoin.com", domain, -1),
-		SetupNodes:         conf.SetupNodes,
+		RouteSetupNodes:    conf.SetupNodes,
 		UptimeTracker:      strings.Replace(skyenv.UptimeTrackerAddr, "skywire.skycoin.com", domain, -1),
 		ServiceDiscovery:   sd,
 		StunServers:        conf.StunServers,
 		DNSServer:          skyenv.DNSServer,
+		SurveyWhitelist:    conf.SurveyWhitelist,
+		TransportSetupPKs:  conf.TransportSetupPKs,
 	}
 
 	api := &API{

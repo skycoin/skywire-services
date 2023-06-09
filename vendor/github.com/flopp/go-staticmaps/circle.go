@@ -95,26 +95,29 @@ func (m *Circle) getLatLng(plus bool) s2.LatLng {
 	}
 }
 
-func (m *Circle) extraMarginPixels() float64 {
-	return 0.5 * m.Weight
+// ExtraMarginPixels returns the left, top, right, bottom pixel margin of the Circle object, which is exactly the line width.
+func (m *Circle) ExtraMarginPixels() (float64, float64, float64, float64) {
+	return m.Weight, m.Weight, m.Weight, m.Weight
 }
 
-func (m *Circle) bounds() s2.Rect {
+// Bounds returns the geographical boundary rect (excluding the actual pixel dimensions).
+func (m *Circle) Bounds() s2.Rect {
 	r := s2.EmptyRect()
 	r = r.AddPoint(m.getLatLng(false))
 	r = r.AddPoint(m.getLatLng(true))
 	return r
 }
 
-func (m *Circle) draw(gc *gg.Context, trans *transformer) {
+// Draw draws the object in the given graphical context.
+func (m *Circle) Draw(gc *gg.Context, trans *Transformer) {
 	if !CanDisplay(m.Position) {
 		log.Printf("Circle coordinates not displayable: %f/%f", m.Position.Lat.Degrees(), m.Position.Lng.Degrees())
 		return
 	}
 
 	ll := m.getLatLng(true)
-	x, y := trans.ll2p(m.Position)
-	x1, y1 := trans.ll2p(ll)
+	x, y := trans.LatLngToXY(m.Position)
+	x1, y1 := trans.LatLngToXY(ll)
 	radius := math.Sqrt(math.Pow(x1-x, 2) + math.Pow(y1-y, 2))
 	gc.ClearPath()
 	gc.SetLineWidth(m.Weight)

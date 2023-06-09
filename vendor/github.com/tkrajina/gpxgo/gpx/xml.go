@@ -13,6 +13,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"golang.org/x/net/html/charset"
 )
 
 const formattingTimelayout = "2006-01-02T15:04:05Z"
@@ -49,14 +51,15 @@ func ToXml(g *GPX, params ToXmlParams) ([]byte, error) {
 	}
 	indentation := params.Indent
 
+	var replacemends map[string]string
 	var gpxDoc interface{}
 	if version == "1.0" {
 		gpxDoc = convertToGpx10Models(g)
 	} else if version == "1.1" {
-		gpxDoc = convertToGpx11Models(g)
+		gpxDoc, replacemends = convertToGpx11Models(g)
 	} else {
 		g.Version = "1.1"
-		gpxDoc = convertToGpx11Models(g)
+		gpxDoc, replacemends = convertToGpx11Models(g)
 	}
 
 	var buffer bytes.Buffer
@@ -74,7 +77,14 @@ func ToXml(g *GPX, params ToXmlParams) ([]byte, error) {
 		}
 		buffer.Write(b)
 	}
-	return buffer.Bytes(), nil
+
+	byts := buffer.Bytes()
+
+	for replKey, replVal := range replacemends {
+		byts = bytes.Replace(byts, []byte(replKey), []byte(replVal), -1)
+	}
+
+	return byts, nil
 }
 
 func guessGPXVersion(bytes []byte) (string, error) {
@@ -141,41 +151,52 @@ func ParseFile(fileName string) (*GPX, error) {
 
 	defer f.Close()
 
-	b, err := ioutil.ReadAll(f)
+	buf, err := ioutil.ReadAll(f)
 	if err != nil {
 		return nil, err
 	}
 
-	return ParseBytes(b)
+	return ParseBytes(buf)
 }
 
 //ParseBytes parses GPX from bytes
-func ParseBytes(bytes []byte) (*GPX, error) {
-	version, err := guessGPXVersion(bytes)
+func ParseBytes(buf []byte) (*GPX, error) {
+
+	version, err := guessGPXVersion(buf)
 	if err != nil {
 		// Unknown version, try with 1.1
 		version = "1.1"
 	}
 
+	reader := bytes.NewReader(buf)
+	decoder := xml.NewDecoder(reader)
+	decoder.CharsetReader = charset.NewReaderLabel
+
 	if version == "1.0" {
+
 		g := &gpx10Gpx{}
-		err := xml.Unmarshal(bytes, &g)
+
+		err = decoder.Decode(&g)
 		if err != nil {
 			return nil, err
 		}
 
 		return convertFromGpx10Models(g), nil
-	} else if version == "1.1" {
+	}
+
+	if version == "1.1" {
+
 		g := &gpx11Gpx{}
-		err := xml.Unmarshal(bytes, &g)
+
+		err = decoder.Decode(&g)
 		if err != nil {
 			return nil, err
 		}
 
 		return convertFromGpx11Models(g), nil
-	} else {
-		return nil, errors.New("Invalid version:" + version)
 	}
+
+	return nil, errors.New("Invalid version:" + version)
 }
 
 //ParseString parses GPX from string

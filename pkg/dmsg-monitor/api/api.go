@@ -22,7 +22,6 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/logging"
 	utilenv "github.com/skycoin/skywire-utilities/pkg/skyenv"
 	"github.com/skycoin/skywire/pkg/app/appserver"
-	"github.com/skycoin/skywire/pkg/restart"
 	"github.com/skycoin/skywire/pkg/visor"
 	"github.com/skycoin/skywire/pkg/visor/visorconfig"
 )
@@ -179,29 +178,27 @@ func (api *API) dmsgDeregistration(uptimes map[string]bool) {
 		transport: "dmsg",
 	}
 	deadDmsg := []string{}
-	tmpBatchSize := 0
-	for _, client := range clients {
-		if _, ok := api.whitelistedPKs[client]; ok {
-			continue
+	var tmpBatchSize, deadDmsgCount int
+	for i, client := range clients {
+		if _, ok := api.whitelistedPKs[client]; !ok {
+			checkerConfig.wg.Add(1)
+			checkerConfig.client = client
+			go api.dmsgChecker(checkerConfig, &deadDmsg)
 		}
 		tmpBatchSize++
-		checkerConfig.wg.Add(1)
-		checkerConfig.client = client
-		go api.dmsgChecker(checkerConfig, &deadDmsg)
-
-		if tmpBatchSize == api.batchSize {
-			time.Sleep(time.Minute)
+		if tmpBatchSize == api.batchSize || i == len(clients)-1 {
+			checkerConfig.wg.Wait()
+			// deregister clients from dmsg-discovery
+			if len(deadDmsg) > 0 {
+				api.dmsgDeregister(deadDmsg)
+				deadDmsgCount += len(deadDmsg)
+			}
+			deadDmsg = []string{}
 			tmpBatchSize = 0
 		}
 	}
-	checkerConfig.wg.Wait()
 
-	// deregister clients from dmsg-discovery
-	if len(deadDmsg) > 0 {
-		api.dmsgDeregister(deadDmsg)
-	}
-
-	api.logger.WithField("Number of dead DMSG entries", len(deadDmsg)).WithField("PKs", deadDmsg).Info("DMSGD Deregistration completed.")
+	api.logger.WithField("Number of dead DMSG entries", deadDmsgCount).Info("DMSGD Deregistration completed.")
 }
 
 func (api *API) dmsgChecker(cfg dmsgCheckerConfig, deadDmsg *[]string) {
@@ -221,6 +218,10 @@ func (api *API) dmsgChecker(cfg dmsgCheckerConfig, deadDmsg *[]string) {
 		if err != nil {
 			api.logger.WithField("Retry", 4-retrier).WithError(err).Warnf("Failed to establish %v transport to %v", cfg.transport, key)
 			retrier--
+			if strings.Contains(err.Error(), "unknown network type") {
+				trp = true
+				retrier = 0
+			}
 		} else {
 			api.logger.Infof("Established %v transport to %v", cfg.transport, key)
 			trp = true
@@ -347,7 +348,7 @@ type uptimes struct {
 
 func (api *API) startVisor(ctx context.Context, conf *visorconfig.V1) {
 	conf.SetLogger(logging.NewMasterLogger())
-	v, ok := visor.NewVisor(ctx, conf, restart.CaptureContext(), false, "", "")
+	v, ok := visor.NewVisor(ctx, conf)
 	if !ok {
 		api.logger.Fatal("Failed to start visor.")
 	}
@@ -374,7 +375,7 @@ func InitConfig(confPath string, mLog *logging.MasterLogger) *visorconfig.V1 {
 		TransportDiscovery: oldConf.Transport.Discovery,
 		AddressResolver:    oldConf.Transport.AddressResolver,
 		RouteFinder:        oldConf.Routing.RouteFinder,
-		SetupNodes:         oldConf.Routing.SetupNodes,
+		RouteSetupNodes:    oldConf.Routing.RouteSetupNodes,
 		UptimeTracker:      oldConf.UptimeTracker.Addr,
 		ServiceDiscovery:   oldConf.Launcher.ServiceDisc,
 	}
@@ -416,13 +417,13 @@ func InitConfig(confPath string, mLog *logging.MasterLogger) *visorconfig.V1 {
 
 func whitelistedPKs() map[string]bool {
 	whitelistedPKs := make(map[string]bool)
-	for _, pk := range strings.Split(utilenv.NetworkMonitorPK, ",") {
+	for _, pk := range strings.Split(utilenv.NetworkMonitorPKs, ",") {
 		whitelistedPKs[pk] = true
 	}
-	for _, pk := range strings.Split(utilenv.TestNetworkMonitorPK, ",") {
+	for _, pk := range strings.Split(utilenv.TestNetworkMonitorPKs, ",") {
 		whitelistedPKs[pk] = true
 	}
-	whitelistedPKs[utilenv.SetupPK] = true
-	whitelistedPKs[utilenv.TestSetupPK] = true
+	whitelistedPKs[utilenv.RouteSetupPKs] = true
+	whitelistedPKs[utilenv.TestRouteSetupPKs] = true
 	return whitelistedPKs
 }

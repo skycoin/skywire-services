@@ -12,16 +12,16 @@ ENV CGO_ENABLED=${CGO_ENABLED} \
 WORKDIR /
 
 RUN apk add --no-cache make git build-base && \
-    git clone https://github.com/skycoin/skywire && \
-    cd skywire && git checkout develop && \
+    git clone -b develop https://github.com/skycoin/skywire && \
+    cd skywire && \
     sh -c /skywire/docker/images/visor/install-preq.sh && \
     make build-race && \
     mkdir -p /apps && \
-    cp ./apps/vpn-server /apps/ && \
-    cp ./apps/vpn-client /apps/ && \
-	cp ./apps/skysocks /apps/ && \
-	cp ./apps/skysocks-client /apps/ && \
-	cp ./apps/skychat /apps/
+    cp ./build/apps/vpn-server /apps/ && \
+    cp ./build/apps/vpn-client /apps/ && \
+	cp ./build/apps/skysocks /apps/ && \
+	cp ./build/apps/skysocks-client /apps/ && \
+	cp ./build/apps/skychat /apps/
 
 ## Resulting image
 FROM ${base} as visor-runner

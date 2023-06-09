@@ -37,14 +37,23 @@ if [[ "$image_tag" == "e2e" ]]; then
   fi
 
   # TODO(ersonp): instead of cloning the git branch we should directly use the docker image od SD from dockerhub like we doing for dmsg 
-  if [[ "$GITHUB_TOKEN" != "" ]]; then
-    git clone https://"$GITHUB_TOKEN":x-oauth-basic@github.com/SkycoinPro/skycoin-service-discovery --depth 1 --branch "$git_branch" ./tmp/skycoin-service-discovery
-  else
-    git clone git@github.com:SkycoinPro/skycoin-service-discovery --depth 1 --branch "$git_branch" ./tmp/skycoin-service-discovery
-  fi
+  git clone https://github.com/skycoin/skycoin-service-discovery.git --depth 1 --branch "$git_branch" ./tmp/skycoin-service-discovery
 
   if [ ! -d ./tmp/skycoin-service-discovery ]; then
     echo "failed to clone skycoin-service-discovery" &&
+      exit 1
+  fi
+
+  # TODO(ersonp): instead of cloning the git branch we should directly use the docker image od SD from dockerhub like we doing for dmsg 
+  # if [[ "$GIT_TOKEN" != "" ]]; then
+  #   git clone https://"$GIT_TOKEN"@github.com/skycoin/skywire-ut --depth 1 --branch "$git_branch" ./tmp/skywire-ut
+  # else
+  #   git clone git@github.com:skycoin/skywire-ut --depth 1 --branch "$git_branch" ./tmp/skywire-ut
+  # fi
+  git clone https://"$GIT_USER":"$GIT_TOKEN"@github.com/skycoin/skywire-ut.git --depth 1 --branch "$git_branch" ./tmp/skywire-ut
+
+  if [ ! -d ./tmp/skywire-ut ]; then
+    echo "failed to clone skywire-ut" &&
       exit 1
   fi
 
@@ -83,6 +92,13 @@ if [[ "$image_tag" == "e2e" ]]; then
     --build-arg build_opts="$go_buildopts" \
     --build-arg image_tag="$image_tag" \
     -t "$registry"/service-discovery:"$image_tag" .
+  
+  echo "building uptime tracker image"
+  DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/uptime-tracker/Dockerfile \
+  --build-arg base_image="$base_image" \
+  --build-arg build_opts="$go_buildopts" \
+  --build-arg image_tag="$image_tag" \
+  -t "$registry"/uptime-tracker:"$image_tag" .
 
   rm -rf ./tmp/skycoin-service-discovery
 fi
@@ -92,9 +108,11 @@ if [[ "$image_tag" == "integration" ]]; then
   rm -rf ./tmp/skycoin-service-discovery
   rm -rf ./tmp/dmsg
   rm -rf ./tmp/skywire
+  rm -rf ./tmp/skywire-ut
   cp -r ../skycoin-service-discovery ./tmp
   cp -r ../dmsg ./tmp
   cp -r ../skywire ./tmp
+  cp -r ../skywire-ut ./tmp
 
   echo ====================================================
   echo "BUILDING SKYWIRE VISOR"
@@ -118,6 +136,13 @@ if [[ "$image_tag" == "integration" ]]; then
     --build-arg build_opts="$go_buildopts" \
     --build-arg image_tag="$image_tag" \
     -t "$registry"/service-discovery:"$image_tag" .
+  
+  echo "building uptime tracker image"
+  DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/uptime-tracker/Dockerfile \
+  --build-arg base_image="$base_image" \
+  --build-arg build_opts="$go_buildopts" \
+  --build-arg image_tag="$image_tag" \
+  -t "$registry"/uptime-tracker:"$image_tag" .
 
   rm -rf ./tmp/*
 fi
@@ -149,13 +174,6 @@ DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/address-resolver/Dockerf
   --build-arg image_tag="$image_tag" \
   --build-arg base_image="$base_image" \
   -t "$registry"/address-resolver:"$image_tag" .
-
-echo "build uptime tracker image"
-DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/uptime-tracker/Dockerfile \
-  --build-arg build_opts="$go_buildopts" \
-  --build-arg image_tag="$image_tag" \
-  --build-arg base_image="$base_image" \
-  -t "$registry"/uptime-tracker:"$image_tag" .
 
 if [[ "$image_tag" == "test" ]]; then
   echo "build node visualizer DEV image"
@@ -218,6 +236,20 @@ DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/dmsg-monitor/Dockerfile 
   --build-arg build_opts="$go_buildopts" \
   --build-arg image_tag="$image_tag" \
   -t "$registry"/dmsg-monitor:"$image_tag" .
+
+echo "building tpd monitor image"
+DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/tpd-monitor/Dockerfile \
+  --build-arg base_image="$base_image" \
+  --build-arg build_opts="$go_buildopts" \
+  --build-arg image_tag="$image_tag" \
+  -t "$registry"/tpd-monitor:"$image_tag" .
+
+echo "building transport setup image"
+DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/transport-setup/Dockerfile \
+  --build-arg base_image="$base_image" \
+  --build-arg build_opts="$go_buildopts" \
+  --build-arg image_tag="$image_tag" \
+  -t "$registry"/transport-setup:"$image_tag" .
 
 
 wait

@@ -72,11 +72,13 @@ func ParseAreaString(s string) (*Area, error) {
 	return area, nil
 }
 
-func (p *Area) extraMarginPixels() float64 {
-	return 0.5 * p.Weight
+// ExtraMarginPixels returns the left, top, right, bottom pixel margin of the Area object, which is exactly the line width.
+func (p *Area) ExtraMarginPixels() (float64, float64, float64, float64) {
+	return p.Weight, p.Weight, p.Weight, p.Weight
 }
 
-func (p *Area) bounds() s2.Rect {
+// Bounds returns the geographical boundary rect (excluding the actual pixel dimensions).
+func (p *Area) Bounds() s2.Rect {
 	r := s2.EmptyRect()
 	for _, ll := range p.Positions {
 		r = r.AddPoint(ll)
@@ -84,7 +86,8 @@ func (p *Area) bounds() s2.Rect {
 	return r
 }
 
-func (p *Area) draw(gc *gg.Context, trans *transformer) {
+// Draw draws the object in the given graphical context.
+func (p *Area) Draw(gc *gg.Context, trans *Transformer) {
 	if len(p.Positions) <= 1 {
 		return
 	}
@@ -94,7 +97,7 @@ func (p *Area) draw(gc *gg.Context, trans *transformer) {
 	gc.SetLineCap(gg.LineCapRound)
 	gc.SetLineJoin(gg.LineJoinRound)
 	for _, ll := range p.Positions {
-		gc.LineTo(trans.ll2p(ll))
+		gc.LineTo(trans.LatLngToXY(ll))
 	}
 	gc.ClosePath()
 	gc.SetColor(p.Fill)

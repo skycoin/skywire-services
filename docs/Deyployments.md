@@ -4,50 +4,47 @@ We currently run two instances of service deployments - production and test. Bot
 
 ### Skywire Services
 
-1. ```service-discovery``` https://github.com/SkycoinPro/skycoin-service-discovery
+1. ```service-discovery``` https://github.com/skycoin/skycoin-service-discovery
 
 - stores info about skywire apps (services) like [vpn](https://sd.skywire.dev/api/services?type=vpn) and [skysocks](https://sd.skywire.dev/api/services?type=skysocks) and also if the visor is a public visor as [visor](https://sd.skywire.dev/api/services?type=visor)
 - Any visor can retrive the info of a ```vpn```, ```skysocks``` or ```visor``` to connect to them
 
-2. ```address-resolver``` https://github.com/SkycoinPro/skywire-services/tree/develop/pkg/address-resolver
+2. ```address-resolver``` https://github.com/skycoin/skywire-services/tree/develop/pkg/address-resolver
 
 - stores info of ```stcpr``` and ```sudph``` transport of a visor is the visor has a public IP
 - ```stcpr``` is stored or ```bind``` via a normal http api over ```TCP```
 - ```sudph``` is ```bind``` via ```UDP```, the ```ar``` listens on a ```UDP``` port and when the visor is ready it ```binds``` by sending a handshake to the ```ar```via ```UDP``` and after the initial handshake the visor keeps on sending a ```hearbeat``` packet every ```10``` seconds to keep the ```UDP``` connection alive
 - it is also used to retrive data also called resolve of the stcpr and sudph of a visor in order to connect to it via the respective transports
 
-3. ```network-monitor``` https://github.com/SkycoinPro/skywire-services/tree/develop/pkg/network-monitor
+3. ```network-monitor``` https://github.com/skycoin/skywire-services/tree/develop/pkg/network-monitor
 
 - it runs a ```lite``` version of a ```visor``` along with a ```lite vpn-client``` in order to check and keep track of visors.
 - it is used to check if the ```stcpr``` and ```sudph``` entries in the ar are working or not and also the vpn entries in sd
 
-4. ```node-visualizer``` https://github.com/SkycoinPro/skywire-services/tree/develop/pkg/node-visualizer
+4. ```node-visualizer``` https://github.com/skycoin/skywire-services/tree/develop/pkg/node-visualizer
 
 - it is used to visualise the visors and other data in the skywire network
 
-5. ```transport-discovery``` https://github.com/SkycoinPro/skywire-services/tree/develop/pkg/transport-discovery
+5. ```transport-discovery``` https://github.com/skycoin/skywire-services/tree/develop/pkg/transport-discovery
 
 - whenever any type of transport is created between visor A and visor B a entry is saved here
 
-6. ```route-finder``` https://github.com/SkycoinPro/skywire-services/tree/develop/pkg/route-finder
+6. ```route-finder``` https://github.com/skycoin/skywire-services/tree/develop/pkg/route-finder
 
 - it is used to find a route between two visors
 - for example of visor A is connected to visor B via ```sudph``` and visor B is connected to visor C via ```stcpr``` and if visor A want's to connect to visor C then via route finder we can get a route ```A->B->C``` where ```B```is considered a ```hop``` so that connection will have ```one hop```; a route can also have ```0 hops``` if both the visors are directly connected via a transport
 
-7. ```uptime-tracker``` https://github.com/SkycoinPro/skywire-services/tree/develop/pkg/uptime-tracker
 
-- it is used to keep track of the uptimes of the visors; visors send a tcp request to the api every 5 mins to keep its status a online in the ```ut```
-
-8. ```setup-node``` https://github.com/skycoin/skywire/tree/master/cmd/setup-node
+7. ```setup-node``` https://github.com/skycoin/skywire/tree/master/cmd/setup-node
 
 - it is used to setup a connection between two ```vpns``` in visors via ```dmsg```
 
-9. ```dmsg-discovery``` https://github.com/skycoin/dmsg
+8. ```dmsg-discovery``` https://github.com/skycoin/dmsg
 
 - it is used to keep a track of every dmsg-server and dmsg-client (visor) which includes which ```dmsg-client``` is connected to which ```dmsg-server```
 - that means if ```visor A``` is connected to ```dmsg-server A``` and ```visor B``` is connected to ```dmsg-server A``` they can connect to each other easily via the ```dmsg-server A```; but if ```visor B``` is connected to ```dmsg-server B``` instead the ```visor A``` will have to get the info from ```dmsg-discovery``` and connect itself to ```dmsg-server B``` in order to connect to the ```visor B```
 
-10. ```dmsg-server``` https://github.com/skycoin/dmsg
+9. ```dmsg-server``` https://github.com/skycoin/dmsg
 
 - it is used to connect connect ```dmsg-client A``` with ```dmsg-client B``` if both of them are connected to it acting as a sort of bridge between the two
 
@@ -66,7 +63,7 @@ It is deployed to Linodes in a Singapore datacenter and is located behind 2 Lino
 
 The URLs of production can be found [here](https://github.com/skycoin/skywire/blob/master/pkg/skyenv/values.go#L9).
 
-The dmsg services in production are defined [here](https://github.com/SkycoinPro/devops).
+The dmsg services in production are defined [here](https://github.com/skycoin/devops).
 
 ### Testing
 
@@ -176,16 +173,16 @@ We keep docker images for both production and testing in DockerHub Registry. You
 
 - For ```Dmsg-Server```, ```Dmsg-Discovery``` and ```Skywire-Visor``` we are using ```skycoin``` ```Public``` DockerHub Registry.
 
-- For other services, we use ```skycoinpro``` ```Private``` DockerHub Registry.
+- For other services, we use ```skycoin``` ```Private``` DockerHub Registry.
 
 ```
 // assuming you are in skywire-services. replace test with latest if you want to push to prod.
-docker build -f PATH_TO_DOCKERFILE -t skycoinpro/uptime-tracker:test . 
+docker build -f PATH_TO_DOCKERFILE -t skycoin/route-finder:test . 
 ```
 
 Afterwards you can push with:
 
 ```
 //login with docker login before if needed
-docker push skycoinpro/service-discovery
+docker push skycoin/service-discovery
 ```

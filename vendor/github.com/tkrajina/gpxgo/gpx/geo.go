@@ -230,6 +230,29 @@ func Distance3D(lat1, lon1 float64, ele1 NullableFloat64, lat2, lon2 float64, el
 	return distance(lat1, lon1, ele1, lat2, lon2, ele2, true, haversine)
 }
 
+func AngleFromNorth(loc1, loc2 Point, radians bool) float64 {
+	coef := math.Cos(ToRad(loc1.Latitude))
+
+	b := (loc2.Longitude - loc1.Longitude) * coef
+	a := loc2.Latitude - loc1.Latitude
+
+	angle := math.Atan(b / a)
+
+	if a < 0 {
+		angle += math.Pi
+	}
+
+	if angle < 0 {
+		angle += 2 * math.Pi
+	}
+
+	if radians {
+		return angle
+	}
+
+	return 180 * angle / math.Pi
+}
+
 //ElevationAngle calculates the elevation angle (steepness) between to points
 func ElevationAngle(loc1, loc2 Point, radians bool) float64 {
 	if loc1.Elevation.Null() || loc2.Elevation.Null() {

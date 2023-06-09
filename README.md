@@ -17,6 +17,28 @@ Run `make build` to build all the services and `make install` to install them in
 
 Refer to the [`cmd`](cmd) subdirectories for setting up each individual service locally.
 
+### DB Setup
+Some of our services needs database for running that we use postgresql here as default database. For setting it up, you just need run pg (by docker or install binary or etc.), make a database with UTF-8 character-set, and pass two credential as flag and save three of them as env variable before running services.
+
+**List of services needs DB**:
+- `route-finder`
+- `transport-discovery`
+- `service-discovery`
+
+So for example if you want run a service, you should pass `--pg-host` and `--pg-port` as flag on running its binary, and also save `PG_USER`, `PG_PASSWORD` and `PG_DATABASE` as env variable.
+```
+export PG_USER=username
+export PG_PASSWORD=pass
+export PG_DATABASE=sampledb
+```
+and run service by
+
+```
+./route-finder --pg-host localhost --pg-port 5432
+```
+
+All tables created automatically.
+
 ## Deployments
 
 We run two service deployments - production and test.
@@ -27,7 +49,7 @@ Pushing to `develop` deploys changes to test on skywire.dev subdomains.
 
 Logs can be retrieved through `kubectl` or grafana.skycoin.com.
 
-Check the [docs](docs/Deployments.md) for more documentation on the deployments. Check [Skywire Devops](https://github.com/SkycoinPro/skywire-devops) for more in depth info on our deployment setup.
+Check the [docs](docs/Deployments.md) for more documentation on the deployments. Check [Skywire Devops](https://github.com/skycoin/skywire-devops) for more in depth info on our deployment setup.
 
 ## Documentation
 
@@ -48,4 +70,4 @@ Check the [docs](docs/Deployments.md) for more documentation on the deployments.
 - [Vpn Monitor](cmd/vpn-monitor/README.md)
 - [Dmsg Discovery](https://github.com/skycoin/dmsg/blob/develop/cmd/dmsg-discovery/README.md)
 - [Dmsg Server](https://github.com/skycoin/dmsg/blob/develop/cmd/dmsg-server/README.md)
-- [Service Discovery](https://github.com/SkycoinPro/skycoin-service-discovery/blob/master/README.md#http-api)
+- [Service Discovery](https://github.com/skycoin/skycoin-service-discovery/blob/master/README.md#http-api)

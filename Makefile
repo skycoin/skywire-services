@@ -17,7 +17,7 @@ OPTS?=GO111MODULE=on
 DOCKER_OPTS?=GO111MODULE=on GOOS=linux # go options for compiling for docker container
 DOCKER_NETWORK?=SKYWIRE
 DOCKER_COMPOSE_FILE:=./docker/docker-compose.yml
-DOCKER_REGISTRY:=skycoinpro
+DOCKER_REGISTRY:=skycoin
 TEST_OPTS:=-tags no_ci -cover -timeout=5m
 RACE_FLAG:=-race
 GOARCH:=$(shell go env GOARCH)
@@ -26,7 +26,7 @@ ifneq (,$(findstring 64,$(GOARCH)))
     TEST_OPTS:=$(TEST_OPTS) $(RACE_FLAG)
 endif
 
-PROJECT_BASE := github.com/SkycoinPro/skywire-services
+PROJECT_BASE := github.com/skycoin/skywire-services
 SKYWIRE_UTILITIES_REPO := github.com/skycoin/skywire-utilities
 BUILDINFO_PATH := $(SKYWIRE_UTILITIES_REPO)/pkg/buildinfo
 
@@ -45,14 +45,14 @@ export REGISTRY=${DOCKER_REGISTRY}
 ## : ## _ [Prepare code]
 
 dep: ## Sorts dependencies
-#	GO111MODULE=on GOPRIVATE=github.com/SkycoinPro/* go get -v github.com/skycoin/skywire@master
-	GO111MODULE=on GOPRIVATE=github.com/SkycoinPro/* go mod vendor -v
+#	GO111MODULE=on GOPRIVATE=github.com/skycoin/* go get -v github.com/skycoin/skywire@master
+	GO111MODULE=on GOPRIVATE=github.com/skycoin/* go mod vendor -v
 	yarn --cwd ./pkg/node-visualizer/web install
 
 format: dep ## Formats the code. Must have goimports and goimports-reviser installed (use make install-linters).
-	goimports -w -local github.com/SkycoinPro/skywire-services ./pkg
-	goimports -w -local github.com/SkycoinPro/skywire-services ./cmd
-	goimports -w -local github.com/SkycoinPro/skywire-services ./internal
+	goimports -w -local github.com/skycoin/skywire-services ./pkg
+	goimports -w -local github.com/skycoin/skywire-services ./cmd
+	goimports -w -local github.com/skycoin/skywire-services ./internal
 	find . -type f -name '*.go' -not -path "./vendor/*" -exec goimports-reviser -project-name ${PROJECT_BASE} -file-path {} \;
 
 ## : ## _ [Build, install, clean]
@@ -69,6 +69,8 @@ build: dep ## Build binaries
 	${OPTS} go build ${BUILD_OPTS} -o ./bin/transport-setup ./cmd/transport-setup
 	${OPTS} go build ${BUILD_OPTS} -o ./bin/config-bootstrapper ./cmd/config-bootstrapper
 	${OPTS} go build ${BUILD_OPTS} -o ./bin/liveness-checker ./cmd/liveness-checker
+	${OPTS} go build ${BUILD_OPTS} -o ./bin/dmsg-monitor ./cmd/dmsg-monitor
+	${OPTS} go build ${BUILD_OPTS} -o ./bin/tpd-monitor ./cmd/tpd-monitor
 	${OPTS} go build ${BUILD_OPTS} -o ./bin/vpn-monitor ./cmd/vpn-monitor
 	${OPTS} go build ${BUILD_OPTS} -o ./bin/public-visor-monitor ./cmd/public-visor-monitor
 	# yarn --cwd ./pkg/node-visualizer/web build
@@ -85,6 +87,8 @@ build-deploy: ## Build for deployment Docker images
 	go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o /release/vpn-client ./cmd/vpn-lite-client
 	go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o /release/transport-setup ./cmd/transport-setup
 	go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o /release/node-visualizer ./cmd/node-visualizer
+	go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o /release/dmsg-monitor ./cmd/dmsg-monitor
+	go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o /release/tpd-monitor ./cmd/tpd-monitor
 	go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o /release/vpn-monitor ./cmd/vpn-monitor
 	go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o /release/public-visor-monitor ./cmd/public-visor-monitor
 
@@ -99,6 +103,8 @@ build-race: dep ## Build binaries
 	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/vpn-client ./cmd/vpn-lite-client
 	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/transport-setup ./cmd/transport-setup
 	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/node-visualizer ./cmd/node-visualizer
+	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/dmsg-monitor ./cmd/dmsg-monitor
+	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/tpd-monitor ./cmd/tpd-monitor
 	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/vpn-monitor ./cmd/vpn-monitor
 	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/public-visor-monitor ./cmd/public-visor-monitor
 
@@ -119,11 +125,11 @@ clean: ## Clean compiled binaries
 
 install-linters: ## Install linters
 	- VERSION=1.40.0 ./ci_scripts/install-golangci-lint.sh
-	GOPRIVATE=github.com/SkycoinPro/* go get -u github.com/FiloSottile/vendorcheck
+	GOPRIVATE=github.com/skycoin/* go get -u github.com/FiloSottile/vendorcheck
 	# For some reason this install method is not recommended, see https://github.com/golangci/golangci-lint#install
 	# However, they suggest `curl ... | bash` which we should not do
-	GOPRIVATE=github.com/SkycoinPro/* go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
-	${OPTS} GOPRIVATE=github.com/SkycoinPro/* go get -u github.com/incu6us/goimports-reviser
+	GOPRIVATE=github.com/skycoin/* go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
+	${OPTS} GOPRIVATE=github.com/skycoin/* go get -u github.com/incu6us/goimports-reviser
 
 install-shellcheck: ## install shellcheck to current directory
 	./ci_scripts/install-shellcheck.sh

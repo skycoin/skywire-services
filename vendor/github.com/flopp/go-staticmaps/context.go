@@ -13,8 +13,11 @@ import (
 	"image/draw"
 	"log"
 	"math"
+	"sync"
 
 	"github.com/fogleman/gg"
+	"github.com/golang/geo/r2"
+	"github.com/golang/geo/s1"
 	"github.com/golang/geo/s2"
 )
 
@@ -34,13 +37,11 @@ type Context struct {
 
 	background color.Color
 
-	markers  []*Marker
-	paths    []*Path
-	areas    []*Area
-	circles  []*Circle
+	objects  []MapObject
 	overlays []*TileProvider
 
 	userAgent    string
+	online       bool
 	tileProvider *TileProvider
 	cache        TileCache
 
@@ -57,6 +58,7 @@ func NewContext() *Context {
 	t.hasBoundingBox = false
 	t.background = nil
 	t.userAgent = ""
+	t.online = true
 	t.tileProvider = NewTileProviderOpenStreetMaps()
 	t.cache = NewTileCacheFromUserCache(0777)
 	return t
@@ -70,6 +72,12 @@ func (m *Context) SetTileProvider(t *TileProvider) {
 // SetCache takes a nil argument to disable caching
 func (m *Context) SetCache(cache TileCache) {
 	m.cache = cache
+}
+
+// SetOnline enables/disables online
+// TileFetcher will only fetch tiles from cache if online = false
+func (m *Context) SetOnline(online bool) {
+	m.online = online
 }
 
 // SetUserAgent sets the HTTP user agent string used when downloading map tiles
@@ -107,43 +115,97 @@ func (m *Context) SetBackground(col color.Color) {
 }
 
 // AddMarker adds a marker to the Context
+//
+// Deprecated: AddMarker is deprecated. Use the more general AddObject.
 func (m *Context) AddMarker(marker *Marker) {
-	m.markers = append(m.markers, marker)
+	m.AddObject(marker)
 }
 
 // ClearMarkers removes all markers from the Context
 func (m *Context) ClearMarkers() {
-	m.markers = nil
+	filtered := []MapObject{}
+	for _, object := range m.objects {
+		switch object.(type) {
+		case *Marker:
+			// skip
+		default:
+			filtered = append(filtered, object)
+		}
+	}
+	m.objects = filtered
 }
 
 // AddPath adds a path to the Context
+//
+// Deprecated: AddPath is deprecated. Use the more general AddObject.
 func (m *Context) AddPath(path *Path) {
-	m.paths = append(m.paths, path)
+	m.AddObject(path)
 }
 
 // ClearPaths removes all paths from the Context
 func (m *Context) ClearPaths() {
-	m.paths = nil
+	filtered := []MapObject{}
+	for _, object := range m.objects {
+		switch object.(type) {
+		case *Path:
+			// skip
+		default:
+			filtered = append(filtered, object)
+		}
+	}
+	m.objects = filtered
 }
 
 // AddArea adds an area to the Context
+//
+// Deprecated: AddArea is deprecated. Use the more general AddObject.
 func (m *Context) AddArea(area *Area) {
-	m.areas = append(m.areas, area)
+	m.AddObject(area)
 }
 
 // ClearAreas removes all areas from the Context
 func (m *Context) ClearAreas() {
-	m.areas = nil
+	filtered := []MapObject{}
+	for _, object := range m.objects {
+		switch object.(type) {
+		case *Area:
+			// skip
+		default:
+			filtered = append(filtered, object)
+		}
+	}
+	m.objects = filtered
 }
 
 // AddCircle adds an circle to the Context
+//
+// Deprecated: AddCircle is deprecated. Use the more general AddObject.
 func (m *Context) AddCircle(circle *Circle) {
-	m.circles = append(m.circles, circle)
+	m.AddObject(circle)
 }
 
 // ClearCircles removes all circles from the Context
 func (m *Context) ClearCircles() {
-	m.circles = nil
+	filtered := []MapObject{}
+	for _, object := range m.objects {
+		switch object.(type) {
+		case *Circle:
+			// skip
+		default:
+			filtered = append(filtered, object)
+		}
+	}
+	m.objects = filtered
+}
+
+// AddObject adds an object to the Context
+func (m *Context) AddObject(object MapObject) {
+	m.objects = append(m.objects, object)
+}
+
+// ClearObjects removes all objects from the Context
+func (m *Context) ClearObjects() {
+	m.objects = nil
 }
 
 // AddOverlay adds an overlay to the Context
@@ -164,46 +226,40 @@ func (m *Context) OverrideAttribution(attribution string) {
 	m.overrideAttribution = &attribution
 }
 
+// Attribution returns the current attribution string - either the overridden
+// version (using OverrideAttribution) or the one set by the selected
+// TileProvider.
+func (m *Context) Attribution() string {
+	if m.overrideAttribution != nil {
+		return *m.overrideAttribution
+	}
+	return m.tileProvider.Attribution
+}
+
 func (m *Context) determineBounds() s2.Rect {
 	r := s2.EmptyRect()
-	for _, marker := range m.markers {
-		r = r.Union(marker.bounds())
-	}
-	for _, path := range m.paths {
-		r = r.Union(path.bounds())
-	}
-	for _, area := range m.areas {
-		r = r.Union(area.bounds())
-	}
-	for _, circle := range m.circles {
-		r = r.Union(circle.bounds())
+	for _, object := range m.objects {
+		r = r.Union(object.Bounds())
 	}
 	return r
 }
 
-func (m *Context) determineExtraMarginPixels() float64 {
-	p := 0.0
-	for _, marker := range m.markers {
-		if pp := marker.extraMarginPixels(); pp > p {
-			p = pp
-		}
+func (m *Context) determineExtraMarginPixels() (float64, float64, float64, float64) {
+	maxL := 0.0
+	maxT := 0.0
+	maxR := 0.0
+	maxB := 0.0
+	if m.Attribution() != "" {
+		maxB = 12.0
 	}
-	for _, path := range m.paths {
-		if pp := path.extraMarginPixels(); pp > p {
-			p = pp
-		}
+	for _, object := range m.objects {
+		l, t, r, b := object.ExtraMarginPixels()
+		maxL = math.Max(maxL, l)
+		maxT = math.Max(maxT, t)
+		maxR = math.Max(maxR, r)
+		maxB = math.Max(maxB, b)
 	}
-	for _, area := range m.areas {
-		if pp := area.extraMarginPixels(); pp > p {
-			p = pp
-		}
-	}
-	for _, circle := range m.circles {
-		if pp := circle.extraMarginPixels(); pp > p {
-			p = pp
-		}
-	}
-	return p
+	return maxL, maxT, maxR, maxB
 }
 
 func (m *Context) determineZoom(bounds s2.Rect, center s2.LatLng) int {
@@ -213,9 +269,14 @@ func (m *Context) determineZoom(bounds s2.Rect, center s2.LatLng) int {
 	}
 
 	tileSize := m.tileProvider.TileSize
-	margin := 4.0 + m.determineExtraMarginPixels()
-	w := (float64(m.width) - 2.0*margin) / float64(tileSize)
-	h := (float64(m.height) - 2.0*margin) / float64(tileSize)
+	marginL, marginT, marginR, marginB := m.determineExtraMarginPixels()
+	w := (float64(m.width) - marginL - marginR) / float64(tileSize)
+	h := (float64(m.height) - marginT - marginB) / float64(tileSize)
+	if w <= 0 || h <= 0 {
+		log.Printf("Object margins are bigger than the target image size => ignoring object margins for calculation of the zoom level")
+		w = float64(m.width) / float64(tileSize)
+		h = float64(m.height) / float64(tileSize)
+	}
 	minX := (b.Lo().Lng.Degrees() + 180.0) / 360.0
 	maxX := (b.Hi().Lng.Degrees() + 180.0) / 360.0
 	minY := (1.0 - math.Log(math.Tan(b.Lo().Lat.Radians())+(1.0/math.Cos(b.Lo().Lat.Radians())))/math.Pi) / 2.0
@@ -242,28 +303,88 @@ func (m *Context) determineZoom(bounds s2.Rect, center s2.LatLng) int {
 	return 15
 }
 
+// determineCenter computes a point that is visually centered in Mercator projection
+func (m *Context) determineCenter(bounds s2.Rect) s2.LatLng {
+	latLo := bounds.Lo().Lat.Radians()
+	latHi := bounds.Hi().Lat.Radians()
+	yLo := math.Log((1+math.Sin(latLo))/(1-math.Sin(latLo))) / 2
+	yHi := math.Log((1+math.Sin(latHi))/(1-math.Sin(latHi))) / 2
+	lat := s1.Angle(math.Atan(math.Sinh((yLo + yHi) / 2)))
+	lng := bounds.Center().Lng
+	return s2.LatLng{Lat: lat, Lng: lng}
+}
+
+// adjustCenter adjust the center such that the map objects are properly centerd in the view wrt. their pixel margins.
+func (m *Context) adjustCenter(center s2.LatLng, zoom int) s2.LatLng {
+	if m.objects == nil || len(m.objects) == 0 {
+		return center
+	}
+
+	transformer := newTransformer(m.width, m.height, zoom, center, m.tileProvider.TileSize)
+
+	first := true
+	minX := 0.0
+	maxX := 0.0
+	minY := 0.0
+	maxY := 0.0
+	for _, object := range m.objects {
+		bounds := object.Bounds()
+		nwX, nwY := transformer.LatLngToXY(bounds.Vertex(3))
+		seX, seY := transformer.LatLngToXY(bounds.Vertex(1))
+		l, t, r, b := object.ExtraMarginPixels()
+		if first {
+			minX = nwX - l
+			maxX = seX + r
+			minY = nwY - t
+			maxY = seY + b
+			first = false
+		} else {
+			minX = math.Min(minX, nwX-l)
+			maxX = math.Max(maxX, seX+r)
+			minY = math.Min(minY, nwY-t)
+			maxY = math.Max(maxY, seY+b)
+		}
+	}
+
+	if (maxX-minX) > float64(m.width) || (maxY-minY) > float64(m.height) {
+		log.Printf("Object margins are bigger than the target image size => ignoring object margins for adjusting the center")
+		return center
+	}
+
+	centerX := (maxX + minX) * 0.5
+	centerY := (maxY + minY) * 0.5
+
+	return transformer.XYToLatLng(centerX, centerY)
+}
+
 func (m *Context) determineZoomCenter() (int, s2.LatLng, error) {
-	bounds := m.determineBounds()
 	if m.hasBoundingBox && !m.boundingBox.IsEmpty() {
-		center := m.boundingBox.Center()
+		center := m.determineCenter(m.boundingBox)
 		return m.determineZoom(m.boundingBox, center), center, nil
-	} else if m.hasCenter {
+	}
+
+	if m.hasCenter {
 		if m.hasZoom {
 			return m.zoom, m.center, nil
 		}
-		return m.determineZoom(bounds, m.center), m.center, nil
-	} else if !bounds.IsEmpty() {
-		center := bounds.Center()
-		if m.hasZoom {
-			return m.zoom, center, nil
+		return m.determineZoom(m.determineBounds(), m.center), m.center, nil
+	}
+
+	bounds := m.determineBounds()
+	if !bounds.IsEmpty() {
+		center := m.determineCenter(bounds)
+		zoom := m.zoom
+		if !m.hasZoom {
+			zoom = m.determineZoom(bounds, center)
 		}
-		return m.determineZoom(bounds, center), center, nil
+		return zoom, m.adjustCenter(center, zoom), nil
 	}
 
 	return 0, s2.LatLngFromDegrees(0, 0), errors.New("cannot determine map extent: no center coordinates given, no bounding box given, no content (markers, paths, areas) given")
 }
 
-type transformer struct {
+// Transformer implements coordinate transformation from latitude longitude to image pixel coordinates.
+type Transformer struct {
 	zoom               int
 	numTiles           float64 // number of tiles per dimension at this zoom level
 	tileSize           int     // tile size in pixels from this provider
@@ -273,14 +394,27 @@ type transformer struct {
 	tCenterX, tCenterY float64 // tile index to requested center
 	tOriginX, tOriginY int     // bottom left tile to download
 	pMinX, pMaxX       int
+	proj               s2.Projection
 }
 
-func newTransformer(width int, height int, zoom int, llCenter s2.LatLng, tileSize int) *transformer {
-	t := new(transformer)
+// Transformer returns an initialized Transformer instance.
+func (m *Context) Transformer() (*Transformer, error) {
+	zoom, center, err := m.determineZoomCenter()
+	if err != nil {
+		return nil, err
+	}
+
+	return newTransformer(m.width, m.height, zoom, center, m.tileProvider.TileSize), nil
+}
+
+func newTransformer(width int, height int, zoom int, llCenter s2.LatLng, tileSize int) *Transformer {
+	t := new(Transformer)
 
 	t.zoom = zoom
 	t.numTiles = math.Exp2(float64(t.zoom))
 	t.tileSize = tileSize
+	// mercator projection from -0.5 to 0.5
+	t.proj = s2.NewMercatorProjection(0.5)
 
 	// fractional tile index to center of requested area
 	t.tCenterX, t.tCenterY = t.ll2t(llCenter)
@@ -311,13 +445,13 @@ func newTransformer(width int, height int, zoom int, llCenter s2.LatLng, tileSiz
 }
 
 // ll2t returns fractional tile index for a lat/lng points
-func (t *transformer) ll2t(ll s2.LatLng) (float64, float64) {
-	x := t.numTiles * (ll.Lng.Degrees() + 180.0) / 360.0
-	y := t.numTiles * (1 - math.Log(math.Tan(ll.Lat.Radians())+(1.0/math.Cos(ll.Lat.Radians())))/math.Pi) / 2.0
-	return x, y
+func (t *Transformer) ll2t(ll s2.LatLng) (float64, float64) {
+	p := t.proj.FromLatLng(ll)
+	return t.numTiles * (p.X + 0.5), t.numTiles * (1 - (p.Y + 0.5))
 }
 
-func (t *transformer) ll2p(ll s2.LatLng) (float64, float64) {
+// LatLngToXY transforms a latitude longitude pair into image x, y coordinates.
+func (t *Transformer) LatLngToXY(ll s2.LatLng) (float64, float64) {
 	x, y := t.ll2t(ll)
 	x = float64(t.pCenterX) + (x-t.tCenterX)*float64(t.tileSize)
 	y = float64(t.pCenterY) + (y-t.tCenterY)*float64(t.tileSize)
@@ -335,8 +469,15 @@ func (t *transformer) ll2p(ll s2.LatLng) (float64, float64) {
 	return x, y
 }
 
-// Rect returns an s2.Rect bounding box around the set of tiles described by transformer
-func (t *transformer) Rect() (bbox s2.Rect) {
+// XYToLatLng transforms image x, y coordinates to  a latitude longitude pair.
+func (t *Transformer) XYToLatLng(x float64, y float64) s2.LatLng {
+	xx := ((((x - float64(t.pCenterX)) / float64(t.tileSize)) + t.tCenterX) / t.numTiles) - 0.5
+	yy := 0.5 - (((y-float64(t.pCenterY))/float64(t.tileSize))+t.tCenterY)/t.numTiles
+	return t.proj.ToLatLng(r2.Point{X: xx, Y: yy})
+}
+
+// Rect returns an s2.Rect bounding box around the set of tiles described by Transformer.
+func (t *Transformer) Rect() (bbox s2.Rect) {
 	// transform from https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Go
 	invNumTiles := 1.0 / t.numTiles
 	// Get latitude bounds
@@ -378,17 +519,8 @@ func (m *Context) Render() (image.Image, error) {
 	}
 
 	// draw map objects
-	for _, area := range m.areas {
-		area.draw(gc, trans)
-	}
-	for _, path := range m.paths {
-		path.draw(gc, trans)
-	}
-	for _, marker := range m.markers {
-		marker.draw(gc, trans)
-	}
-	for _, circle := range m.circles {
-		circle.draw(gc, trans)
+	for _, object := range m.objects {
+		object.Draw(gc, trans)
 	}
 
 	// crop image
@@ -397,12 +529,8 @@ func (m *Context) Render() (image.Image, error) {
 		img, image.Point{trans.pCenterX - int(m.width)/2, trans.pCenterY - int(m.height)/2},
 		draw.Src)
 
-	attribution := m.tileProvider.Attribution
-	if m.overrideAttribution != nil {
-		attribution = *m.overrideAttribution
-	}
-
 	// draw attribution
+	attribution := m.Attribution()
 	if attribution == "" {
 		return croppedImg, nil
 	}
@@ -418,15 +546,15 @@ func (m *Context) Render() (image.Image, error) {
 	return croppedImg, nil
 }
 
-// RenderWithBounds actually renders the map image including all map objects (markers, paths, areas).
+// RenderWithTransformer actually renders the map image including all map objects (markers, paths, areas).
 // The returned image covers requested area as well as any tiles necessary to cover that area, which may
 // be larger than the request.
 //
-// Specific bounding box of returned image is provided to support image registration with other data
-func (m *Context) RenderWithBounds() (image.Image, s2.Rect, error) {
+// A Transformer is returned to support image registration with other data.
+func (m *Context) RenderWithTransformer() (image.Image, *Transformer, error) {
 	zoom, center, err := m.determineZoomCenter()
 	if err != nil {
-		return nil, s2.Rect{}, err
+		return nil, nil, err
 	}
 
 	tileSize := m.tileProvider.TileSize
@@ -445,27 +573,18 @@ func (m *Context) RenderWithBounds() (image.Image, s2.Rect, error) {
 
 	for _, layer := range layers {
 		if err := m.renderLayer(gc, zoom, trans, tileSize, layer); err != nil {
-			return nil, s2.Rect{}, err
+			return nil, nil, err
 		}
 	}
 
 	// draw map objects
-	for _, area := range m.areas {
-		area.draw(gc, trans)
-	}
-	for _, path := range m.paths {
-		path.draw(gc, trans)
-	}
-	for _, circle := range m.circles {
-		circle.draw(gc, trans)
-	}
-	for _, marker := range m.markers {
-		marker.draw(gc, trans)
+	for _, object := range m.objects {
+		object.Draw(gc, trans)
 	}
 
 	// draw attribution
 	if m.tileProvider.Attribution == "" {
-		return img, trans.Rect(), nil
+		return img, trans, nil
 	}
 	_, textHeight := gc.MeasureString(m.tileProvider.Attribution)
 	boxHeight := textHeight + 4.0
@@ -475,40 +594,72 @@ func (m *Context) RenderWithBounds() (image.Image, s2.Rect, error) {
 	gc.SetRGBA(1.0, 1.0, 1.0, 0.75)
 	gc.DrawString(m.tileProvider.Attribution, 4.0, float64(m.height)-4.0)
 
+	return img, trans, nil
+}
+
+// RenderWithBounds actually renders the map image including all map objects (markers, paths, areas).
+// The returned image covers requested area as well as any tiles necessary to cover that area, which may
+// be larger than the request.
+//
+// Specific bounding box of returned image is provided to support image registration with other data
+func (m *Context) RenderWithBounds() (image.Image, s2.Rect, error) {
+	img, trans, err := m.RenderWithTransformer()
+	if err != nil {
+		return nil, s2.Rect{}, err
+
+	}
 	return img, trans.Rect(), nil
 }
 
-func (m *Context) renderLayer(gc *gg.Context, zoom int, trans *transformer, tileSize int, provider *TileProvider) error {
-	t := NewTileFetcher(provider, m.cache)
+func (m *Context) renderLayer(gc *gg.Context, zoom int, trans *Transformer, tileSize int, provider *TileProvider) error {
+	var wg sync.WaitGroup
+	tiles := (1 << uint(zoom))
+	fetchedTiles := make(chan *Tile)
+	t := NewTileFetcher(provider, m.cache, m.online)
 	if m.userAgent != "" {
 		t.SetUserAgent(m.userAgent)
 	}
 
-	tiles := (1 << uint(zoom))
-	for xx := 0; xx < trans.tCountX; xx++ {
-		x := trans.tOriginX + xx
-		if x < 0 {
-			x = x + tiles
-		} else if x >= tiles {
-			x = x - tiles
-		}
-		for yy := 0; yy < trans.tCountY; yy++ {
-			y := trans.tOriginY + yy
-			if y < 0 || y >= tiles {
-				log.Printf("Skipping out of bounds tile %d/%d", x, y)
+	go func() {
+		for xx := 0; xx < trans.tCountX; xx++ {
+			x := trans.tOriginX + xx
+			if x < 0 {
+				x = x + tiles
+			} else if x >= tiles {
+				x = x - tiles
+			}
+			if x < 0 || x >= tiles {
+				log.Printf("Skipping out of bounds tile column %d/?", x)
 				continue
 			}
+			for yy := 0; yy < trans.tCountY; yy++ {
+				y := trans.tOriginY + yy
+				if y < 0 || y >= tiles {
+					log.Printf("Skipping out of bounds tile %d/%d", x, y)
+					continue
+				}
+				wg.Add(1)
+				tile := &Tile{Zoom: zoom, X: x, Y: y}
+				go func(wg *sync.WaitGroup, tile *Tile, xx, yy int) {
+					defer wg.Done()
+					if err := t.Fetch(tile); err == nil {
+						tile.X = xx * tileSize
+						tile.Y = yy * tileSize
+						fetchedTiles <- tile
+					} else if err == errTileNotFound && provider.IgnoreNotFound {
+						log.Printf("Error downloading tile file: %s (Ignored)", err)
+					} else {
+						log.Printf("Error downloading tile file: %s", err)
+					}
+				}(&wg, tile, xx, yy)
+			}
+		}
+		wg.Wait()
+		close(fetchedTiles)
+	}()
 
-			if tileImg, err := t.Fetch(zoom, x, y); err == nil {
-				gc.DrawImage(tileImg, xx*tileSize, yy*tileSize)
-			} else if err == errTileNotFound && provider.IgnoreNotFound {
-				log.Printf("Error downloading tile file: %s (Ignored)", err)
-				continue
-			} else {
-				log.Printf("Error downloading tile file: %s", err)
-				return err
-			}
-		}
+	for tile := range fetchedTiles {
+		gc.DrawImage(tile.Img, tile.X, tile.Y)
 	}
 
 	return nil
