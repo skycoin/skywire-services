@@ -51,17 +51,19 @@ type API struct {
 	reqsInFlightCountMiddleware *metricsutil.RequestsInFlightCountMiddleware
 	store                       store.Store
 	startedAt                   time.Time
+	dmsgAddr                    string
 }
 
 // HealthCheckResponse is struct of /health endpoint
 type HealthCheckResponse struct {
 	BuildInfo *buildinfo.Info `json:"build_info,omitempty"`
 	StartedAt time.Time       `json:"started_at"`
+	DmsgAddr  string          `json:"dmsg_address,omitempty"`
 }
 
 // New constructs a new API instance.
 func New(log logrus.FieldLogger, s store.Store, nonceStore httpauth.NonceStore,
-	enableMetrics bool, m tpdiscmetrics.Metrics) *API {
+	enableMetrics bool, m tpdiscmetrics.Metrics, dmsgAddr string) *API {
 	if log == nil {
 		log = logging.MustGetLogger("tp_disc")
 	}
@@ -71,6 +73,7 @@ func New(log logrus.FieldLogger, s store.Store, nonceStore httpauth.NonceStore,
 		reqsInFlightCountMiddleware: metricsutil.NewRequestsInFlightCountMiddleware(),
 		store:                       s,
 		startedAt:                   time.Now(),
+		dmsgAddr:                    dmsgAddr,
 	}
 
 	r := chi.NewRouter()

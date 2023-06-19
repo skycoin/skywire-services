@@ -63,12 +63,15 @@ type API struct {
 
 	closeOnce sync.Once
 	closeC    chan struct{}
+
+	dmsgAddr string
 }
 
 // HealthCheckResponse is struct of /health endpoint
 type HealthCheckResponse struct {
 	BuildInfo *buildinfo.Info `json:"build_info,omitempty"`
 	StartedAt time.Time       `json:"started_at"`
+	DmsgAddr  string          `json:"dmsg_address,omitempty"`
 }
 
 // ArData has all the visors that have registered with sudph or stcpr transport
@@ -84,7 +87,7 @@ type Error struct {
 
 // New creates a new api.
 func New(log *logging.Logger, s store.Store, nonceStore httpauth.NonceStore,
-	enableMetrics bool, m armetrics.Metrics) *API {
+	enableMetrics bool, m armetrics.Metrics, dmsgAddr string) *API {
 	api := &API{
 		log:                         log,
 		store:                       s,
@@ -93,6 +96,7 @@ func New(log *logging.Logger, s store.Store, nonceStore httpauth.NonceStore,
 		udpConns:                    make(map[cipher.PubKey]net.Conn),
 		startedAt:                   time.Now(),
 		closeC:                      make(chan struct{}),
+		dmsgAddr:                    dmsgAddr,
 	}
 
 	r := chi.NewRouter()
@@ -336,6 +340,7 @@ func (a *API) health(w http.ResponseWriter, r *http.Request) {
 	a.writeJSON(w, r, http.StatusOK, HealthCheckResponse{
 		BuildInfo: info,
 		StartedAt: a.startedAt,
+		DmsgAddr:  a.dmsgAddr,
 	})
 }
 

@@ -72,7 +72,7 @@ func TestBadRequest(t *testing.T) {
 	r := httptest.NewRequest("POST", "/transports/", bytes.NewBufferString("not-a-json"))
 	r.Header = validHeaders(t, []byte("not-a-json"))
 
-	api := New(nil, mock, nonceMock, false, tpdiscmetrics.NewEmpty())
+	api := New(nil, mock, nonceMock, false, tpdiscmetrics.NewEmpty(), "")
 	api.ServeHTTP(w, r)
 
 	resp := w.Result()
@@ -95,7 +95,7 @@ func TestRegisterTransport(t *testing.T) {
 	nonceMock, err := httpauth.NewNonceStore(ctx, nonceStoreConfig, "")
 	require.NoError(t, err)
 
-	api := New(nil, mock, nonceMock, false, tpdiscmetrics.NewEmpty())
+	api := New(nil, mock, nonceMock, false, tpdiscmetrics.NewEmpty(), "")
 	w := httptest.NewRecorder()
 
 	body := bytes.NewBuffer(nil)
@@ -131,7 +131,7 @@ func TestRegisterTimeout(t *testing.T) {
 	nonceMock, err := httpauth.NewNonceStore(ctx, nonceStoreConfig, "")
 	require.NoError(t, err)
 
-	api := New(nil, mock, nonceMock, false, tpdiscmetrics.NewEmpty())
+	api := New(nil, mock, nonceMock, false, tpdiscmetrics.NewEmpty(), "")
 
 	// after this ctx's deadline will be exceeded
 	time.Sleep(timeout * 2)
@@ -162,7 +162,7 @@ func TestGETTransportByID(t *testing.T) {
 	nonceMock, err := httpauth.NewNonceStore(ctx, nonceStoreConfig, "")
 	require.NoError(t, err)
 
-	api := New(nil, mock, nonceMock, false, tpdiscmetrics.NewEmpty())
+	api := New(nil, mock, nonceMock, false, tpdiscmetrics.NewEmpty(), "")
 
 	entry := newTestEntry()
 	sEntry := &transport.SignedEntry{Entry: entry, Signatures: [2]cipher.Sig{}}
@@ -198,7 +198,7 @@ func TestDELETETransportByID(t *testing.T) {
 	nonceMock, err := httpauth.NewNonceStore(ctx, nonceStoreConfig, "")
 	require.NoError(t, err)
 
-	api := New(nil, mock, nonceMock, false, tpdiscmetrics.NewEmpty())
+	api := New(nil, mock, nonceMock, false, tpdiscmetrics.NewEmpty(), "")
 
 	entry := newTestEntry()
 	sEntry := &transport.SignedEntry{Entry: entry, Signatures: [2]cipher.Sig{}}
@@ -220,7 +220,7 @@ func TestDELETETransportByID(t *testing.T) {
 		nonceMock, err := httpauth.NewNonceStore(ctx, nonceStoreConfig, "")
 		require.NoError(t, err)
 
-		api := New(nil, mock, nonceMock, false, tpdiscmetrics.NewEmpty())
+		api := New(nil, mock, nonceMock, false, tpdiscmetrics.NewEmpty(), "")
 		pk1, _ := cipher.GenerateKeyPair()
 		pk2, _ := cipher.GenerateKeyPair()
 		otherVisorEntry := &transport.Entry{
@@ -256,7 +256,7 @@ func TestGETTransportByEdge(t *testing.T) {
 	nonceMock, err := httpauth.NewNonceStore(ctx, nonceStoreConfig, "")
 	require.NoError(t, err)
 
-	api := New(nil, mock, nonceMock, false, tpdiscmetrics.NewEmpty())
+	api := New(nil, mock, nonceMock, false, tpdiscmetrics.NewEmpty(), "")
 
 	entry := newTestEntry()
 	sEntry := &transport.SignedEntry{Entry: entry, Signatures: [2]cipher.Sig{}}
@@ -293,7 +293,7 @@ func TestGETAllTransports(t *testing.T) {
 	nonceMock, err := httpauth.NewNonceStore(ctx, nonceStoreConfig, "")
 	require.NoError(t, err)
 
-	api := New(nil, mock, nonceMock, false, tpdiscmetrics.NewEmpty())
+	api := New(nil, mock, nonceMock, false, tpdiscmetrics.NewEmpty(), "")
 
 	entry1 := newTestEntry()
 	sEntry1 := &transport.SignedEntry{Entry: entry1, Signatures: [2]cipher.Sig{}}
@@ -342,7 +342,7 @@ func TestGETIncrementingNonces(t *testing.T) {
 	ctx := context.TODO()
 	nonceMock, err := httpauth.NewNonceStore(ctx, nonceStoreConfig, "")
 	require.NoError(t, err)
-	api := New(nil, mock, nonceMock, false, tpdiscmetrics.NewEmpty())
+	api := New(nil, mock, nonceMock, false, tpdiscmetrics.NewEmpty(), "")
 
 	t.Run("ValidRequest", func(t *testing.T) {
 		const iterations = 0xFF

@@ -3,6 +3,7 @@ package commands
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"log/syslog"
 	"os"
@@ -48,6 +49,7 @@ var (
 	whitelistKeys   string
 	testEnvironment bool
 	sk              cipher.SecKey
+	dmsgPort        uint16
 )
 
 func init() {
@@ -63,6 +65,7 @@ func init() {
 	rootCmd.Flags().StringVar(&whitelistKeys, "whitelist-keys", "", "list of whitelisted keys of network monitor used for deregistration\033[0m")
 	rootCmd.Flags().BoolVar(&testEnvironment, "test-environment", false, "distinguished between prod and test environment\033[0m")
 	rootCmd.Flags().Var(&sk, "sk", "dmsg secret key\r")
+	rootCmd.Flags().Uint16Var(&dmsgPort, "dmsgPort", dmsg.DefaultDmsgHTTPPort, "dmsg port value\r")
 	var helpflag bool
 	rootCmd.SetUsageTemplate(help)
 	rootCmd.PersistentFlags().BoolVarP(&helpflag, "help", "h", false, "help for "+rootCmd.Use)
@@ -158,8 +161,13 @@ var rootCmd = &cobra.Command{
 			m = armetrics.NewVictoriaMetrics()
 		}
 
+		var dmsgAddr string
+		if !pk.Null() {
+			dmsgAddr = fmt.Sprintf("%s:%d", pk.Hex(), dmsgPort)
+		}
+
 		enableMetrics := metricsAddr != ""
-		arAPI := api.New(logger, transportStore, nonceStore, enableMetrics, m)
+		arAPI := api.New(logger, transportStore, nonceStore, enableMetrics, m, dmsgAddr)
 
 		udpListener, err := kcp.Listen(addr)
 		if err != nil {

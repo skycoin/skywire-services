@@ -49,6 +49,7 @@ var (
 	testing       bool
 	dmsgDisc      string
 	sk            cipher.SecKey
+	dmsgPort      uint16
 )
 
 func init() {
@@ -64,6 +65,7 @@ func init() {
 	rootCmd.Flags().BoolVarP(&testing, "testing", "t", false, "enable testing to start without redis\033[0m")
 	rootCmd.Flags().StringVar(&dmsgDisc, "dmsg-disc", "http://dmsgd.skywire.skycoin.com", "url of dmsg-discovery\033[0m")
 	rootCmd.Flags().Var(&sk, "sk", "dmsg secret key\r")
+	rootCmd.Flags().Uint16Var(&dmsgPort, "dmsgPort", dmsg.DefaultDmsgHTTPPort, "dmsg port value\r")
 	var helpflag bool
 	rootCmd.SetUsageTemplate(help)
 	rootCmd.PersistentFlags().BoolVarP(&helpflag, "help", "h", false, "help for "+rootCmd.Use)
@@ -158,8 +160,13 @@ var rootCmd = &cobra.Command{
 			m = tpdiscmetrics.NewVictoriaMetrics()
 		}
 
+		var dmsgAddr string
+		if !pk.Null() {
+			dmsgAddr = fmt.Sprintf("%s:%d", pk.Hex(), dmsgPort)
+		}
+
 		enableMetrics := metricsAddr != ""
-		tpdAPI := api.New(logger, s, nonceStore, enableMetrics, m)
+		tpdAPI := api.New(logger, s, nonceStore, enableMetrics, m, dmsgAddr)
 
 		logger.Infof("Listening on %s", addr)
 
