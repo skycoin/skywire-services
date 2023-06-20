@@ -2,7 +2,7 @@ on: [pull_request]
 name: Test
 jobs:
   linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - name: Setup golang
         uses: actions/setup-go@v3
