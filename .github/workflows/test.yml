@@ -20,7 +20,7 @@ jobs:
         env:
           SSH_PRIVATE_KEY: ${{ secrets.PRIVATE_SSH_KEY }}
         with:
-          ssh-private-key: ${PRIVATE_SSH_KEY
+          ssh-private-key: ${PRIVATE_SSH_KEY}}
       - name: Setup SSH Key Build and run e2e
         run : |
           make e2e-build
