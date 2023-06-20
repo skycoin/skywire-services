@@ -27,6 +27,7 @@ var (
 	addr                string
 	tag                 string
 	syslogAddr          string
+	logLvl              string
 	sleepDeregistration time.Duration
 	batchSize           int
 )
@@ -40,6 +41,7 @@ func init() {
 	rootCmd.Flags().StringVarP(&utURL, "ut-url", "u", "", "url to uptime tracker visor data.\033[0m")
 	rootCmd.Flags().StringVar(&tag, "tag", "dmsg_monitor", "logging tag\033[0m")
 	rootCmd.Flags().StringVar(&syslogAddr, "syslog", "", "syslog server address. E.g. localhost:514\033[0m")
+	rootCmd.Flags().StringVarP(&logLvl, "loglvl", "l", "info", "set log level one of: info, error, warn, debug, trace, panic")
 	var helpflag bool
 	rootCmd.SetUsageTemplate(help)
 	rootCmd.PersistentFlags().BoolVarP(&helpflag, "help", "h", false, "help for "+rootCmd.Use)
@@ -65,6 +67,12 @@ var rootCmd = &cobra.Command{
 		}
 
 		mLogger := logging.NewMasterLogger()
+		lvl, err := logging.LevelFromString(logLvl)
+		if err != nil {
+			mLogger.Fatal("Invalid log level")
+		}
+		logging.SetLevel(lvl)
+
 		conf := api.InitConfig(confPath, mLogger)
 
 		if dmsgURL == "" {
@@ -78,7 +86,7 @@ var rootCmd = &cobra.Command{
 		srvURLs.DMSG = dmsgURL
 		srvURLs.UT = utURL
 
-		logger := mLogger.PackageLogger("dmsg_monitor")
+		logger := mLogger.PackageLogger(tag)
 		if syslogAddr != "" {
 			hook, err := logrussyslog.NewSyslogHook("udp", syslogAddr, syslog.LOG_INFO, tag)
 			if err != nil {
@@ -120,14 +128,13 @@ var rootCmd = &cobra.Command{
 // Execute executes root CLI command.
 func Execute() {
 	cc.Init(&cc.Config{
-		RootCmd:       rootCmd,
-		Headings:      cc.HiBlue + cc.Bold, //+ cc.Underline,
-		Commands:      cc.HiBlue + cc.Bold,
-		CmdShortDescr: cc.HiBlue,
-		Example:       cc.HiBlue + cc.Italic,
-		ExecName:      cc.HiBlue + cc.Bold,
-		Flags:         cc.HiBlue + cc.Bold,
-		//FlagsDataType: cc.HiBlue,
+		RootCmd:         rootCmd,
+		Headings:        cc.HiBlue + cc.Bold,
+		Commands:        cc.HiBlue + cc.Bold,
+		CmdShortDescr:   cc.HiBlue,
+		Example:         cc.HiBlue + cc.Italic,
+		ExecName:        cc.HiBlue + cc.Bold,
+		Flags:           cc.HiBlue + cc.Bold,
 		FlagsDescr:      cc.HiBlue,
 		NoExtraNewlines: true,
 		NoBottomNewline: true,
