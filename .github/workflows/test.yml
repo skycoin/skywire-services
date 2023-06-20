@@ -19,7 +19,7 @@ jobs:
       - name: Setup SSH Key Build and run e2e
         run : |
           eval `ssh-agent -s`
-          ssh-add - <<< '${{ secrets.PRIVATE_SSH_KEY }}'
+          ssh-add - <<< "${{ secrets.SSH_PRIVATE_KEY }}"
           make e2e-build
           make e2e-run
           make install-shellcheck
