@@ -53,7 +53,7 @@ format: dep ## Formats the code. Must have goimports and goimports-reviser insta
 	goimports -w -local github.com/skycoin/skywire-services ./pkg
 	goimports -w -local github.com/skycoin/skywire-services ./cmd
 	goimports -w -local github.com/skycoin/skywire-services ./internal
-	find . -type f -name '*.go' -not -path "./vendor/*" -exec goimports-reviser -project-name ${PROJECT_BASE} -file-path {} \;
+	find . -type f -name '*.go' -not -path "./vendor/*" -exec goimports-reviser -project-name ${PROJECT_BASE} {} \;
 
 ## : ## _ [Build, install, clean]
 
