@@ -343,7 +343,7 @@ func (c *Client) isClosed() bool {
 }
 
 // SetupTUN sets the allocated TUN interface up, setting its IP, gateway, netmask and MTU.
-func SetupTUN(ifcName, ipCIDR, gateway string, mtu int) error {
+func SetupTUN(ifcName, ipCIDR, _ string, mtu int) error {
 	if err := osutil.Run("ip", "a", "add", ipCIDR, "dev", ifcName); err != nil {
 		return fmt.Errorf("error assigning IP: %w", err)
 	}
