@@ -2,12 +2,9 @@
 package commands
 
 import (
-	"bytes"
 	"context"
-	"io"
 	"log"
 	"os"
-	"path/filepath"
 	"time"
 
 	cc "github.com/ivanpirog/coloredcobra"
@@ -15,7 +12,9 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/cipher"
 	"github.com/skycoin/skywire-utilities/pkg/cmdutil"
 	"github.com/skycoin/skywire-utilities/pkg/logging"
+	utilenv "github.com/skycoin/skywire-utilities/pkg/skyenv"
 	"github.com/skycoin/skywire-utilities/pkg/tcpproxy"
+	"github.com/skycoin/skywire/pkg/app/appserver"
 	"github.com/skycoin/skywire/pkg/visor/visorconfig"
 	"github.com/spf13/cobra"
 
@@ -60,7 +59,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		mLogger := logging.NewMasterLogger()
-		conf := initConfig(confPath, visorBuildInfo, mLogger)
+		conf := initConfig(confPath, mLogger)
 
 		srvURLs := api.ServicesURLs{
 			SD: conf.Launcher.ServiceDisc,
@@ -100,25 +99,60 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-func initConfig(confPath string, visorBuildInfo *buildinfo.Info, mLog *logging.MasterLogger) *visorconfig.V1 {
-	log := mLog.PackageLogger("public_visor_monitor:config")
-	var r io.Reader
+func initConfig(confPath string, mLog *logging.MasterLogger) *visorconfig.V1 {
+	log := mLog.PackageLogger("network_monitor:config")
+	log.Info("Reading config from file.")
+	log.WithField("filepath", confPath).Info()
 
-	if confPath != "" {
-		log.WithField("filepath", confPath).Info()
-		f, err := os.ReadFile(filepath.Clean(confPath))
-		if err != nil {
-			log.WithError(err).Fatal("Failed to read config file.")
-		}
-		r = bytes.NewReader(f)
-	}
-
-	conf, compat, err := visorconfig.Parse(log, r, confPath, visorBuildInfo)
+	oldConf, err := visorconfig.ReadFile(confPath)
 	if err != nil {
-		log.WithError(err).Fatal("Failed to read in config.")
+		log.WithError(err).Fatal("Failed to read config file.")
 	}
-	if !compat {
-		log.Fatalf("failed to start skywire - config version is incompatible")
+	var testEnv bool
+	if oldConf.Dmsg.Discovery == utilenv.TestDmsgDiscAddr {
+		testEnv = true
+	}
+	// have same services as old config
+	services := &visorconfig.Services{
+		DmsgDiscovery:      oldConf.Dmsg.Discovery,
+		TransportDiscovery: oldConf.Transport.Discovery,
+		AddressResolver:    oldConf.Transport.AddressResolver,
+		RouteFinder:        oldConf.Routing.RouteFinder,
+		RouteSetupNodes:    oldConf.Routing.RouteSetupNodes,
+		UptimeTracker:      oldConf.UptimeTracker.Addr,
+		ServiceDiscovery:   oldConf.Launcher.ServiceDisc,
+	}
+	// update old config
+	conf, err := visorconfig.MakeDefaultConfig(mLog, &oldConf.SK, false, false, testEnv, false, false, confPath, "", services)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to create config.")
+	}
+
+	// have the same apps that the old config had
+	var newConfLauncherApps []appserver.AppConfig
+	for _, app := range conf.Launcher.Apps {
+		for _, oldApp := range oldConf.Launcher.Apps {
+			if app.Name == oldApp.Name {
+				newConfLauncherApps = append(newConfLauncherApps, app)
+			}
+		}
+	}
+	conf.Launcher.Apps = newConfLauncherApps
+
+	conf.Version = oldConf.Version
+	conf.LocalPath = oldConf.LocalPath
+	conf.Launcher.BinPath = oldConf.Launcher.BinPath
+	conf.Launcher.ServerAddr = oldConf.Launcher.ServerAddr
+	conf.CLIAddr = oldConf.CLIAddr
+
+	// following services are not needed
+	conf.STCP = nil
+	conf.Dmsgpty = nil
+	conf.Transport.PublicAutoconnect = false
+
+	// save the config file
+	if err := conf.Flush(); err != nil {
+		log.WithError(err).Fatal("Failed to flush config to file.")
 	}
 
 	return conf

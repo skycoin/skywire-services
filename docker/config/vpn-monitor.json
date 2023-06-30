@@ -37,7 +37,10 @@
 			{
 				"name": "vpn-client",
 				"binary": "vpn-client",
-				"args": [],
+				"args": [
+					"-dns",
+					"1.1.1.1"
+				],
 				"auto_start": false,
 				"port": 43
 			}
