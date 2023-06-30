@@ -471,7 +471,6 @@ services:
     entrypoint: /release/network-monitor --redis redis://nm-redis:6379 --config /release/network-monitor.json
     depends_on:
       - nm-redis
-      - visor-c
     volumes:
       - type: bind
         source: ../docker/config/network-monitor.json
@@ -538,7 +537,7 @@ services:
         read_only: false
     ports:
       - "9083:9083"
-    entrypoint: /release/vpn-monitor -a :9083 -c /release/vpn-monitor.json
+    entrypoint: "/release/vpn-monitor -a :9083 -c /release/vpn-monitor.json"
     restart: always
     stdin_open: true # docker run -i
     tty: true        # docker run -t
@@ -559,7 +558,7 @@ services:
         read_only: false
     ports:
       - "9084:9084"
-    entrypoint: /release/public-visor-monitor -a :9084 -c /release/public-visor-monitor.json
+    entrypoint: "/release/public-visor-monitor -a :9084 -c /release/public-visor-monitor.json"
     restart: always
     stdin_open: true # docker run -i
     tty: true        # docker run -t

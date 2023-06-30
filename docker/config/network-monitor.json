@@ -33,7 +33,7 @@
 	},
 	"launcher": {
 		"service_discovery": "http://service-discovery:9098",
-		"apps": [],
+		"apps": null,
 		"server_addr": "localhost:5510",
 		"bin_path": "./release",
 		"display_node_ip": false
