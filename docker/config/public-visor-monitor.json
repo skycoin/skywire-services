@@ -1,7 +1,7 @@
 {
-	"version": "v1.3.10",
-	"sk": "6e4afd961a83a04690e0562e0b7688c52e05efcbf8ef5748f3a15a6001d7fb01",
-	"pk": "027306a7dee4908adb0f3a828a2482cbc889e0a061b1320fd6a60a37bfc6b5f747",
+	"version": "v1.3.9",
+	"sk": "72beb06492738e0bd1fd2c434327cc5e1a0bc56f39c20156891ddfacfccb8d8c",
+	"pk": "020963f3943a4ced9dbaadfda7b33e444a63cfd5135e5630c8c72c1a841a112cf6",
 	"dmsg": {
 		"discovery": "http://dmsg-discovery:9090",
 		"sessions_count": 1,
@@ -40,7 +40,7 @@
 	},
 	"survey_whitelist": null,
 	"hypervisors": [],
-	"cli_addr": "localhost:3435",
+	"cli_addr": "localhost:3439",
 	"log_level": "info",
 	"local_path": "./local/network-monitor",
 	"dmsghttp_server_path": "./local/custom",
