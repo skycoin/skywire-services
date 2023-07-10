@@ -13,13 +13,13 @@ require (
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/golang/geo v0.0.0-20230421003525-6adc56603217
 	github.com/google/uuid v1.1.2
-	github.com/ivanpirog/coloredcobra v1.0.0
+	github.com/ivanpirog/coloredcobra v1.0.1
 	github.com/json-iterator/go v1.1.12
 	github.com/rs/cors v1.8.2
 	github.com/sirupsen/logrus v1.8.1
-	github.com/skycoin/dmsg v1.3.0-rc1.0.20230224131835-1c194ef9791e
+	github.com/skycoin/dmsg v1.3.11
 	github.com/skycoin/skywire v1.3.8-0.20230526150732-0a8555564495
-	github.com/skycoin/skywire-utilities v0.0.0-20230522105416-0c3b75e1fef4
+	github.com/skycoin/skywire-utilities v0.0.0-20230609191923-1e678802e17e
 	github.com/songgao/water v0.0.0-20200317203138-2b4b6d7c09d8
 	github.com/spf13/cobra v1.4.0
 	github.com/stretchr/testify v1.8.1
@@ -73,6 +73,7 @@ require (
 	github.com/google/flatbuffers v1.12.1 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1 // indirect
 	github.com/gorilla/securecookie v1.1.1 // indirect
+	github.com/hashicorp/yamux v0.1.1 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.12.1 // indirect
@@ -111,7 +112,6 @@ require (
 	github.com/skycoin/noise v0.0.0-20180327030543-2492fe189ae6 // indirect
 	github.com/skycoin/skycoin v0.27.1 // indirect
 	github.com/skycoin/systray v1.10.0 // indirect
-	github.com/skycoin/yamux v0.0.0-20200803175205-571ceb89da9f // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
