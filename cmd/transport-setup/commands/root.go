@@ -50,6 +50,12 @@ var rootCmd = &cobra.Command{
 	Run: func(_ *cobra.Command, args []string) {
 		const loggerTag = "transport_setup"
 		log := logging.MustGetLogger(loggerTag)
+		lvl, err := logging.LevelFromString(logLvl)
+		if err != nil {
+			log.Fatal("Invalid loglvl detected")
+		}
+		logging.SetLevel(lvl)
+
 		conf := config.MustReadConfig(configFile, log)
 		api := api.New(log, conf)
 		srv := &http.Server{

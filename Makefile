@@ -190,7 +190,7 @@ e2e-help: ## E2E. Show env-vars and useful commands
 
 docker-push-test:
 	bash ./docker/docker_build.sh test ${BUILD_OPTS_DEPLOY}
-	bash ./docker/docker_push.sh test
+	# bash ./docker/docker_push.sh test
 
 docker-push:
 	bash ./docker/docker_build.sh prod ${BUILD_OPTS_DEPLOY}
