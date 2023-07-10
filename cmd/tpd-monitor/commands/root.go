@@ -26,6 +26,7 @@ var (
 	arURL               string
 	tpdURL              string
 	addr                string
+	logLvl              string
 	tag                 string
 	syslogAddr          string
 	sleepDeregistration time.Duration
@@ -35,10 +36,11 @@ func init() {
 	rootCmd.Flags().StringVarP(&addr, "addr", "a", ":9080", "address to bind to.\033[0m")
 	rootCmd.Flags().DurationVarP(&sleepDeregistration, "sleep-deregistration", "s", 10, "Sleep time for deregistration process in minutes\033[0m")
 	rootCmd.Flags().StringVarP(&confPath, "config", "c", "dmsg-monitor.json", "config file location.\033[0m")
+	rootCmd.Flags().StringVarP(&logLvl, "loglvl", "l", "info", "set log level one of: info, error, warn, debug, trace, panic")
 	rootCmd.Flags().StringVar(&dmsgURL, "dmsg-url", "", "url to dmsg data.\033[0m")
 	rootCmd.Flags().StringVar(&tpdURL, "tpd-url", "", "url to transport discovery.\033[0m")
 	rootCmd.Flags().StringVar(&arURL, "ar-url", "", "url to address resolver.\033[0m")
-	rootCmd.Flags().StringVar(&tag, "tag", "dmsg_monitor", "logging tag\033[0m")
+	rootCmd.Flags().StringVar(&tag, "tag", "tpd-monitor", "logging tag\033[0m")
 	rootCmd.Flags().StringVar(&syslogAddr, "syslog", "", "syslog server address. E.g. localhost:514\033[0m")
 	var helpflag bool
 	rootCmd.SetUsageTemplate(help)
@@ -65,6 +67,14 @@ var rootCmd = &cobra.Command{
 		}
 
 		mLogger := logging.NewMasterLogger()
+		logger := logging.MustGetLogger(tag)
+		lvl, err := logging.LevelFromString(logLvl)
+		if err != nil {
+			logger.Fatal("Invalid loglvl detected")
+		}
+
+		logging.SetLevel(lvl)
+
 		conf := api.InitConfig(confPath, mLogger)
 
 		if dmsgURL == "" {
@@ -82,7 +92,6 @@ var rootCmd = &cobra.Command{
 		srvURLs.TPD = tpdURL
 		srvURLs.AR = arURL
 
-		logger := mLogger.PackageLogger("tpd_monitor")
 		if syslogAddr != "" {
 			hook, err := logrussyslog.NewSyslogHook("udp", syslogAddr, syslog.LOG_INFO, tag)
 			if err != nil {
@@ -123,14 +132,13 @@ var rootCmd = &cobra.Command{
 // Execute executes root CLI command.
 func Execute() {
 	cc.Init(&cc.Config{
-		RootCmd:       rootCmd,
-		Headings:      cc.HiBlue + cc.Bold, //+ cc.Underline,
-		Commands:      cc.HiBlue + cc.Bold,
-		CmdShortDescr: cc.HiBlue,
-		Example:       cc.HiBlue + cc.Italic,
-		ExecName:      cc.HiBlue + cc.Bold,
-		Flags:         cc.HiBlue + cc.Bold,
-		//FlagsDataType: cc.HiBlue,
+		RootCmd:         rootCmd,
+		Headings:        cc.HiBlue + cc.Bold,
+		Commands:        cc.HiBlue + cc.Bold,
+		CmdShortDescr:   cc.HiBlue,
+		Example:         cc.HiBlue + cc.Italic,
+		ExecName:        cc.HiBlue + cc.Bold,
+		Flags:           cc.HiBlue + cc.Bold,
 		FlagsDescr:      cc.HiBlue,
 		NoExtraNewlines: true,
 		NoBottomNewline: true,
