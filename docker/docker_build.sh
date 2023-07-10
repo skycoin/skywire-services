@@ -9,6 +9,7 @@ nv_dev_url="https://nv.skywire.dev/map"
 nv_prod_url="https://nv.skycoin.com/map"
 nv_e2e_url="https://localhost:9081/map"
 bldkit="1"
+platform="--platform=linux/amd64"
 
 # shellcheck disable=SC2153
 registry="$REGISTRY"
@@ -86,6 +87,7 @@ if [[ "$image_tag" == "e2e" ]]; then
     --build-arg base_image="$base_image" \
     --build-arg build_opts="$go_buildopts" \
     --build-arg image_tag="$image_tag" \
+    $platform \
     -t "$registry"/service-discovery:"$image_tag" .
   
   echo "building uptime tracker image"
@@ -168,6 +170,7 @@ DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/address-resolver/Dockerf
   --build-arg build_opts="$go_buildopts" \
   --build-arg image_tag="$image_tag" \
   --build-arg base_image="$base_image" \
+  $platform \
   -t "$registry"/address-resolver:"$image_tag" .
 
 if [[ "$image_tag" == "test" ]]; then

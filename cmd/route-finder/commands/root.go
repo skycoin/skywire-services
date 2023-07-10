@@ -33,25 +33,27 @@ var (
 	metricsAddr string
 	pgHost      string
 	pgPort      string
-	logEnabled  bool
 	syslogAddr  string
+	logLvl      string
 	tag         string
 	testing     bool
 	dmsgDisc    string
 	sk          cipher.SecKey
+	dmsgPort    uint16
 )
 
 func init() {
 	rootCmd.Flags().StringVarP(&addr, "addr", "a", ":9092", "address to bind to\033[0m")
 	rootCmd.Flags().StringVarP(&metricsAddr, "metrics", "m", "", "address to bind metrics API to\033[0m")
-	rootCmd.Flags().BoolVarP(&logEnabled, "log", "l", true, "enable request logging\033[0m")
 	rootCmd.Flags().StringVar(&pgHost, "pg-host", "localhost", "host of postgres\033[0m")
 	rootCmd.Flags().StringVar(&pgPort, "pg-port", "5432", "port of postgres\033[0m")
 	rootCmd.Flags().StringVar(&syslogAddr, "syslog", "", "syslog server address. E.g. localhost:514\033[0m")
+	rootCmd.Flags().StringVarP(&logLvl, "loglvl", "l", "info", "set log level one of: info, error, warn, debug, trace, panic")
 	rootCmd.Flags().StringVar(&tag, "tag", "route_finder", "logging tag\033[0m")
 	rootCmd.Flags().BoolVarP(&testing, "testing", "t", false, "enable testing to start without redis\033[0m")
 	rootCmd.Flags().StringVar(&dmsgDisc, "dmsg-disc", "http://dmsgd.skywire.skycoin.com", "url of dmsg-discovery\033[0m")
 	rootCmd.Flags().Var(&sk, "sk", "dmsg secret key\r")
+	rootCmd.Flags().Uint16Var(&dmsgPort, "dmsgPort", dmsg.DefaultDmsgHTTPPort, "dmsg port value\r")
 	var helpflag bool
 	rootCmd.SetUsageTemplate(help)
 	rootCmd.PersistentFlags().BoolVarP(&helpflag, "help", "h", false, "help for "+rootCmd.Use)
@@ -78,15 +80,15 @@ var rootCmd = &cobra.Command{
 
 		memoryStore := true
 
-		var logger *logging.Logger
-		if logEnabled {
-			logger = logging.MustGetLogger(tag)
-		} else {
-			logger = nil
+		logger := logging.MustGetLogger(tag)
+		lvl, err := logging.LevelFromString(logLvl)
+		if err != nil {
+			logger.Fatal("Invalid loglvl detected")
 		}
 
+		logging.SetLevel(lvl)
+
 		var gormDB *gorm.DB
-		var err error
 
 		if !testing {
 			pgUser, pgPassword, pgDatabase := storeconfig.PostgresCredential()
@@ -125,8 +127,13 @@ var rootCmd = &cobra.Command{
 
 		metricsutil.ServeHTTPMetrics(logger, metricsAddr)
 
+		var dmsgAddr string
+		if !pk.Null() {
+			dmsgAddr = fmt.Sprintf("%s:%d", pk.Hex(), dmsgPort)
+		}
+
 		enableMetrics := metricsAddr != ""
-		rfAPI := api.New(transportStore, logger, enableMetrics)
+		rfAPI := api.New(transportStore, logger, enableMetrics, dmsgAddr)
 
 		if logger != nil {
 			logger.Infof("Listening on %s", addr)

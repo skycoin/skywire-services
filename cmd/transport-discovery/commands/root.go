@@ -43,12 +43,13 @@ var (
 	redisPoolSize int
 	pgHost        string
 	pgPort        string
-	logEnabled    bool
 	syslogAddr    string
+	logLvl        string
 	tag           string
 	testing       bool
 	dmsgDisc      string
 	sk            cipher.SecKey
+	dmsgPort      uint16
 )
 
 func init() {
@@ -58,12 +59,13 @@ func init() {
 	rootCmd.Flags().IntVar(&redisPoolSize, "redis-pool-size", 10, "redis connection pool size\033[0m")
 	rootCmd.Flags().StringVar(&pgHost, "pg-host", "localhost", "host of postgres\033[0m")
 	rootCmd.Flags().StringVar(&pgPort, "pg-port", "5432", "port of postgres\033[0m")
-	rootCmd.Flags().BoolVarP(&logEnabled, "log", "l", true, "enable request logging\033[0m")
 	rootCmd.Flags().StringVar(&syslogAddr, "syslog", "", "syslog server address. E.g. localhost:514\033[0m")
+	rootCmd.Flags().StringVarP(&logLvl, "loglvl", "l", "info", "set log level one of: info, error, warn, debug, trace, panic")
 	rootCmd.Flags().StringVar(&tag, "tag", "transport_discovery", "logging tag\033[0m")
 	rootCmd.Flags().BoolVarP(&testing, "testing", "t", false, "enable testing to start without redis\033[0m")
 	rootCmd.Flags().StringVar(&dmsgDisc, "dmsg-disc", "http://dmsgd.skywire.skycoin.com", "url of dmsg-discovery\033[0m")
 	rootCmd.Flags().Var(&sk, "sk", "dmsg secret key\r")
+	rootCmd.Flags().Uint16Var(&dmsgPort, "dmsgPort", dmsg.DefaultDmsgHTTPPort, "dmsg port value\r")
 	var helpflag bool
 	rootCmd.SetUsageTemplate(help)
 	rootCmd.PersistentFlags().BoolVarP(&helpflag, "help", "h", false, "help for "+rootCmd.Use)
@@ -99,8 +101,14 @@ var rootCmd = &cobra.Command{
 			PoolSize: redisPoolSize,
 		}
 
-		const loggerTag = "transport_discovery"
-		logger := logging.MustGetLogger(loggerTag)
+		logger := logging.MustGetLogger(tag)
+		lvl, err := logging.LevelFromString(logLvl)
+		if err != nil {
+			logger.Fatal("Invalid loglvl detected")
+		}
+
+		logging.SetLevel(lvl)
+
 		if syslogAddr != "" {
 			hook, err := logrussyslog.NewSyslogHook("udp", syslogAddr, syslog.LOG_INFO, tag)
 			if err != nil {
@@ -110,7 +118,6 @@ var rootCmd = &cobra.Command{
 		}
 
 		var gormDB *gorm.DB
-		var err error
 
 		if !testing {
 			pgUser, pgPassword, pgDatabase := storeconfig.PostgresCredential()
@@ -158,8 +165,13 @@ var rootCmd = &cobra.Command{
 			m = tpdiscmetrics.NewVictoriaMetrics()
 		}
 
+		var dmsgAddr string
+		if !pk.Null() {
+			dmsgAddr = fmt.Sprintf("%s:%d", pk.Hex(), dmsgPort)
+		}
+
 		enableMetrics := metricsAddr != ""
-		tpdAPI := api.New(logger, s, nonceStore, enableMetrics, m)
+		tpdAPI := api.New(logger, s, nonceStore, enableMetrics, m, dmsgAddr)
 
 		logger.Infof("Listening on %s", addr)
 

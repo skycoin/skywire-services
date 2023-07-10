@@ -29,20 +29,23 @@ type API struct {
 	reqsInFlightCountMiddleware *metricsutil.RequestsInFlightCountMiddleware
 	store                       store.Store
 	startedAt                   time.Time
+	dmsgAddr                    string
 }
 
 // HealthCheckResponse is struct of /health endpoint
 type HealthCheckResponse struct {
 	BuildInfo *buildinfo.Info `json:"build_info,omitempty"`
 	StartedAt time.Time       `json:"started_at"`
+	DmsgAddr  string          `json:"dmsg_address,omitempty"`
 }
 
 // New creates a new api
-func New(s store.Store, logger logrus.FieldLogger, enableMetrics bool) *API {
+func New(s store.Store, logger logrus.FieldLogger, enableMetrics bool, dmsgAddr string) *API {
 	api := &API{
 		reqsInFlightCountMiddleware: metricsutil.NewRequestsInFlightCountMiddleware(),
 		store:                       s,
 		startedAt:                   time.Now(),
+		dmsgAddr:                    dmsgAddr,
 	}
 
 	r := chi.NewRouter()
@@ -155,6 +158,7 @@ func (a *API) health(w http.ResponseWriter, r *http.Request) {
 	a.writeJSON(w, r, http.StatusOK, HealthCheckResponse{
 		BuildInfo: info,
 		StartedAt: a.startedAt,
+		DmsgAddr:  a.dmsgAddr,
 	})
 }
 

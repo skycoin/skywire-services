@@ -35,7 +35,7 @@ func (m *mockStore) DeregisterTransport(context.Context, uuid.UUID) error {
 func (m *mockStore) GetTransportByID(context.Context, uuid.UUID) (*transport.Entry, error) {
 	return nil, nil
 }
-func (m *mockStore) GetTransportsByEdge(ctx context.Context, edgePK cipher.PubKey) ([]*transport.Entry, error) {
+func (m *mockStore) GetTransportsByEdge(_ context.Context, edgePK cipher.PubKey) ([]*transport.Entry, error) {
 	trs, ok := m.transports[edgePK]
 	if !ok {
 		return nil, ErrNoNodeInMockStore
@@ -52,7 +52,7 @@ func (m *mockStore) GetAllTransports(context.Context) ([]*transport.Entry, error
 func (m *mockStore) Close() {}
 
 // SaveEntry is added to the mock to allow saving Entry, without need for SignedEntry
-func (m *mockStore) SaveEntry(source, destiny cipher.PubKey, isUp bool) {
+func (m *mockStore) SaveEntry(source, destiny cipher.PubKey, _ bool) {
 	entry := &transport.Entry{
 		Edges: transport.SortEdges(source, destiny), // original: [2]cipher.PubKey{source, destiny}
 	}
