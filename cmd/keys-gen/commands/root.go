@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"log"
 
+	cc "github.com/ivanpirog/coloredcobra"
 	"github.com/skycoin/skywire-utilities/pkg/buildinfo"
 	"github.com/skycoin/skywire-utilities/pkg/cipher"
-
-	cc "github.com/ivanpirog/coloredcobra"
 	"github.com/spf13/cobra"
 )
 

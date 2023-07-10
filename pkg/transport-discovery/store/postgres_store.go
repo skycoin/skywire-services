@@ -45,18 +45,11 @@ func (s *postgresStore) RegisterTransport(_ context.Context, sEntry *transport.S
 	tpRecord.Type = string(entry.Type)
 	tpRecord.Label = string(entry.Label)
 
-	if err := s.client.Save(&tpRecord).Error; err != nil {
-		return err
-	}
-
-	return nil
+	return s.client.Save(&tpRecord).Error
 }
 
-func (s *postgresStore) DeregisterTransport(ctx context.Context, id uuid.UUID) error {
-	if err := s.client.Where("transport_id = ?", id).Delete(&Transport{}).Error; err != nil {
-		return err
-	}
-	return nil
+func (s *postgresStore) DeregisterTransport(ctx context.Context, id uuid.UUID) error { //nolint
+	return s.client.Where("transport_id = ?", id).Delete(&Transport{}).Error
 }
 
 func (s *postgresStore) GetTransportByID(_ context.Context, id uuid.UUID) (*transport.Entry, error) {
