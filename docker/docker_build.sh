@@ -4,6 +4,9 @@ trap "exit" INT
 ## Variables
 image_tag="$1"
 go_buildopts="$2"
+docker_go111module="$3"
+docker_goos="$4"
+docker_goarch="$5"
 git_branch="$(git rev-parse --abbrev-ref HEAD)"
 nv_dev_url="https://nv.skywire.dev/map"
 nv_prod_url="https://nv.skycoin.com/map"
@@ -153,6 +156,9 @@ echo "Build transport discovery image"
 DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/transport-discovery/Dockerfile \
   --build-arg base_image="$base_image" \
   --build-arg build_opts="$go_buildopts" \
+  --build-arg go111module="$docker_go111module" \
+  --build-arg goos="$docker_goos" \
+  --build-arg goarch="$docker_goarch" \
   --build-arg image_tag="$image_tag" \
   -t "$registry"/transport-discovery:"$image_tag" .
 
@@ -160,6 +166,9 @@ echo "build route finder image"
 DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/route-finder/Dockerfile \
   --build-arg base_image="$base_image" \
   --build-arg build_opts="$go_buildopts" \
+  --build-arg go111module="$docker_go111module" \
+  --build-arg goos="$docker_goos" \
+  --build-arg goarch="$docker_goarch" \
   --build-arg image_tag="$image_tag" \
   -t "$registry"/route-finder:"$image_tag" .
 
@@ -167,12 +176,18 @@ echo "build setup node image"
 DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/setup-node/Dockerfile \
   --build-arg base_image="$base_image" \
   --build-arg build_opts="$go_buildopts" \
+  --build-arg go111module="$docker_go111module" \
+  --build-arg goos="$docker_goos" \
+  --build-arg goarch="$docker_goarch" \
   --build-arg image_tag="$image_tag" \
   -t "$registry"/setup-node:"$image_tag" .
 
 echo "build address resolver image"
 DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/address-resolver/Dockerfile \
   --build-arg build_opts="$go_buildopts" \
+  --build-arg go111module="$docker_go111module" \
+  --build-arg goos="$docker_goos" \
+  --build-arg goarch="$docker_goarch" \
   --build-arg image_tag="$image_tag" \
   --build-arg base_image="$base_image" \
   $platform \
@@ -195,6 +210,9 @@ fi
 DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/node-visualizer/Dockerfile \
   --build-arg base_image="$base_image" \
   --build-arg build_opts="$go_buildopts" \
+  --build-arg go111module="$docker_go111module" \
+  --build-arg goos="$docker_goos" \
+  --build-arg goarch="$docker_goarch" \
   --build-arg image_tag="$image_tag" \
   -t "$registry"/node-visualizer:"$image_tag" .
 
@@ -202,6 +220,9 @@ echo "building network monitor image"
 DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/network-monitor/Dockerfile \
   --build-arg base_image="$base_image" \
   --build-arg build_opts="$go_buildopts" \
+  --build-arg go111module="$docker_go111module" \
+  --build-arg goos="$docker_goos" \
+  --build-arg goarch="$docker_goarch" \
   --build-arg image_tag="$image_tag" \
   -t "$registry"/network-monitor:"$image_tag" .
 
@@ -209,6 +230,9 @@ echo "building config bootstrapper image"
 DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/config-bootstrapper/Dockerfile \
   --build-arg base_image="$base_image" \
   --build-arg build_opts="$go_buildopts" \
+  --build-arg go111module="$docker_go111module" \
+  --build-arg goos="$docker_goos" \
+  --build-arg goarch="$docker_goarch" \
   --build-arg image_tag="$image_tag" \
   -t "$registry"/config-bootstrapper:"$image_tag" .
 
@@ -216,6 +240,9 @@ echo "building liveness checker image"
 DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/liveness-checker/Dockerfile \
   --build-arg base_image="$base_image" \
   --build-arg build_opts="$go_buildopts" \
+  --build-arg go111module="$docker_go111module" \
+  --build-arg goos="$docker_goos" \
+  --build-arg goarch="$docker_goarch" \
   --build-arg image_tag="$image_tag" \
   -t "$registry"/liveness-checker:"$image_tag" .
 
@@ -223,6 +250,9 @@ echo "building vpn monitor image"
 DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/vpn-monitor/Dockerfile \
   --build-arg base_image="$base_image" \
   --build-arg build_opts="$go_buildopts" \
+  --build-arg go111module="$docker_go111module" \
+  --build-arg goos="$docker_goos" \
+  --build-arg goarch="$docker_goarch" \
   --build-arg image_tag="$image_tag" \
   -t "$registry"/vpn-monitor:"$image_tag" .
 
@@ -230,6 +260,9 @@ echo "building public visor monitor image"
 DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/public-visor-monitor/Dockerfile \
   --build-arg base_image="$base_image" \
   --build-arg build_opts="$go_buildopts" \
+  --build-arg go111module="$docker_go111module" \
+  --build-arg goos="$docker_goos" \
+  --build-arg goarch="$docker_goarch" \
   --build-arg image_tag="$image_tag" \
   -t "$registry"/public-visor-monitor:"$image_tag" .
 
@@ -237,6 +270,9 @@ echo "building dmsg monitor image"
 DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/dmsg-monitor/Dockerfile \
   --build-arg base_image="$base_image" \
   --build-arg build_opts="$go_buildopts" \
+  --build-arg go111module="$docker_go111module" \
+  --build-arg goos="$docker_goos" \
+  --build-arg goarch="$docker_goarch" \
   --build-arg image_tag="$image_tag" \
   -t "$registry"/dmsg-monitor:"$image_tag" .
 
@@ -244,6 +280,9 @@ echo "building tpd monitor image"
 DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/tpd-monitor/Dockerfile \
   --build-arg base_image="$base_image" \
   --build-arg build_opts="$go_buildopts" \
+  --build-arg go111module="$docker_go111module" \
+  --build-arg goos="$docker_goos" \
+  --build-arg goarch="$docker_goarch" \
   --build-arg image_tag="$image_tag" \
   -t "$registry"/tpd-monitor:"$image_tag" .
 
@@ -251,6 +290,9 @@ echo "building transport setup image"
 DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/transport-setup/Dockerfile \
   --build-arg base_image="$base_image" \
   --build-arg build_opts="$go_buildopts" \
+  --build-arg go111module="$docker_go111module" \
+  --build-arg goos="$docker_goos" \
+  --build-arg goarch="$docker_goarch" \
   --build-arg image_tag="$image_tag" \
   -t "$registry"/transport-setup:"$image_tag" .
 
