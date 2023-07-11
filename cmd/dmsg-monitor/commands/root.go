@@ -27,6 +27,7 @@ var (
 	addr                string
 	tag                 string
 	syslogAddr          string
+	logLvl              string
 	sleepDeregistration time.Duration
 	batchSize           int
 )
@@ -40,6 +41,7 @@ func init() {
 	RootCmd.Flags().StringVarP(&utURL, "ut-url", "u", "", "url to uptime tracker visor data.\033[0m")
 	RootCmd.Flags().StringVar(&tag, "tag", "dmsg_monitor", "logging tag\033[0m")
 	RootCmd.Flags().StringVar(&syslogAddr, "syslog", "", "syslog server address. E.g. localhost:514\033[0m")
+	RootCmd.Flags().StringVarP(&logLvl, "loglvl", "l", "info", "set log level one of: info, error, warn, debug, trace, panic")
 	var helpflag bool
 	RootCmd.SetUsageTemplate(help)
 	RootCmd.PersistentFlags().BoolVarP(&helpflag, "help", "h", false, "help for dmsg-monitor")
@@ -66,6 +68,12 @@ var RootCmd = &cobra.Command{
 		}
 
 		mLogger := logging.NewMasterLogger()
+		lvl, err := logging.LevelFromString(logLvl)
+		if err != nil {
+			mLogger.Fatal("Invalid log level")
+		}
+		logging.SetLevel(lvl)
+
 		conf := api.InitConfig(confPath, mLogger)
 
 		if dmsgURL == "" {
@@ -79,7 +87,7 @@ var RootCmd = &cobra.Command{
 		srvURLs.DMSG = dmsgURL
 		srvURLs.UT = utURL
 
-		logger := mLogger.PackageLogger("dmsg_monitor")
+		logger := mLogger.PackageLogger(tag)
 		if syslogAddr != "" {
 			hook, err := logrussyslog.NewSyslogHook("udp", syslogAddr, syslog.LOG_INFO, tag)
 			if err != nil {
@@ -121,6 +129,7 @@ var RootCmd = &cobra.Command{
 // Execute executes root CLI command.
 func Execute() {
 	cc.Init(&cc.Config{
+<<<<<<< HEAD
 		RootCmd:       RootCmd,
 		Headings:      cc.HiBlue + cc.Bold, //+ cc.Underline,
 		Commands:      cc.HiBlue + cc.Bold,
@@ -129,6 +138,15 @@ func Execute() {
 		ExecName:      cc.HiBlue + cc.Bold,
 		Flags:         cc.HiBlue + cc.Bold,
 		//FlagsDataType: cc.HiBlue,
+=======
+		RootCmd:         RootCmd,
+		Headings:        cc.HiBlue + cc.Bold,
+		Commands:        cc.HiBlue + cc.Bold,
+		CmdShortDescr:   cc.HiBlue,
+		Example:         cc.HiBlue + cc.Italic,
+		ExecName:        cc.HiBlue + cc.Bold,
+		Flags:           cc.HiBlue + cc.Bold,
+>>>>>>> develop
 		FlagsDescr:      cc.HiBlue,
 		NoExtraNewlines: true,
 		NoBottomNewline: true,

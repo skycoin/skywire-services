@@ -33,8 +33,8 @@ var (
 	metricsAddr string
 	pgHost      string
 	pgPort      string
-	logEnabled  bool
 	syslogAddr  string
+	logLvl      string
 	tag         string
 	testing     bool
 	dmsgDisc    string
@@ -45,10 +45,10 @@ var (
 func init() {
 	RootCmd.Flags().StringVarP(&addr, "addr", "a", ":9092", "address to bind to\033[0m")
 	RootCmd.Flags().StringVarP(&metricsAddr, "metrics", "m", "", "address to bind metrics API to\033[0m")
-	RootCmd.Flags().BoolVarP(&logEnabled, "log", "l", true, "enable request logging\033[0m")
 	RootCmd.Flags().StringVar(&pgHost, "pg-host", "localhost", "host of postgres\033[0m")
 	RootCmd.Flags().StringVar(&pgPort, "pg-port", "5432", "port of postgres\033[0m")
 	RootCmd.Flags().StringVar(&syslogAddr, "syslog", "", "syslog server address. E.g. localhost:514\033[0m")
+	RootCmd.Flags().StringVarP(&logLvl, "loglvl", "l", "info", "set log level one of: info, error, warn, debug, trace, panic")
 	RootCmd.Flags().StringVar(&tag, "tag", "route_finder", "logging tag\033[0m")
 	RootCmd.Flags().BoolVarP(&testing, "testing", "t", false, "enable testing to start without redis\033[0m")
 	RootCmd.Flags().StringVar(&dmsgDisc, "dmsg-disc", "http://dmsgd.skywire.skycoin.com", "url of dmsg-discovery\033[0m")
@@ -81,15 +81,15 @@ var RootCmd = &cobra.Command{
 
 		memoryStore := true
 
-		var logger *logging.Logger
-		if logEnabled {
-			logger = logging.MustGetLogger(tag)
-		} else {
-			logger = nil
+		logger := logging.MustGetLogger(tag)
+		lvl, err := logging.LevelFromString(logLvl)
+		if err != nil {
+			logger.Fatal("Invalid loglvl detected")
 		}
 
+		logging.SetLevel(lvl)
+
 		var gormDB *gorm.DB
-		var err error
 
 		if !testing {
 			pgUser, pgPassword, pgDatabase := storeconfig.PostgresCredential()

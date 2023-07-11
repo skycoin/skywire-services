@@ -38,6 +38,7 @@ var (
 	addr                string
 	tag                 string
 	syslogAddr          string
+	logLvl              string
 	metricsAddr         string
 	redisURL            string
 	testing             bool
@@ -55,6 +56,7 @@ func init() {
 	RootCmd.Flags().StringVarP(&utURL, "ut-url", "u", "", "url to uptime tracker visor data.\033[0m")
 	RootCmd.Flags().StringVar(&tag, "tag", "network_monitor", "logging tag\033[0m")
 	RootCmd.Flags().StringVar(&syslogAddr, "syslog", "", "syslog server address. E.g. localhost:514\033[0m")
+	RootCmd.Flags().StringVarP(&logLvl, "loglvl", "l", "info", "set log level one of: info, error, warn, debug, trace, panic")
 	RootCmd.Flags().StringVarP(&metricsAddr, "metrics", "m", "", "address to bind metrics API to\033[0m")
 	RootCmd.Flags().StringVar(&redisURL, "redis", "redis://localhost:6379", "connections string for a redis store\033[0m")
 	RootCmd.Flags().BoolVarP(&testing, "testing", "t", false, "enable testing to start without redis\033[0m")
@@ -105,6 +107,12 @@ var RootCmd = &cobra.Command{
 		}
 
 		mLogger := logging.NewMasterLogger()
+		lvl, err := logging.LevelFromString(logLvl)
+		if err != nil {
+			mLogger.Fatal("Invalid loglvl detected")
+		}
+
+		logging.SetLevel(lvl)
 		conf := api.InitConfig(confPath, mLogger)
 
 		if sdURL == "" {

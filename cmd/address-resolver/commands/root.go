@@ -41,9 +41,9 @@ var (
 	metricsAddr     string
 	redisURL        string
 	redisPoolSize   int
-	logEnabled      bool
 	syslogAddr      string
 	tag             string
+	logLvl          string
 	testing         bool
 	dmsgDisc        string
 	whitelistKeys   string
@@ -57,7 +57,7 @@ func init() {
 	RootCmd.Flags().StringVarP(&metricsAddr, "metrics", "m", "", "address to bind metrics API to\033[0m")
 	RootCmd.Flags().StringVar(&redisURL, "redis", "redis://localhost:6379", "connections string for a redis store\033[0m")
 	RootCmd.Flags().IntVar(&redisPoolSize, "redis-pool-size", 10, "redis connection pool size\033[0m")
-	RootCmd.Flags().BoolVarP(&logEnabled, "log", "l", true, "enable request logging\033[0m")
+	RootCmd.Flags().StringVarP(&logLvl, "loglvl", "l", "info", "set log level one of: info, error, warn, debug, trace, panic")
 	RootCmd.Flags().StringVar(&syslogAddr, "syslog", "", "syslog server address. E.g. localhost:514\033[0m")
 	RootCmd.Flags().StringVar(&tag, "tag", "address_resolver", "logging tag\033[0m")
 	RootCmd.Flags().BoolVarP(&testing, "testing", "t", false, "enable testing to start without redis\033[0m")
@@ -105,12 +105,13 @@ var RootCmd = &cobra.Command{
 			storeConfig.Type = storeconfig.Memory
 		}
 
-		var logger *logging.Logger
-		if logEnabled {
-			logger = logging.MustGetLogger(tag)
-		} else {
-			logger = nil
+		logger := logging.MustGetLogger(tag)
+		lvl, err := logging.LevelFromString(logLvl)
+		if err != nil {
+			logger.Fatal("Invalid loglvl detected")
 		}
+
+		logging.SetLevel(lvl)
 
 		ctx, cancel := cmdutil.SignalContext(context.Background(), logger)
 		defer cancel()
