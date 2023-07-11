@@ -14,7 +14,7 @@ DATE := $(shell date -u $(RFC_3339))
 COMMIT := $(shell git rev-list -1 HEAD)
 
 OPTS?=GO111MODULE=on
-DOCKER_OPTS=?GO111MODULE=on GOOS=linux GOARCH=amd64
+DOCKER_OPTS?=GO111MODULE=on GOOS=linux GOARCH=amd64
 DOCKER_OPTS_ENV?=on linux amd64
 DOCKER_NETWORK?=SKYWIRE
 DOCKER_COMPOSE_FILE:=./docker/docker-compose.yml
