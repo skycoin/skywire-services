@@ -4,12 +4,17 @@ ARG base_image
 FROM ${base_image} as builder
 
 ARG build_opts
-ARG docker_opts
+ARG go111module
+ARG goos
+ARG goarch
+ENV GO111MODULE=$go111module \
+    GOOS=$goos \
+    GOARCH=$goarch
 
 COPY . /skywire-services
 WORKDIR /skywire-services
 
-RUN "${docker_opts}" go build "${build_opts}" -o /release/dmsg-monitor ./cmd/dmsg-monitor && \
+RUN go build "${build_opts}" -o /release/dmsg-monitor ./cmd/dmsg-monitor && \
     mv /skywire-services/docker/config/dmsg-monitor.json /release/dmsg-monitor.json
 
 FROM alpine as prod

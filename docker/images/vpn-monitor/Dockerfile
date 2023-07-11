@@ -4,13 +4,18 @@ ARG base_image
 FROM ${base_image} as builder
 
 ARG build_opts
-ARG docker_opts
+ARG go111module
+ARG goos
+ARG goarch
+ENV GO111MODULE=$go111module \
+    GOOS=$goos \
+    GOARCH=$goarch
 
 COPY . /skywire-services
 WORKDIR /skywire-services
 
-RUN "${docker_opts}" go build "${build_opts}" -o /release/vpn-monitor ./cmd/vpn-monitor && \
-    "${docker_opts}" go build "${build_opts}" -o /release/vpn-client ./cmd/vpn-lite-client
+RUN go build "${build_opts}" -o /release/vpn-monitor ./cmd/vpn-monitor && \
+    go build "${build_opts}" -o /release/vpn-client ./cmd/vpn-lite-client
 
 FROM alpine as prod
 COPY --from=builder /release/vpn-client /apps/vpn-client
