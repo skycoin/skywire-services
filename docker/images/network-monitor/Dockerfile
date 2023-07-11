@@ -4,12 +4,13 @@ ARG base_image
 FROM ${base_image} as builder
 
 ARG build_opts
+ARG docker_opts
 
 COPY . /skywire-services
 WORKDIR /skywire-services
 
-RUN go build "${build_opts}" -o /release/network-monitor ./cmd/network-monitor && \
-    go build "${build_opts}" -o /release/vpn-client ./cmd/vpn-lite-client && \
+RUN "${docker_opts}" go build "${build_opts}" -o /release/network-monitor ./cmd/network-monitor && \
+    "${docker_opts}" go build "${build_opts}" -o /release/vpn-client ./cmd/vpn-lite-client && \
     mv /skywire-services/docker/config/network-monitor.json /release/network-monitor.json
 
 FROM alpine as prod

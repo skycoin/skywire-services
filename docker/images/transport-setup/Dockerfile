@@ -4,11 +4,12 @@ ARG base_image
 FROM ${base_image} as builder
 
 ARG build_opts
+ARG docker_opts
 
 COPY . /skywire-services
 WORKDIR /skywire-services
 
-RUN go build "${build_opts}" -o /release/transport-setup ./cmd/transport-setup && \
+RUN "${docker_opts}" go build "${build_opts}" -o /release/transport-setup ./cmd/transport-setup && \
     mv ./docker/config/transport-setup.json /release/transport-setup.json
 
 FROM alpine as prod

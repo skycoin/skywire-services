@@ -4,11 +4,12 @@ ARG base_image
 FROM ${base_image} as builder
 
 ARG build_opts
+ARG docker_opts
 
 COPY . /skywire-services
 WORKDIR /skywire-services
 
-RUN go build "${build_opts}" -o /release/tpd-monitor ./cmd/tpd-monitor && \
+RUN "${docker_opts}" go build "${build_opts}" -o /release/tpd-monitor ./cmd/tpd-monitor && \
     mv /skywire-services/docker/config/tpd-monitor.json /release/tpd-monitor.json
 
 FROM alpine as prod

@@ -14,12 +14,13 @@ RUN yarn --cwd ./pkg/node-visualizer/web install && \
 
 FROM ${base_image} as builder
 ARG build_opts
+ARG docker_opts
 
 # COPY . /skywire-services
 COPY --from=react-builder ./app/ /skywire-services/
 WORKDIR /skywire-services
 
-RUN go build "${build_opts}" -o /release/node-visualizer ./cmd/node-visualizer
+RUN "${docker_opts}" go build "${build_opts}" -o /release/node-visualizer ./cmd/node-visualizer
 
 FROM alpine as prod
 COPY --from=builder /release/node-visualizer /release/node-visualizer
