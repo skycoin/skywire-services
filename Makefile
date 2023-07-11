@@ -14,7 +14,8 @@ DATE := $(shell date -u $(RFC_3339))
 COMMIT := $(shell git rev-list -1 HEAD)
 
 OPTS?=GO111MODULE=on
-DOCKER_OPTS?=GO111MODULE=on GOOS=linux GOARCH=amd64# go options for compiling for docker container
+DOCKER_OPTS=?GO111MODULE=on GOOS=linux GOARCH=amd64
+DOCKER_OPTS_ENV?=on linux amd64
 DOCKER_NETWORK?=SKYWIRE
 DOCKER_COMPOSE_FILE:=./docker/docker-compose.yml
 DOCKER_REGISTRY:=skycoin
@@ -189,11 +190,11 @@ e2e-help: ## E2E. Show env-vars and useful commands
 	@echo -e "\nConsult with:\n\n   docker-compose help\n"
 
 docker-push-test:
-	bash ./docker/docker_build.sh test ${BUILD_OPTS_DEPLOY} ${DOCKER_OPTS}
+	bash ./docker/docker_build.sh test ${BUILD_OPTS_DEPLOY} ${DOCKER_OPTS_ENV}
 	bash ./docker/docker_push.sh test
 
 docker-push:
-	bash ./docker/docker_build.sh prod ${BUILD_OPTS_DEPLOY} ${DOCKER_OPTS}
+	bash ./docker/docker_build.sh prod ${BUILD_OPTS_DEPLOY} ${DOCKER_OPTS_ENV}
 	bash ./docker/docker_push.sh prod
 
 set-forwarding:
