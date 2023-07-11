@@ -16,10 +16,14 @@ import (
 	"github.com/skycoin/skywire-services/pkg/transport-setup/config"
 )
 
-var configFile string
+var (
+	logLvl     string
+	configFile string
+)
 
 func init() {
 	rootCmd.Flags().StringVarP(&configFile, "config", "c", "", "path to config file\033[0m")
+	rootCmd.Flags().StringVarP(&logLvl, "loglvl", "l", "info", "set log level one of: info, error, warn, debug, trace, panic")
 	err := rootCmd.MarkFlagRequired("config")
 	if err != nil {
 		log.Fatal("config flag is not specified")
@@ -44,9 +48,14 @@ var rootCmd = &cobra.Command{
 	DisableFlagsInUseLine: true,
 	Version:               buildinfo.Version(),
 	Run: func(_ *cobra.Command, args []string) {
-		// local config of the client
 		const loggerTag = "transport_setup"
 		log := logging.MustGetLogger(loggerTag)
+		lvl, err := logging.LevelFromString(logLvl)
+		if err != nil {
+			log.Fatal("Invalid loglvl detected")
+		}
+		logging.SetLevel(lvl)
+
 		conf := config.MustReadConfig(configFile, log)
 		api := api.New(log, conf)
 		srv := &http.Server{

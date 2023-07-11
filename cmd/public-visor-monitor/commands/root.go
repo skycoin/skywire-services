@@ -26,6 +26,7 @@ var (
 	confPath            string
 	addr                string
 	tag                 string
+	logLvl              string
 	sleepDeregistration time.Duration
 )
 
@@ -34,6 +35,7 @@ func init() {
 	rootCmd.Flags().DurationVarP(&sleepDeregistration, "sleep-deregistration", "s", 10, "Sleep time for derigstration process in minutes\033[0m")
 	rootCmd.Flags().StringVarP(&confPath, "config", "c", "public-visor-monitor.json", "config file location.\033[0m")
 	rootCmd.Flags().StringVar(&tag, "tag", "public_visor_monitor", "logging tag\033[0m")
+	rootCmd.Flags().StringVarP(&logLvl, "loglvl", "l", "info", "set log level one of: info, error, warn, debug, trace, panic")
 	var helpflag bool
 	rootCmd.SetUsageTemplate(help)
 	rootCmd.PersistentFlags().BoolVarP(&helpflag, "help", "h", false, "help for "+rootCmd.Use)
@@ -60,6 +62,13 @@ var rootCmd = &cobra.Command{
 		}
 
 		mLogger := logging.NewMasterLogger()
+		lvl, err := logging.LevelFromString(logLvl)
+		if err != nil {
+			mLogger.Fatal("Invalid loglvl detected")
+		}
+
+		logging.SetLevel(lvl)
+
 		conf := initConfig(confPath, visorBuildInfo, mLogger)
 
 		srvURLs := api.ServicesURLs{
