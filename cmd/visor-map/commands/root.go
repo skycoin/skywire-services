@@ -45,19 +45,20 @@ var (
 )
 
 func init() {
-	rootCmd.Flags().IntVar(&width, "width", 1200, "image width\033[0m")
-	rootCmd.Flags().IntVar(&height, "height", 800, "image height\033[0m")
-	rootCmd.Flags().StringVarP(&output, "output", "o", "./map"+imageExtension, "output .jpg file\033[0m")
-	rootCmd.Flags().StringVar(&trackerURL, "tracker-url", defaultUptimeTrackerHost, "uptime tracker URL\033[0m")
+	RootCmd.Flags().IntVar(&width, "width", 1200, "image width\033[0m")
+	RootCmd.Flags().IntVar(&height, "height", 800, "image height\033[0m")
+	RootCmd.Flags().StringVarP(&output, "output", "o", "./map"+imageExtension, "output .jpg file\033[0m")
+	RootCmd.Flags().StringVar(&trackerURL, "tracker-url", defaultUptimeTrackerHost, "uptime tracker URL\033[0m")
 	var helpflag bool
-	rootCmd.SetUsageTemplate(help)
-	rootCmd.PersistentFlags().BoolVarP(&helpflag, "help", "h", false, "help for "+rootCmd.Use)
-	rootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
-	rootCmd.PersistentFlags().MarkHidden("help") //nolint
+	RootCmd.SetUsageTemplate(help)
+	RootCmd.PersistentFlags().BoolVarP(&helpflag, "help", "h", false, "help for visor-map")
+	RootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
+	RootCmd.PersistentFlags().MarkHidden("help") //nolint
 }
 
-var rootCmd = &cobra.Command{
-	Use:   "visor-map",
+// RootCmd contains the root command
+var RootCmd = &cobra.Command{
+	Use:   "vmap",
 	Short: "Utility to render visors map",
 	Long: `
 	┬  ┬┬┌─┐┌─┐┬─┐   ┌┬┐┌─┐┌─┐
@@ -142,7 +143,7 @@ var rootCmd = &cobra.Command{
 // Execute executes root CLI command.
 func Execute() {
 	cc.Init(&cc.Config{
-		RootCmd:       rootCmd,
+		RootCmd:       RootCmd,
 		Headings:      cc.HiBlue + cc.Bold, //+ cc.Underline,
 		Commands:      cc.HiBlue + cc.Bold,
 		CmdShortDescr: cc.HiBlue,
@@ -154,7 +155,7 @@ func Execute() {
 		NoExtraNewlines: true,
 		NoBottomNewline: true,
 	})
-	if err := rootCmd.Execute(); err != nil {
+	if err := RootCmd.Execute(); err != nil {
 		log.Fatal("Failed to execute command: ", err)
 	}
 }
