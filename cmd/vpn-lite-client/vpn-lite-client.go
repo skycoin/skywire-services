@@ -25,16 +25,17 @@ var (
 )
 
 func init() {
-	rootCmd.Flags().StringVarP(&serverPKStr, "srv", "k", "", "PubKey of the server to connect to\033[0m")
+	RootCmd.Flags().StringVarP(&serverPKStr, "srv", "k", "", "PubKey of the server to connect to\033[0m")
 	var helpflag bool
-	rootCmd.SetUsageTemplate(help)
-	rootCmd.PersistentFlags().BoolVarP(&helpflag, "help", "h", false, "help for "+rootCmd.Use)
-	rootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
-	rootCmd.PersistentFlags().MarkHidden("help") //nolint
+	RootCmd.SetUsageTemplate(help)
+	RootCmd.PersistentFlags().BoolVarP(&helpflag, "help", "h", false, "help for vpn-lite-client")
+	RootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
+	RootCmd.PersistentFlags().MarkHidden("help") //nolint
 }
 
-var rootCmd = &cobra.Command{
-	Use:   "vpn-lite-client",
+// RootCmd contains the root command
+var RootCmd = &cobra.Command{
+	Use:   "vpnlc",
 	Short: "Vpn lite client",
 	Long: `
 	┬  ┬┌─┐┌┐┌   ┬  ┬┌┬┐┌─┐  ┌─┐┬  ┬┌─┐┌┐┌┌┬┐
@@ -116,7 +117,7 @@ func main() {
 // Execute executes root CLI command.
 func Execute() {
 	cc.Init(&cc.Config{
-		RootCmd:       rootCmd,
+		RootCmd:       RootCmd,
 		Headings:      cc.HiBlue + cc.Bold, //+ cc.Underline,
 		Commands:      cc.HiBlue + cc.Bold,
 		CmdShortDescr: cc.HiBlue,
@@ -128,7 +129,7 @@ func Execute() {
 		NoExtraNewlines: true,
 		NoBottomNewline: true,
 	})
-	if err := rootCmd.Execute(); err != nil {
+	if err := RootCmd.Execute(); err != nil {
 		log.Fatal("Failed to execute command: ", err)
 	}
 }
