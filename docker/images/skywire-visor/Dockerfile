@@ -1,7 +1,7 @@
 ARG image_tag=e2e
 
 ARG base=alpine
-FROM golang:alpine3.19 as builder
+FROM golang:alpine3.17 as builder
 
 ARG BUILDINFO_LDFLAGS
 ARG CGO_ENABLED=0
