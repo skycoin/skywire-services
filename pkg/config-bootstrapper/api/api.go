@@ -116,7 +116,6 @@ func (a *API) health(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *API) config(w http.ResponseWriter, r *http.Request) {
-
 	a.writeJSON(w, r, http.StatusOK, a.services)
 }
 
