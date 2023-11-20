@@ -525,7 +525,7 @@ github.com/skycoin/skywire/pkg/visor/usermanager
 github.com/skycoin/skywire/pkg/visor/visorconfig
 github.com/skycoin/skywire/pkg/visor/visorinit
 github.com/skycoin/skywire/static/icons
-# github.com/skycoin/skywire-utilities v1.3.11
+# github.com/skycoin/skywire-utilities v0.0.0-20231120175000-12be4345eb26
 ## explicit; go 1.17
 github.com/skycoin/skywire-utilities/pkg/buildinfo
 github.com/skycoin/skywire-utilities/pkg/cipher
