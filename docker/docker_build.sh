@@ -15,7 +15,7 @@ platform="--platform=linux/amd64"
 registry="$REGISTRY"
 
 # shellcheck disable=SC2153
-base_image=golang:1.19-alpine
+base_image=golang:1.21-alpine
 
 if [[ "$#" != 2 ]]; then
   echo "docker_build.sh <IMAGE_TAG> <GO_BUILDOPTS>"
@@ -51,7 +51,7 @@ if [[ "$image_tag" == "e2e" ]]; then
   # else
   #   git clone git@github.com:skycoin/skywire-ut --depth 1 --branch "$git_branch" ./tmp/skywire-ut
   # fi
-  git clone https://"$GIT_USER":"$GIT_TOKEN"@github.com/skycoin/skywire-ut.git --depth 1 --branch "$git_branch" ./tmp/skywire-ut
+  git clone https://github.com/skycoin/skywire-ut.git --depth 1 --branch "$git_branch" ./tmp/skywire-ut
 
   if [ ! -d ./tmp/skywire-ut ]; then
     echo "failed to clone skywire-ut" &&
@@ -205,19 +205,19 @@ DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/network-monitor/Dockerfi
   --build-arg image_tag="$image_tag" \
   -t "$registry"/network-monitor:"$image_tag" .
 
-echo "building config bootstrapper image"
-DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/config-bootstrapper/Dockerfile \
-  --build-arg base_image="$base_image" \
-  --build-arg build_opts="$go_buildopts" \
-  --build-arg image_tag="$image_tag" \
-  -t "$registry"/config-bootstrapper:"$image_tag" .
-
 echo "building liveness checker image"
 DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/liveness-checker/Dockerfile \
   --build-arg base_image="$base_image" \
   --build-arg build_opts="$go_buildopts" \
   --build-arg image_tag="$image_tag" \
   -t "$registry"/liveness-checker:"$image_tag" .
+
+echo "building config bootstrapper image"
+DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/config-bootstrapper/Dockerfile \
+  --build-arg base_image="$base_image" \
+  --build-arg build_opts="$go_buildopts" \
+  --build-arg image_tag="$image_tag" \
+  -t "$registry"/config-bootstrapper:"$image_tag" .
 
 echo "building vpn monitor image"
 DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/vpn-monitor/Dockerfile \

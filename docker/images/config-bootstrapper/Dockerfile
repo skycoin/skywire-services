@@ -8,13 +8,12 @@ ARG build_opts
 COPY . /skywire-services
 WORKDIR /skywire-services
 
-RUN go build "${build_opts}" -o /release/config-bootstrapper \
-    ./cmd/config-bootstrapper && \ 
+RUN go build "${build_opts}" -o /release/config-bootstrapper ./cmd/config-bootstrapper && \ 
     mv /skywire-services/docker/config/config.json /release/config.json
-
 
 FROM alpine as prod
 COPY --from=builder /release/config-bootstrapper /release/config-bootstrapper
+COPY --from=builder /release/config.json /release/config.json
 ENTRYPOINT ["/release/config-bootstrapper"]
 
 FROM prod as test
