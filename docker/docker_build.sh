@@ -25,9 +25,9 @@ if [[ "$go_buildopts" == "" ]]; then
   go_buildopts="-mod=vendor -ldflags\"-w -s\""
 fi
 
-if [[ "$git_branch" != "master" ]] && [[ "$git_branch" != "develop" ]]; then
-  git_branch="develop"
-fi
+# if [[ "$git_branch" != "master" ]] && [[ "$git_branch" != "develop" ]]; then
+#   git_branch="develop"
+# fi
 
 echo "Building using tag: $image_tag"
 
