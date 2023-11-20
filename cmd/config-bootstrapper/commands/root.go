@@ -13,6 +13,7 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/cmdutil"
 	"github.com/skycoin/skywire-utilities/pkg/logging"
 	"github.com/skycoin/skywire-utilities/pkg/tcpproxy"
+
 	"github.com/spf13/cobra"
 
 	"github.com/skycoin/skywire-services/pkg/config-bootstrapper/api"
