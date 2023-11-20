@@ -15,7 +15,7 @@ platform="--platform=linux/amd64"
 registry="$REGISTRY"
 
 # shellcheck disable=SC2153
-base_image=golang:1.19-alpine
+base_image=golang:1.21-alpine
 
 if [[ "$#" != 2 ]]; then
   echo "docker_build.sh <IMAGE_TAG> <GO_BUILDOPTS>"
