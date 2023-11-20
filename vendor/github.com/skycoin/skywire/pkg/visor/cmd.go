@@ -18,10 +18,12 @@ import (
 
 	"github.com/skycoin/skywire-utilities/pkg/buildinfo"
 	"github.com/skycoin/skywire-utilities/pkg/logging"
+	"github.com/skycoin/skywire/pkg/restart"
 	"github.com/skycoin/skywire/pkg/visor/visorconfig"
 )
 
 var (
+	restartCtx       = restart.CaptureContext()
 	pkgconfigexists  bool
 	userconfigexists bool
 	//	isAutoPeer           bool
