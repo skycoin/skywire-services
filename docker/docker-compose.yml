@@ -167,7 +167,7 @@ services:
     depends_on:
       - tpd-redis
       - postgres-db
-    entrypoint: "/release/transport-discovery --pg-host postgres-db --pg-port 5432 --redis redis://tpd-redis:6379"
+    entrypoint: "/release/transport-discovery --pg-host postgres-db --pg-port 5432 --redis redis://tpd-redis:6379 --sk 85789cd7efcdf35340c8f4cb3e15bccdff57efda49af5bcdddaae57374d25ab8"
     stdin_open: true # docker run -i
     tty: true        # docker run -t
 
@@ -190,7 +190,7 @@ services:
       - "9092:9092"
     depends_on:
       - transport-discovery
-    entrypoint: "/release/route-finder --pg-host postgres-db --pg-port 5432"
+    entrypoint: "/release/route-finder --pg-host postgres-db --pg-port 5432 --sk 640905f9fd60d6bf1ee88519f61035765d65319d9f3bac6c5f2fc14ea5cf15ca"
     stdin_open: true # docker run -i
     tty: true        # docker run -t
 
@@ -209,7 +209,7 @@ services:
     depends_on:
       - dmsgd-redis
       - transport-discovery
-    entrypoint: "/usr/local/bin/dmsg-discovery --redis redis://dmsgd-redis:6379 -t"
+    entrypoint: "/usr/local/bin/dmsg-discovery --redis redis://dmsgd-redis:6379 --sk b3f6706cb72215d3873ef92cc0c6037a47fe651112b1685017d6347eed0fb714 -t"
     stdin_open: true # docker run -i
     tty: true        # docker run -t
 
@@ -279,7 +279,7 @@ services:
       - PG_USER=postgres
       - PG_PASSWORD=postgres
       - PG_DATABASE=postgres
-    entrypoint: "/release/service-discovery --pg-host postgres-db --pg-port 5432 --redis redis://sd-redis:6379"
+    entrypoint: "/release/service-discovery --pg-host postgres-db --pg-port 5432 --redis redis://sd-redis:6379 --sk ccc3ae9993ed03bed80b1f9feb747d7c6ca3342a65c3923191b7527c2c00ef0f"
     stdin_open: true # docker run -i
     tty: true        # docker run -t
 
@@ -303,7 +303,7 @@ services:
       - PG_DATABASE=postgres
     ports:
       - "9096:9096"
-    entrypoint: "/release/uptime-tracker --pg-host postgres-db --pg-port 5432 --redis redis://ut-redis:6379"
+    entrypoint: "/release/uptime-tracker --pg-host postgres-db --pg-port 5432 --redis redis://ut-redis:6379 --sk e20681b4fd1eb1904ebfbf8fba79a138bbac481e1c3f77bcfab3a877525fda32"
     stdin_open: true # docker run -i
     tty: true        # docker run -t
 
@@ -322,7 +322,7 @@ services:
     depends_on:
       - ar-redis
     restart: on-failure
-    entrypoint: "/release/address-resolver --redis redis://ar-redis:6379"
+    entrypoint: "/release/address-resolver --redis redis://ar-redis:6379 --sk 1fa0a7b80438b8d31655b5c69efd57bcf931ac828438ff2925ab36e4abcc426a"
     stdin_open: true # docker run -i
     tty: true        # docker run -t
 
