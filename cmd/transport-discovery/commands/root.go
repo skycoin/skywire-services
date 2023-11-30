@@ -8,6 +8,7 @@ import (
 	"log/syslog"
 	"os"
 	"strings"
+	"time"
 
 	cc "github.com/ivanpirog/coloredcobra"
 	logrussyslog "github.com/sirupsen/logrus/hooks/syslog"
@@ -202,6 +203,13 @@ var RootCmd = &cobra.Command{
 			}
 
 			defer closeDmsgDC()
+
+			go func() {
+				for {
+					tpdAPI.DmsgServers = dmsgDC.ConnectedServersPK()
+					time.Sleep(time.Second)
+				}
+			}()
 
 			go dmsghttp.UpdateServers(ctx, dClient, dmsgDisc, dmsgDC, logger)
 
