@@ -17,7 +17,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/rs/cors v1.8.2
 	github.com/sirupsen/logrus v1.9.3
-	github.com/skycoin/dmsg v1.3.12-0.20231120175607-0b6d5135bbc5
+	github.com/skycoin/dmsg v1.3.12-0.20231130180155-65d707cd1b01
 	github.com/skycoin/skywire v1.3.14-0.20231120181804-7c5994927a04
 	github.com/skycoin/skywire-utilities v0.0.0-20231120175000-12be4345eb26
 	github.com/songgao/water v0.0.0-20200317203138-2b4b6d7c09d8
