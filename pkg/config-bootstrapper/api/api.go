@@ -36,12 +36,15 @@ type API struct {
 
 	closeOnce sync.Once
 	closeC    chan struct{}
+
+	dmsgAddr string
 }
 
 // HealthCheckResponse is struct of /health endpoint
 type HealthCheckResponse struct {
 	BuildInfo *buildinfo.Info `json:"build_info,omitempty"`
 	StartedAt time.Time       `json:"started_at"`
+	DmsgAddr  string          `json:"dmsg_address,omitempty"`
 }
 
 // Error is the object returned to the client when there's an error.
@@ -58,7 +61,7 @@ type Config struct {
 }
 
 // New creates a new api.
-func New(log *logging.Logger, conf Config, domain string) *API {
+func New(log *logging.Logger, conf Config, domain, dmsgAddr string) *API {
 
 	sd := strings.Replace(skyenv.ServiceDiscAddr, "skycoin.com", domain, -1)
 	if domain == "skywire.skycoin.com" {
@@ -85,6 +88,7 @@ func New(log *logging.Logger, conf Config, domain string) *API {
 		services:       services,
 		dmsghttpConfTs: time.Now().Add(-5 * time.Minute),
 		closeC:         make(chan struct{}),
+		dmsgAddr:       dmsgAddr,
 	}
 
 	r := chi.NewRouter()
@@ -119,6 +123,7 @@ func (a *API) health(w http.ResponseWriter, r *http.Request) {
 	a.writeJSON(w, r, http.StatusOK, HealthCheckResponse{
 		BuildInfo: info,
 		StartedAt: a.startedAt,
+		DmsgAddr:  a.dmsgAddr,
 	})
 }
 
