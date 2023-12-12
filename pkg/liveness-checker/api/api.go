@@ -256,7 +256,7 @@ func (api *API) RunBackgroundTasks(ctx context.Context, conf *visorconfig.V1) {
 		}
 	}
 }
-/*
+
 // checkAddressResolver runs a liveness check on the address-resolver
 func (api *API) checkAddressResolver(ctx context.Context) {
 
@@ -591,7 +591,6 @@ func (api *API) checkStunServers(ctx context.Context) {
 		api.logger.Infof("%v liveness check complete.", serviceName)
 	}
 }
-*/
 
 func checkCertificate(serviceURL string) (*lc.CertificateInfo, error) {
 	u, err := url.Parse(serviceURL)
