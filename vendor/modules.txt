@@ -455,8 +455,8 @@ github.com/rs/cors
 ## explicit; go 1.13
 github.com/sirupsen/logrus
 github.com/sirupsen/logrus/hooks/syslog
-# github.com/skycoin/dmsg v1.3.12-0.20231130180155-65d707cd1b01
-## explicit; go 1.18
+# github.com/skycoin/dmsg v1.3.14
+## explicit; go 1.21
 github.com/skycoin/dmsg/internal/servermetrics
 github.com/skycoin/dmsg/pkg/direct
 github.com/skycoin/dmsg/pkg/disc
@@ -479,8 +479,8 @@ github.com/skycoin/skycoin/src/cipher/ripemd160
 github.com/skycoin/skycoin/src/cipher/secp256k1-go
 github.com/skycoin/skycoin/src/cipher/secp256k1-go/secp256k1-go2
 github.com/skycoin/skycoin/src/util/logging
-# github.com/skycoin/skywire v1.3.14-0.20231120181804-7c5994927a04
-## explicit; go 1.18
+# github.com/skycoin/skywire v1.3.15
+## explicit; go 1.21
 github.com/skycoin/skywire/cmd/setup-node/commands
 github.com/skycoin/skywire/internal/httpauth
 github.com/skycoin/skywire/internal/packetfilter
@@ -525,8 +525,8 @@ github.com/skycoin/skywire/pkg/visor/usermanager
 github.com/skycoin/skywire/pkg/visor/visorconfig
 github.com/skycoin/skywire/pkg/visor/visorinit
 github.com/skycoin/skywire/static/icons
-# github.com/skycoin/skywire-utilities v0.0.0-20231120175000-12be4345eb26
-## explicit; go 1.17
+# github.com/skycoin/skywire-utilities v1.3.14
+## explicit; go 1.21
 github.com/skycoin/skywire-utilities/pkg/buildinfo
 github.com/skycoin/skywire-utilities/pkg/cipher
 github.com/skycoin/skywire-utilities/pkg/cmdutil
