@@ -479,7 +479,7 @@ github.com/skycoin/skycoin/src/cipher/ripemd160
 github.com/skycoin/skycoin/src/cipher/secp256k1-go
 github.com/skycoin/skycoin/src/cipher/secp256k1-go/secp256k1-go2
 github.com/skycoin/skycoin/src/util/logging
-# github.com/skycoin/skywire v1.3.15
+# github.com/skycoin/skywire v1.3.16
 ## explicit; go 1.21
 github.com/skycoin/skywire/cmd/setup-node/commands
 github.com/skycoin/skywire/internal/httpauth
