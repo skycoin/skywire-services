@@ -291,7 +291,7 @@ func getARData(url string) (map[string]map[string]bool, error) {
 }
 
 func (api *API) tpdDeregister(tps []string) {
-	err := api.deregisterRequest(tps, api.dmsgURL+"/deregister", "tp discovery")
+	err := api.deregisterRequest(tps, api.tpdURL+"/deregister", "tp discovery")
 	if err != nil {
 		api.logger.Warn(err)
 		return
