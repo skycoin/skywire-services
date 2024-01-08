@@ -291,7 +291,7 @@ func getARData(url string) (map[string]map[string]bool, error) {
 }
 
 func (api *API) tpdDeregister(tps []string) {
-	err := api.deregisterRequest(tps, api.tpdURL+"/deregister", "tp discovery")
+	err := api.deregisterRequest(tps, api.tpdURL+"/transports/deregister", "tp discovery")
 	if err != nil {
 		api.logger.Warn(err)
 		return
@@ -331,7 +331,7 @@ func (api *API) deregisterRequest(keys []string, rawReqURL, service string) erro
 	}(res.Body)
 
 	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("Error deregister keys from %s : %s", service, err)
+		return fmt.Errorf("Error on deregister keys from %s : res.StatusCode %s", service, res.StatusCode)
 	}
 
 	return nil
