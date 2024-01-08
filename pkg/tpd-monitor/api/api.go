@@ -331,7 +331,7 @@ func (api *API) deregisterRequest(keys []string, rawReqURL, service string) erro
 	}(res.Body)
 
 	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("Error on deregister keys from %s : res.StatusCode %s", service, res.StatusCode)
+		return fmt.Errorf("Error on deregister keys from %s : res.StatusCode %d", service, res.StatusCode)
 	}
 
 	return nil
