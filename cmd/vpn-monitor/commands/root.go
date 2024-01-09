@@ -3,7 +3,6 @@ package commands
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"time"
@@ -59,8 +58,6 @@ var RootCmd = &cobra.Command{
 
 		mLogger := logging.NewMasterLogger()
 		conf := api.InitConfig(confPath, mLogger)
-
-		fmt.Println(conf.Version)
 
 		srvURLs := api.ServicesURLs{
 			SD: conf.Launcher.ServiceDisc,
