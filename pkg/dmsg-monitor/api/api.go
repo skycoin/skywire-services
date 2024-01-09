@@ -170,7 +170,7 @@ func (api *API) dmsgDeregistration(uptimes map[string]bool) {
 		api.logger.Warnf("Error occur during get dmsg clients list due to %s", err)
 		return
 	}
-	//randomize the order of the survey collection - workaround for hanging
+	//randomize the order of the dmsg entries
 	rand.Shuffle(len(clients), func(i, j int) {
 		clients[i], clients[j] = clients[j], clients[i]
 	})
