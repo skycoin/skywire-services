@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"sync/atomic"
@@ -303,6 +304,10 @@ func (api *API) getVPNKeys() {
 	if len(vpns) == 0 {
 		api.logger.Warn("No vpns found... Trying again")
 	}
+	//randomize the order of the vpn entries
+	rand.Shuffle(len(vpns), func(i, j int) {
+		vpns[i], vpns[j] = vpns[j], vpns[i]
+	})
 	api.vpnKeys = []cipher.PubKey{}
 	for _, vpnEntry := range vpns {
 		api.vpnKeys = append(api.vpnKeys, vpnEntry.Addr.PubKey())
