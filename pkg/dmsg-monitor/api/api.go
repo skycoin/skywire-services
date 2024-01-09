@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"strings"
@@ -169,7 +170,10 @@ func (api *API) dmsgDeregistration(uptimes map[string]bool) {
 		api.logger.Warnf("Error occur during get dmsg clients list due to %s", err)
 		return
 	}
-
+	//randomize the order of the survey collection - workaround for hanging
+	rand.Shuffle(len(clients), func(i, j int) {
+		clients[i], clients[j] = clients[j], clients[i]
+	})
 	// check dmsg clients either alive or dead
 	checkerConfig := dmsgCheckerConfig{
 		wg:        new(sync.WaitGroup),
