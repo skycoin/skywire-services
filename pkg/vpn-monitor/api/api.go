@@ -390,7 +390,7 @@ func InitConfig(confPath string, mLog *logging.MasterLogger) *visorconfig.V1 {
 	for _, app := range conf.Launcher.Apps {
 		for _, oldApp := range oldConf.Launcher.Apps {
 			if app.Name == oldApp.Name {
-				newConfLauncherApps = append(newConfLauncherApps, app)
+				newConfLauncherApps = append(newConfLauncherApps, oldApp)
 			}
 		}
 	}
