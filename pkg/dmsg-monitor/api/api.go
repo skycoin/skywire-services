@@ -428,7 +428,20 @@ func whitelistedPKs() map[string]bool {
 	for _, pk := range strings.Split(utilenv.TestNetworkMonitorPKs, ",") {
 		whitelistedPKs[pk] = true
 	}
-	whitelistedPKs[utilenv.RouteSetupPKs] = true
-	whitelistedPKs[utilenv.TestRouteSetupPKs] = true
+	for _, pk := range strings.Split(utilenv.RouteSetupPKs, ",") {
+		whitelistedPKs[pk] = true
+	}
+	for _, pk := range strings.Split(utilenv.TestRouteSetupPKs, ",") {
+		whitelistedPKs[pk] = true
+	}
+	for _, pk := range strings.Split(utilenv.TPSetupPKs, ",") {
+		whitelistedPKs[pk] = true
+	}
+	for _, pk := range strings.Split(utilenv.TestTPSetupPKs, ",") {
+		whitelistedPKs[pk] = true
+	}
+	for _, pk := range strings.Split(utilenv.SurveyWhitelistPKs, ",") {
+		whitelistedPKs[pk] = true
+	}
 	return whitelistedPKs
 }
