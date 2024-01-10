@@ -3,99 +3,74 @@ package main
 
 import (
 	"errors"
+	"flag"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
-	cc "github.com/ivanpirog/coloredcobra"
-	"github.com/skycoin/skywire-utilities/pkg/buildinfo"
 	"github.com/skycoin/skywire-utilities/pkg/cipher"
 	"github.com/skycoin/skywire/pkg/app"
 	"github.com/skycoin/skywire/pkg/app/appevent"
 	"github.com/skycoin/skywire/pkg/app/appserver"
-	"github.com/spf13/cobra"
 
 	"github.com/skycoin/skywire-services/internal/vpn"
 )
 
 var (
-	serverPKStr string
+	serverPKStr = flag.String("srv", "", "PubKey of the server to connect to")
 )
 
-func init() {
-	RootCmd.Flags().StringVarP(&serverPKStr, "srv", "k", "", "PubKey of the server to connect to\033[0m")
-	var helpflag bool
-	RootCmd.SetUsageTemplate(help)
-	RootCmd.PersistentFlags().BoolVarP(&helpflag, "help", "h", false, "help for vpn-lite-client")
-	RootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
-	RootCmd.PersistentFlags().MarkHidden("help") //nolint
-}
+func main() {
+	flag.Parse()
 
-// RootCmd contains the root command
-var RootCmd = &cobra.Command{
-	Use:   "vpnlc",
-	Short: "Vpn lite client",
-	Long: `
-	┬  ┬┌─┐┌┐┌   ┬  ┬┌┬┐┌─┐  ┌─┐┬  ┬┌─┐┌┐┌┌┬┐
-	└┐┌┘├─┘│││───│  │ │ ├┤───│  │  │├┤ │││ │
-	 └┘ ┴  ┘└┘   ┴─┘┴ ┴ └─┘  └─┘┴─┘┴└─┘┘└┘ ┴ `,
-	SilenceErrors:         true,
-	SilenceUsage:          true,
-	DisableSuggestions:    true,
-	DisableFlagsInUseLine: true,
-	Version:               buildinfo.Version(),
-	Run: func(_ *cobra.Command, _ []string) {
+	eventSub := appevent.NewSubscriber()
 
-		eventSub := appevent.NewSubscriber()
+	appCl := app.NewClient(eventSub)
+	defer appCl.Close()
 
-		appCl := app.NewClient(eventSub)
-		defer appCl.Close()
+	if *serverPKStr == "" {
+		err := errors.New("VPN server pub key is missing")
+		print(fmt.Sprintf("%v\n", err))
+		setAppErr(appCl, err)
+		os.Exit(1)
+	}
 
-		if serverPKStr == "" {
-			err := errors.New("VPN server pub key is missing")
-			print(fmt.Sprintf("%v\n", err))
-			setAppErr(appCl, err)
-			os.Exit(1)
-		}
+	serverPK := cipher.PubKey{}
+	if err := serverPK.UnmarshalText([]byte(*serverPKStr)); err != nil {
+		print(fmt.Sprintf("Invalid local SK: %v\n", err))
+		setAppErr(appCl, err)
+		os.Exit(1)
+	}
 
-		serverPK := cipher.PubKey{}
-		if err := serverPK.UnmarshalText([]byte(serverPKStr)); err != nil {
-			print(fmt.Sprintf("Invalid local SK: %v\n", err))
-			setAppErr(appCl, err)
-			os.Exit(1)
-		}
+	fmt.Printf("Connecting to VPN server %s\n", serverPK.String())
 
-		fmt.Printf("Connecting to VPN server %s\n", serverPK.String())
+	vpnLiteClientCfg := vpn.ClientConfig{
+		ServerPK: serverPK,
+	}
+	vpnLiteClient, err := vpn.NewLiteClient(vpnLiteClientCfg, appCl)
+	if err != nil {
+		print(fmt.Sprintf("Error creating VPN lite client: %v\n", err))
+		setAppErr(appCl, err)
+	}
 
-		vpnLiteClientCfg := vpn.ClientConfig{
-			ServerPK: serverPK,
-		}
-		vpnLiteClient, err := vpn.NewLiteClient(vpnLiteClientCfg, appCl)
-		if err != nil {
-			print(fmt.Sprintf("Error creating VPN lite client: %v\n", err))
-			setAppErr(appCl, err)
-		}
+	osSigs := make(chan os.Signal, 2)
+	sigs := []os.Signal{syscall.SIGTERM, syscall.SIGINT}
+	for _, sig := range sigs {
+		signal.Notify(osSigs, sig)
+	}
 
-		osSigs := make(chan os.Signal, 2)
-		sigs := []os.Signal{syscall.SIGTERM, syscall.SIGINT}
-		for _, sig := range sigs {
-			signal.Notify(osSigs, sig)
-		}
+	go func() {
+		<-osSigs
+		vpnLiteClient.Close()
+	}()
 
-		go func() {
-			<-osSigs
-			vpnLiteClient.Close()
-		}()
+	defer setAppStatus(appCl, appserver.AppDetailedStatusStopped)
 
-		defer setAppStatus(appCl, appserver.AppDetailedStatusStopped)
+	if err := vpnLiteClient.Serve(); err != nil {
+		print(fmt.Sprintf("Failed to serve VPN lite client: %v\n", err))
+	}
 
-		if err := vpnLiteClient.Serve(); err != nil {
-			print(fmt.Sprintf("Failed to serve VPN lite client: %v\n", err))
-		}
-
-	},
 }
 
 func setAppErr(appCl *app.Client, err error) {
@@ -109,37 +84,3 @@ func setAppStatus(appCl *app.Client, status appserver.AppDetailedStatus) {
 		print(fmt.Sprintf("Failed to set status %v: %v\n", status, err))
 	}
 }
-
-func main() {
-	Execute()
-}
-
-// Execute executes root CLI command.
-func Execute() {
-	cc.Init(&cc.Config{
-		RootCmd:       RootCmd,
-		Headings:      cc.HiBlue + cc.Bold, //+ cc.Underline,
-		Commands:      cc.HiBlue + cc.Bold,
-		CmdShortDescr: cc.HiBlue,
-		Example:       cc.HiBlue + cc.Italic,
-		ExecName:      cc.HiBlue + cc.Bold,
-		Flags:         cc.HiBlue + cc.Bold,
-		//FlagsDataType: cc.HiBlue,
-		FlagsDescr:      cc.HiBlue,
-		NoExtraNewlines: true,
-		NoBottomNewline: true,
-	})
-	if err := RootCmd.Execute(); err != nil {
-		log.Fatal("Failed to execute command: ", err)
-	}
-}
-
-const help = "Usage:\r\n" +
-	"  {{.UseLine}}{{if .HasAvailableSubCommands}}{{end}} {{if gt (len .Aliases) 0}}\r\n\r\n" +
-	"{{.NameAndAliases}}{{end}}{{if .HasAvailableSubCommands}}\r\n\r\n" +
-	"Available Commands:{{range .Commands}}{{if (or .IsAvailableCommand)}}\r\n  " +
-	"{{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}\r\n\r\n" +
-	"Flags:\r\n" +
-	"{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}\r\n\r\n" +
-	"Global Flags:\r\n" +
-	"{{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}\r\n\r\n"
