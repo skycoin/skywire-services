@@ -247,6 +247,13 @@ DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/tpd-monitor/Dockerfile \
   --build-arg image_tag="$image_tag" \
   -t "$registry"/tpd-monitor:"$image_tag" .
 
+echo "building skysocks monitor image"
+DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/skysocks-monitor/Dockerfile \
+  --build-arg base_image="$base_image" \
+  --build-arg build_opts="$go_buildopts" \
+  --build-arg image_tag="$image_tag" \
+  -t "$registry"/skysocks-monitor:"$image_tag" .
+
 echo "building transport setup image"
 DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/transport-setup/Dockerfile \
   --build-arg base_image="$base_image" \
