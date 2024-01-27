@@ -42,9 +42,9 @@ var RootCmd = &cobra.Command{
 	Use:   "skysocksmon",
 	Short: "Skysocks monitor.",
 	Long: `
-	┬  ┬┌─┐┌┐┌   ┌┬┐┌─┐┌┐┌┬┌┬┐┌─┐┬─┐
-	└┐┌┘├─┘│││───││││ │││││ │ │ │├┬┘
-	 └┘ ┴  ┘└┘   ┴ ┴└─┘┘└┘┴ ┴ └─┘┴└─`,
+	┌─┐┬┌─┬ ┬┌─┐┌─┐┌─┐┬┌─┌─┐   ┌┬┐┌─┐┌┐┌┬┌┬┐┌─┐┬─┐
+	└─┐├┴┐└┬┘└─┐│ ││  ├┴┐└─┐───││││ │││││ │ │ │├┬┘
+	└─┘┴ ┴ ┴ └─┘└─┘└─┘┴ ┴└─┘   ┴ ┴└─┘┘└┘┴ ┴ └─┘┴└─`,
 	SilenceErrors:         true,
 	SilenceUsage:          true,
 	DisableSuggestions:    true,
