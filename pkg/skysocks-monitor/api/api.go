@@ -207,7 +207,7 @@ func (api *API) isOnline(key cipher.PubKey) (ok bool) {
 		if len(sum) > 0 {
 			latency = sum[0].Latency
 		}
-	case vpn.ErrSetupNode, vpn.ErrNotPermitted:
+	case vpn.ErrNotPermitted:
 		api.logger.WithError(skysocksErr).Infof("Skysocks error on %v transport of %v.", transport, key)
 	default:
 		api.logger.WithError(skysocksErr).Infof("Skysocks error on %v transport of %v.", transport, key)
@@ -338,9 +338,6 @@ func RunSkysocksClient(v *visor.Visor, serverPK cipher.PubKey, appName string) (
 
 	time.Sleep(time.Second * 15)
 	appErr, _ := v.GetAppError(appName) //nolint
-	if appErr == vpn.ErrSetupNode.Error() {
-		return []appserver.ConnectionSummary{}, vpn.ErrSetupNode
-	}
 	if appErr == vpn.ErrNotPermitted.Error() {
 		return []appserver.ConnectionSummary{}, vpn.ErrNotPermitted
 	}
