@@ -47,8 +47,8 @@ type API struct {
 	whitelistedPKs map[string]bool
 }
 
-// DMSGMonitorConfig is struct for Keys and Sign value of dmsg monitor
-type DMSGMonitorConfig struct {
+// TpdMonitorConfig is struct for Keys and Sign value of tpd monitor
+type TpdMonitorConfig struct {
 	PK   cipher.PubKey
 	Sign cipher.Sig
 }
@@ -72,7 +72,7 @@ type Error struct {
 }
 
 // New returns a new *chi.Mux object, which can be started as a server
-func New(logger *logging.Logger, srvURLs ServicesURLs, monitorConfig DMSGMonitorConfig) *API {
+func New(logger *logging.Logger, srvURLs ServicesURLs, monitorConfig TpdMonitorConfig) *API {
 
 	api := &API{
 		dmsgURL:        srvURLs.DMSG,
