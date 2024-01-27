@@ -15,7 +15,7 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/tcpproxy"
 	"github.com/spf13/cobra"
 
-	"github.com/skycoin/skywire-services/pkg/vpn-monitor/api"
+	"github.com/skycoin/skywire-services/pkg/skysocks-monitor/api"
 )
 
 var (
