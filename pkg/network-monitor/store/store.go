@@ -12,7 +12,7 @@ import (
 
 var (
 	// ErrVisorSumNotFound indicates that requested visor summary is not registered.
-	ErrVisorSumNotFound = errors.New("Visor summarry not found")
+	ErrVisorSumNotFound = errors.New("Visor summary not found")
 )
 
 // Store stores Transport metadata and generated nonce values.

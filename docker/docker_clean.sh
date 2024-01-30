@@ -25,6 +25,7 @@ declare -a images_arr=(
   "skycoin/dmsg-monitor:${image_tag}"
   "skycoin/tpd-monitor:${image_tag}"
   "skycoin/transport-setup:${image_tag}"
+  "skycoin/skysocks-monitor:${image_tag}"
 )
 
 for i in "${images_arr[@]}"; do

@@ -358,16 +358,17 @@ func (api *API) testTransport(key cipher.PubKey, transport network.Type, ch chan
 			api.logger.WithField("Retry", 4-retrier).WithError(err).Warnf("Failed to establish %v transport to %v", transport, key)
 			retrier--
 			continue
-		} else {
-			api.logger.Infof("Established %v transport to %v", transport, key)
-			isUp = true
-			err = api.Visor.RemoveTransport(tp.ID)
-			if err != nil {
-				api.logger.Warnf("Error removing %v transport of %v: %v", transport, key, err)
-			}
-			retrier = 0
 		}
+
+		api.logger.Infof("Established %v transport to %v", transport, key)
+		isUp = true
+		err = api.Visor.RemoveTransport(tp.ID)
+		if err != nil {
+			api.logger.Warnf("Error removing %v transport of %v: %v", transport, key, err)
+		}
+		retrier = 0
 	}
+
 	ch <- isUp
 }
 
@@ -566,6 +567,7 @@ func InitConfig(confPath string, mLog *logging.MasterLogger) *visorconfig.V1 {
 	conf.Launcher.BinPath = oldConf.Launcher.BinPath
 	conf.Launcher.ServerAddr = oldConf.Launcher.ServerAddr
 	conf.CLIAddr = oldConf.CLIAddr
+	conf.Transport.TransportSetupPKs = oldConf.Transport.TransportSetupPKs
 
 	// following services are not needed
 	conf.STCP = nil

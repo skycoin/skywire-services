@@ -28,6 +28,7 @@ declare -a images_arr=(
   "dmsg-monitor"
   "tpd-monitor"
   "transport-setup"
+  "skysocks-monitor"
 )
 
 echo "Pushing to $registry using tag: $tag"

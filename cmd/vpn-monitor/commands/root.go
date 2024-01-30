@@ -16,6 +16,7 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/tcpproxy"
 	"github.com/skycoin/skywire/pkg/app/appserver"
 	"github.com/skycoin/skywire/pkg/visor/visorconfig"
+
 	"github.com/spf13/cobra"
 
 	"github.com/skycoin/skywire-services/pkg/vpn-monitor/api"
@@ -29,19 +30,20 @@ var (
 )
 
 func init() {
-	rootCmd.Flags().StringVarP(&addr, "addr", "a", ":9081", "address to bind to.\033[0m")
-	rootCmd.Flags().DurationVarP(&sleepDeregistration, "sleep-deregistration", "s", 10, "Sleep time for derigstration process in minutes\033[0m")
-	rootCmd.Flags().StringVarP(&confPath, "config", "c", "vpn-monitor.json", "config file location.\033[0m")
-	rootCmd.Flags().StringVar(&tag, "tag", "vpn_monitor", "logging tag\033[0m")
+	RootCmd.Flags().StringVarP(&addr, "addr", "a", ":9081", "address to bind to.\033[0m")
+	RootCmd.Flags().DurationVarP(&sleepDeregistration, "sleep-deregistration", "s", 10, "Sleep time for derigstration process in minutes\033[0m")
+	RootCmd.Flags().StringVarP(&confPath, "config", "c", "vpn-monitor.json", "config file location.\033[0m")
+	RootCmd.Flags().StringVar(&tag, "tag", "vpn_monitor", "logging tag\033[0m")
 	var helpflag bool
-	rootCmd.SetUsageTemplate(help)
-	rootCmd.PersistentFlags().BoolVarP(&helpflag, "help", "h", false, "help for "+rootCmd.Use)
-	rootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
-	rootCmd.PersistentFlags().MarkHidden("help") //nolint
+	RootCmd.SetUsageTemplate(help)
+	RootCmd.PersistentFlags().BoolVarP(&helpflag, "help", "h", false, "help for vpn-monitor")
+	RootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
+	RootCmd.PersistentFlags().MarkHidden("help") //nolint
 }
 
-var rootCmd = &cobra.Command{
-	Use:   "vpn-monitor",
+// RootCmd contains the root command
+var RootCmd = &cobra.Command{
+	Use:   "vpnmon",
 	Short: "VPN monitor.",
 	Long: `
 	┬  ┬┌─┐┌┐┌   ┌┬┐┌─┐┌┐┌┬┌┬┐┌─┐┬─┐
@@ -59,7 +61,7 @@ var rootCmd = &cobra.Command{
 		}
 
 		mLogger := logging.NewMasterLogger()
-		conf := initConfig(confPath, mLogger)
+		conf := api.InitConfig(confPath, mLogger)
 
 		srvURLs := api.ServicesURLs{
 			SD: conf.Launcher.ServiceDisc,
@@ -99,69 +101,10 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-func initConfig(confPath string, mLog *logging.MasterLogger) *visorconfig.V1 {
-	log := mLog.PackageLogger("network_monitor:config")
-	log.Info("Reading config from file.")
-	log.WithField("filepath", confPath).Info()
-
-	oldConf, err := visorconfig.ReadFile(confPath)
-	if err != nil {
-		log.WithError(err).Fatal("Failed to read config file.")
-	}
-	var testEnv bool
-	if oldConf.Dmsg.Discovery == utilenv.TestDmsgDiscAddr {
-		testEnv = true
-	}
-	// have same services as old config
-	services := &visorconfig.Services{
-		DmsgDiscovery:      oldConf.Dmsg.Discovery,
-		TransportDiscovery: oldConf.Transport.Discovery,
-		AddressResolver:    oldConf.Transport.AddressResolver,
-		RouteFinder:        oldConf.Routing.RouteFinder,
-		RouteSetupNodes:    oldConf.Routing.RouteSetupNodes,
-		UptimeTracker:      oldConf.UptimeTracker.Addr,
-		ServiceDiscovery:   oldConf.Launcher.ServiceDisc,
-	}
-	// update old config
-	conf, err := visorconfig.MakeDefaultConfig(mLog, &oldConf.SK, false, false, testEnv, false, false, confPath, "", services)
-	if err != nil {
-		log.WithError(err).Fatal("Failed to create config.")
-	}
-
-	// have the same apps that the old config had
-	var newConfLauncherApps []appserver.AppConfig
-	for _, app := range conf.Launcher.Apps {
-		for _, oldApp := range oldConf.Launcher.Apps {
-			if app.Name == oldApp.Name {
-				newConfLauncherApps = append(newConfLauncherApps, app)
-			}
-		}
-	}
-	conf.Launcher.Apps = newConfLauncherApps
-
-	conf.Version = oldConf.Version
-	conf.LocalPath = oldConf.LocalPath
-	conf.Launcher.BinPath = oldConf.Launcher.BinPath
-	conf.Launcher.ServerAddr = oldConf.Launcher.ServerAddr
-	conf.CLIAddr = oldConf.CLIAddr
-
-	// following services are not needed
-	conf.STCP = nil
-	conf.Dmsgpty = nil
-	conf.Transport.PublicAutoconnect = false
-
-	// save the config file
-	if err := conf.Flush(); err != nil {
-		log.WithError(err).Fatal("Failed to flush config to file.")
-	}
-
-	return conf
-}
-
 // Execute executes root CLI command.
 func Execute() {
 	cc.Init(&cc.Config{
-		RootCmd:       rootCmd,
+		RootCmd:       RootCmd,
 		Headings:      cc.HiBlue + cc.Bold, //+ cc.Underline,
 		Commands:      cc.HiBlue + cc.Bold,
 		CmdShortDescr: cc.HiBlue,
@@ -173,7 +116,7 @@ func Execute() {
 		NoExtraNewlines: true,
 		NoBottomNewline: true,
 	})
-	if err := rootCmd.Execute(); err != nil {
+	if err := RootCmd.Execute(); err != nil {
 		log.Fatal("Failed to execute command: ", err)
 	}
 }
