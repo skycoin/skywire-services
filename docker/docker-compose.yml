@@ -51,7 +51,7 @@ services:
       intra:
         ipv4_address: 174.0.0.250
     ports:
-      - "6379:6379"
+      - "6385:6379"
     container_name: "dmsgd-redis"
     hostname: dmsgd-redis
     depends_on:
@@ -471,6 +471,7 @@ services:
     entrypoint: /release/network-monitor --redis redis://nm-redis:6379 --config /release/network-monitor.json
     depends_on:
       - nm-redis
+      - visor-c
     volumes:
       - type: bind
         source: ../docker/config/network-monitor.json
@@ -496,6 +497,8 @@ services:
     ports:
       - "9081:9081"
     entrypoint: /release/dmsg-monitor -d http://dmsg-discovery:9090 -u http://uptime-tracker:9096 -a :9081 --config /release/dmsg-monitor.json
+    depends_on:
+      - visor-c
     restart: always
     stdin_open: true # docker run -i
     tty: true        # docker run -t
@@ -517,6 +520,8 @@ services:
     ports:
       - "9082:9082"
     entrypoint: /release/tpd-monitor --dmsg-url http://dmsg-discovery:9090 --tpd-url http://transport-discovery:9091 --ar-url http://address-resolver:9093 -a :9082 --config /release/tpd-monitor.json
+    depends_on:
+      - visor-c
     restart: always
     stdin_open: true # docker run -i
     tty: true        # docker run -t
@@ -538,6 +543,8 @@ services:
     ports:
       - "9083:9083"
     entrypoint: "/release/vpn-monitor -a :9083 -c /release/vpn-monitor.json"
+    depends_on:
+      - visor-c
     restart: always
     stdin_open: true # docker run -i
     tty: true        # docker run -t
