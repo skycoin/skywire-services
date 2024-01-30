@@ -1,7 +1,7 @@
 {
-	"version": "v0.2.0-1568-gd2dba960",
-	"sk": "7cc6c5f12cf79e4cd003e2f49e8bc9a8a12c6b0a9353c296d6b6a4d400749d2d",
-	"pk": "0216a2b84c5ec409c1aef3fc7c73770d2182cfda8d51ee1dc6bfd507424894b038",
+	"version": "v1.3.9",
+	"sk": "72beb06492738e0bd1fd2c434327cc5e1a0bc56f39c20156891ddfacfccb8d8c",
+	"pk": "020963f3943a4ced9dbaadfda7b33e444a63cfd5135e5630c8c72c1a841a112cf6",
 	"dmsg": {
 		"discovery": "http://dmsg-discovery:9090",
 		"sessions_count": 1,
@@ -11,11 +11,18 @@
 		"discovery": "http://transport-discovery:9091",
 		"address_resolver": "http://address-resolver:9093",
 		"public_autoconnect": false,
-		"transport_setup_nodes": null
+		"transport_setup": null,
+		"log_store": {
+			"type": "file",
+			"location": "./local/transport_logs",
+			"rotation_interval": "168h0m0s"
+		},
+		"stcpr_port": 0,
+		"sudph_port": 0
 	},
 	"routing": {
-		"setup_nodes": [
-			"02603d53d49b6575a0b8cee05b70dd23c86e42cd6cba99af769d61a6196ea2bcb1"
+		"route_setup_nodes": [
+			"0324579f003e6b4048bae2def4365e634d8e0e3054a20fc7af49daf2a179658557"
 		],
 		"route_finder": "http://route-finder:9092",
 		"route_finder_timeout": "10s",
@@ -26,23 +33,19 @@
 	},
 	"launcher": {
 		"service_discovery": "http://service-discovery:9098",
-		"apps": [
-			{
-				"name": "vpn-client",
-				"auto_start": false,
-				"port": 43
-			}
-		],
+		"apps": null,
 		"server_addr": "localhost:5510",
-		"bin_path": "./release"
+		"bin_path": "./release",
+		"display_node_ip": false
 	},
+	"survey_whitelist": null,
 	"hypervisors": [],
 	"cli_addr": "localhost:3439",
 	"log_level": "info",
 	"local_path": "./local/network-monitor",
+	"dmsghttp_server_path": "./local/custom",
 	"stun_servers": null,
 	"shutdown_timeout": "10s",
-	"restart_check_delay": "1s",
 	"is_public": false,
 	"persistent_transports": null
 }

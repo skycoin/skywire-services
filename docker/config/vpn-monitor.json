@@ -1,7 +1,7 @@
 {
 	"version": "v1.3.10",
-	"sk": "66475bf8ce6140792ffed0cba14490a93d9b033ca1f1811ca88d69df72c76d2f",
-	"pk": "02704c20a061d0a97f2ac8efc9e7c96fcf9bb54fcdfcc96bec83fb4b9b3b2f7d3f",
+	"sk": "69306af6cb18525e6fcd60cf830126d8b1310ef5bfb2ce908dd6e56956fecb48",
+	"pk": "023ab76d2d6cd92b2651cf52e8d392d912e799665dbf5ceae56baef42e0d9700dd",
 	"dmsg": {
 		"discovery": "http://dmsg-discovery:9090",
 		"sessions_count": 1,
@@ -33,14 +33,25 @@
 	},
 	"launcher": {
 		"service_discovery": "http://service-discovery:9098",
-		"apps": null,
+		"apps": [
+			{
+				"name": "vpn-client",
+				"binary": "vpn-client",
+				"args": [
+					"-dns",
+					"1.1.1.1"
+				],
+				"auto_start": false,
+				"port": 43
+			}
+		],
 		"server_addr": "localhost:5510",
 		"bin_path": "./release",
 		"display_node_ip": false
 	},
 	"survey_whitelist": null,
 	"hypervisors": [],
-	"cli_addr": "localhost:3435",
+	"cli_addr": "localhost:3439",
 	"log_level": "info",
 	"local_path": "./local/network-monitor",
 	"dmsghttp_server_path": "./local/custom",
