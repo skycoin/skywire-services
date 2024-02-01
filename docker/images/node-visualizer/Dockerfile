@@ -14,12 +14,6 @@ RUN yarn --cwd ./pkg/node-visualizer/web install && \
 
 FROM ${base_image} as builder
 ARG build_opts
-ARG go111module
-ARG goos
-ARG goarch
-ENV GO111MODULE=$go111module \
-    GOOS=$goos \
-    GOARCH=$goarch
 
 # COPY . /skywire-services
 COPY --from=react-builder ./app/ /skywire-services/

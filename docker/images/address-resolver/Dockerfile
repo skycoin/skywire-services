@@ -4,12 +4,6 @@ ARG image_tag
 FROM ${base_image} as builder
 
 ARG build_opts
-ARG go111module
-ARG goos
-ARG goarch
-ENV GO111MODULE=$go111module \
-    GOOS=$goos \
-    GOARCH=$goarch
 
 COPY . /skywire-services
 WORKDIR /skywire-services
