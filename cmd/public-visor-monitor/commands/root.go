@@ -2,12 +2,9 @@
 package commands
 
 import (
-	"bytes"
 	"context"
-	"io"
 	"log"
 	"os"
-	"path/filepath"
 	"time"
 
 	cc "github.com/ivanpirog/coloredcobra"
@@ -16,7 +13,6 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/cmdutil"
 	"github.com/skycoin/skywire-utilities/pkg/logging"
 	"github.com/skycoin/skywire-utilities/pkg/tcpproxy"
-	"github.com/skycoin/skywire/pkg/visor/visorconfig"
 	"github.com/spf13/cobra"
 
 	"github.com/skycoin/skywire-services/pkg/public-visor-monitor/api"
@@ -63,6 +59,7 @@ var RootCmd = &cobra.Command{
 		}
 
 		mLogger := logging.NewMasterLogger()
+
 		lvl, err := logging.LevelFromString(logLvl)
 		if err != nil {
 			mLogger.Fatal("Invalid loglvl detected")
@@ -70,7 +67,7 @@ var RootCmd = &cobra.Command{
 
 		logging.SetLevel(lvl)
 
-		conf := initConfig(confPath, visorBuildInfo, mLogger)
+		conf := api.InitConfig(confPath, mLogger)
 
 		srvURLs := api.ServicesURLs{
 			SD: conf.Launcher.ServiceDisc,
@@ -108,30 +105,6 @@ var RootCmd = &cobra.Command{
 			logger.WithError(err).Error("Visor closed with error.")
 		}
 	},
-}
-
-func initConfig(confPath string, visorBuildInfo *buildinfo.Info, mLog *logging.MasterLogger) *visorconfig.V1 {
-	log := mLog.PackageLogger("public_visor_monitor:config")
-	var r io.Reader
-
-	if confPath != "" {
-		log.WithField("filepath", confPath).Info()
-		f, err := os.ReadFile(filepath.Clean(confPath))
-		if err != nil {
-			log.WithError(err).Fatal("Failed to read config file.")
-		}
-		r = bytes.NewReader(f)
-	}
-
-	conf, compat, err := visorconfig.Parse(log, r, confPath, visorBuildInfo)
-	if err != nil {
-		log.WithError(err).Fatal("Failed to read in config.")
-	}
-	if !compat {
-		log.Fatalf("failed to start skywire - config version is incompatible")
-	}
-
-	return conf
 }
 
 // Execute executes root CLI command.

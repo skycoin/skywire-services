@@ -73,6 +73,8 @@ build: dep ## Build binaries
 	${OPTS} go build ${BUILD_OPTS} -o ./bin/dmsg-monitor ./cmd/dmsg-monitor
 	${OPTS} go build ${BUILD_OPTS} -o ./bin/tpd-monitor ./cmd/tpd-monitor
 	${OPTS} go build ${BUILD_OPTS} -o ./bin/vpn-monitor ./cmd/vpn-monitor
+	${OPTS} go build ${BUILD_OPTS} -o ./bin/skysocks-monitor ./cmd/skysocks-monitor
+	${OPTS} go build ${BUILD_OPTS} -o ./apps/skysocks-client ./cmd/skysocks-lite-client
 	${OPTS} go build ${BUILD_OPTS} -o ./bin/public-visor-monitor ./cmd/public-visor-monitor
 	# yarn --cwd ./pkg/node-visualizer/web build
 	# rm -rf ./pkg/node-visualizer/api/build/static
@@ -91,6 +93,8 @@ build-deploy: ## Build for deployment Docker images
 	${DOCKER_OPTS} go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/dmsg-monitor ./cmd/dmsg-monitor
 	${DOCKER_OPTS} go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/tpd-monitor ./cmd/tpd-monitor
 	${DOCKER_OPTS} go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/vpn-monitor ./cmd/vpn-monitor
+	${DOCKER_OPTS} go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o /release/skysocks-monitor ./cmd/skysocks-monitor
+	${DOCKER_OPTS} go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o /release/skysocks-client ./cmd/skysocks-lite-client
 	${DOCKER_OPTS} go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/public-visor-monitor ./cmd/public-visor-monitor
 
 build-race: dep ## Build binaries
@@ -107,6 +111,8 @@ build-race: dep ## Build binaries
 	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/dmsg-monitor ./cmd/dmsg-monitor
 	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/tpd-monitor ./cmd/tpd-monitor
 	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/vpn-monitor ./cmd/vpn-monitor
+	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/skysocks-monitor ./cmd/skysocks-monitor
+	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/skysocks-client ./cmd/skysocks-lite-client
 	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/public-visor-monitor ./cmd/public-visor-monitor
 
 install: ## Install route-finder, transport-discovery, address-resolver, sw-env, keys-gen, network-monitor, node-visualizer

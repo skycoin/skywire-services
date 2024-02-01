@@ -14,12 +14,12 @@ ENV GO111MODULE=$go111module \
 COPY . /skywire-services
 WORKDIR /skywire-services
 
-RUN go build "${build_opts}" -o /release/dmsg-monitor ./cmd/dmsg-monitor && \
-    mv /skywire-services/docker/config/dmsg-monitor.json /release/dmsg-monitor.json
+RUN go build "${build_opts}" -o /release/dmsg-monitor ./cmd/dmsg-monitor
 
 FROM alpine as prod
+
+WORKDIR /release
 COPY --from=builder /release/dmsg-monitor /release/dmsg-monitor
-COPY --from=builder /release/dmsg-monitor.json /release/dmsg-monitor.json
 ENTRYPOINT ["/release/dmsg-monitor"]
 
 FROM prod as test
@@ -33,7 +33,6 @@ RUN sh -c /release/install-prequisites.sh cert-only \
     && rm -rf /release/install-prequisites.sh
 
 COPY --from=builder /release/dmsg-monitor /release/dmsg-monitor
-COPY --from=builder /release/dmsg-monitor.json /release/dmsg-monitor.json
 ENTRYPOINT ["/release/dmsg-monitor"]
 
 FROM e2e as integration

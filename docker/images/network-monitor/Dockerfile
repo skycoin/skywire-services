@@ -15,13 +15,12 @@ COPY . /skywire-services
 WORKDIR /skywire-services
 
 RUN go build "${build_opts}" -o /release/network-monitor ./cmd/network-monitor && \
-    go build "${build_opts}" -o /release/vpn-client ./cmd/vpn-lite-client && \
-    mv /skywire-services/docker/config/network-monitor.json /release/network-monitor.json
+    go build "${build_opts}" -o /release/vpn-client ./cmd/vpn-lite-client
 
 FROM alpine as prod
+WORKDIR /release
 COPY --from=builder /release/vpn-client /apps/vpn-client
 COPY --from=builder /release/network-monitor /release/network-monitor
-COPY --from=builder /release/network-monitor.json /release/network-monitor.json
 ENTRYPOINT ["/release/network-monitor"]
 
 FROM prod as test
@@ -36,7 +35,6 @@ RUN sh -c /release/install-prequisites.sh cert-only \
 
 COPY --from=builder /release/vpn-client /release/vpn-client
 COPY --from=builder /release/network-monitor /release/network-monitor
-COPY --from=builder /release/network-monitor.json /release/network-monitor.json
 ENTRYPOINT ["/release/network-monitor"]
 
 FROM e2e as integration
