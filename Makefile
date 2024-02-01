@@ -14,6 +14,7 @@ DATE := $(shell date -u $(RFC_3339))
 COMMIT := $(shell git rev-list -1 HEAD)
 
 OPTS?=GO111MODULE=on
+DOCKER_OPTS?=GO111MODULE=on GOOS=linux
 DOCKER_NETWORK?=SKYWIRE
 DOCKER_COMPOSE_FILE:=./docker/docker-compose.yml
 DOCKER_REGISTRY:=skycoin
@@ -80,20 +81,20 @@ build: dep ## Build binaries
 	# ${OPTS} go build ${BUILD_OPTS} -o ./bin/node-visualizer ./cmd/node-visualizer
 
 build-deploy: ## Build for deployment Docker images
-	go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/address-resolver ./cmd/address-resolver
-	go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/route-finder ./cmd/route-finder
-	go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/setup-node ./cmd/setup-node
-	go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/transport-discovery ./cmd/transport-discovery
-	go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/network-monitor ./cmd/network-monitor
-	go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/vpn-client ./cmd/vpn-lite-client
-	go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/transport-setup ./cmd/transport-setup
-	go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/node-visualizer ./cmd/node-visualizer
-	go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/dmsg-monitor ./cmd/dmsg-monitor
-	go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/tpd-monitor ./cmd/tpd-monitor
-	go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/vpn-monitor ./cmd/vpn-monitor
-	go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o /release/skysocks-monitor ./cmd/skysocks-monitor
-	go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o /release/skysocks-client ./cmd/skysocks-lite-client
-	go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/public-visor-monitor ./cmd/public-visor-monitor
+	${DOCKER_OPTS} go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/address-resolver ./cmd/address-resolver
+	${DOCKER_OPTS} go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/route-finder ./cmd/route-finder
+	${DOCKER_OPTS} go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/setup-node ./cmd/setup-node
+	${DOCKER_OPTS} go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/transport-discovery ./cmd/transport-discovery
+	${DOCKER_OPTS} go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/network-monitor ./cmd/network-monitor
+	${DOCKER_OPTS} go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/vpn-client ./cmd/vpn-lite-client
+	${DOCKER_OPTS} go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/transport-setup ./cmd/transport-setup
+	${DOCKER_OPTS} go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/node-visualizer ./cmd/node-visualizer
+	${DOCKER_OPTS} go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/dmsg-monitor ./cmd/dmsg-monitor
+	${DOCKER_OPTS} go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/tpd-monitor ./cmd/tpd-monitor
+	${DOCKER_OPTS} go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/vpn-monitor ./cmd/vpn-monitor
+	${DOCKER_OPTS} go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o /release/skysocks-monitor ./cmd/skysocks-monitor
+	${DOCKER_OPTS} go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o /release/skysocks-client ./cmd/skysocks-lite-client
+	${DOCKER_OPTS} go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/public-visor-monitor ./cmd/public-visor-monitor
 
 build-race: dep ## Build binaries
 	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/route-finder ./cmd/route-finder

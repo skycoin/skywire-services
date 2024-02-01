@@ -4,9 +4,6 @@ trap "exit" INT
 ## Variables
 image_tag="$1"
 go_buildopts="$2"
-docker_go111module="$3"
-docker_goos="$4"
-docker_goarch="$5"
 git_branch="$(git rev-parse --abbrev-ref HEAD)"
 nv_dev_url="https://nv.skywire.dev/map"
 nv_prod_url="https://nv.skycoin.com/map"
