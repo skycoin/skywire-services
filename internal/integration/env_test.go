@@ -377,7 +377,7 @@ func (env *TestEnv) visorTpExec(cmd string) ([]*skyvisor.TransportSummary, error
 }
 
 func (env *TestEnv) VPNList(visor string) ([]servicedisc.Service, error) {
-	cmd := fmt.Sprintf("/release/skywire-cli vpn --rpc %v:3435 list -n 1 --json", visor)
+	cmd := fmt.Sprintf("/release/skywire-cli vpn --rpc %v:3435 list --sdurl http://service-discovery:9098 --uturl http://uptime-tracker:9096 --json", visor)
 	cliOutput := struct {
 		Output []servicedisc.Service `json:"output,omitempty"`
 		Err    *string               `json:"error,omitempty"`
