@@ -357,7 +357,7 @@ func (env *TestEnv) VisorTpAdd(visor, pk string, tpType network.Type) (*skyvisor
 }
 
 func (env *TestEnv) VisorTpRm(visor string, tpID uuid.UUID) (string, error) {
-	cmd := fmt.Sprintf("/release/skywire-cli visor --rpc %v:3435 tp rm %v --json", visor, tpID)
+	cmd := fmt.Sprintf("/release/skywire-cli visor --rpc %v:3435 tp rm -i %v --json", visor, tpID)
 	return env.ExecJSONReturnString(cmd)
 }
 
