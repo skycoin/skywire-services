@@ -195,12 +195,12 @@ elif [[ "$image_tag" == "integration" ]]; then
   echo "REACT_APP_SKY_NODEVIZ_URL=${nv_e2e_url}" > ./pkg/node-visualizer/web/.env
 fi
 
-DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/node-visualizer/Dockerfile \
-  --build-arg base_image="$base_image" \
-  --build-arg build_opts="$go_buildopts" \
-  --build-arg image_tag="$image_tag" \
-  $platform \
-  -t "$registry"/node-visualizer:"$image_tag" .
+# DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/node-visualizer/Dockerfile \
+#   --build-arg base_image="$base_image" \
+#   --build-arg build_opts="$go_buildopts" \
+#   --build-arg image_tag="$image_tag" \
+#   $platform \
+#   -t "$registry"/node-visualizer:"$image_tag" .
 
 echo "building network monitor image"
 DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/network-monitor/Dockerfile \

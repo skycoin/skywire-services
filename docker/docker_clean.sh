@@ -17,7 +17,7 @@ declare -a images_arr=(
   "skycoin/service-discovery:${image_tag}"
   "skycoin/uptime-tracker:${image_tag}"
   "skycoin/network-monitor:${image_tag}"
-  "skycoin/node-visualizer:${image_tag}"
+  # "skycoin/node-visualizer:${image_tag}"
   "skycoin/config-bootstrapper:${image_tag}"
   "skycoin/liveness-checker:${image_tag}"
   "skycoin/vpn-monitor:${image_tag}"
