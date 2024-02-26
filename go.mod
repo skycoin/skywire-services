@@ -9,7 +9,7 @@ require (
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/docker/docker v1.13.1
 	github.com/flopp/go-staticmaps v0.0.0-20220221183018-c226716bec53
-	github.com/go-chi/chi/v5 v5.0.10
+	github.com/go-chi/chi/v5 v5.0.11
 	github.com/go-playground/validator/v10 v10.15.1
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-redis/redis/v8 v8.11.5
@@ -21,9 +21,9 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/rs/cors v1.8.2
 	github.com/sirupsen/logrus v1.9.3
-	github.com/skycoin/dmsg v1.3.14
-	github.com/skycoin/skywire v1.3.16
-	github.com/skycoin/skywire-utilities v1.3.14
+	github.com/skycoin/dmsg v1.3.18-0.20240226072009-86c43e8d4ca4
+	github.com/skycoin/skywire v1.3.19-0.20240226074006-004b1e214d5c
+	github.com/skycoin/skywire-utilities v1.3.17
 	github.com/songgao/water v0.0.0-20200317203138-2b4b6d7c09d8
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.4
@@ -136,13 +136,13 @@ require (
 	go.etcd.io/bbolt v1.3.7 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	golang.org/x/arch v0.4.0 // indirect
-	golang.org/x/crypto v0.12.0 // indirect
+	golang.org/x/crypto v0.17.0 // indirect
 	golang.org/x/exp v0.0.0-20230817173708-d852ddb80c63 // indirect
 	golang.org/x/image v0.0.0-20210628002857-a66eb6448b8d // indirect
 	golang.org/x/mod v0.12.0 // indirect
-	golang.org/x/sys v0.11.0 // indirect
-	golang.org/x/term v0.11.0 // indirect
-	golang.org/x/text v0.12.0 // indirect
+	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/term v0.15.0 // indirect
+	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.12.1-0.20230815132531-74c255bcf846 // indirect
 	golang.zx2c4.com/wintun v0.0.0-20230126152724-0fa3db229ce2 // indirect
 	golang.zx2c4.com/wireguard v0.0.0-20230223181233-21636207a675 // indirect
