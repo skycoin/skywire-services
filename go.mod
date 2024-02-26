@@ -23,7 +23,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/skycoin/dmsg v1.3.18-0.20240226072009-86c43e8d4ca4
 	github.com/skycoin/skywire v1.3.19-0.20240226074006-004b1e214d5c
-	github.com/skycoin/skywire-utilities v1.3.17
+	github.com/skycoin/skywire-utilities v1.3.18-0.20240208220612-9f31eda72f33
 	github.com/songgao/water v0.0.0-20200317203138-2b4b6d7c09d8
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.4
