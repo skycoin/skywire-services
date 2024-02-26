@@ -50,8 +50,8 @@
 				"name": "skychat",
 				"binary": "skychat",
 				"args": [
-					"addr",
-					"*:8001"
+					"--addr",
+					"*:8002"
 				],
 				"auto_start": true,
 				"port": 1
