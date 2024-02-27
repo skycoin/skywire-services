@@ -11,7 +11,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/skycoin/skywire-services/internal/skysocks"
 	"github.com/skycoin/skywire-utilities/pkg/buildinfo"
 	"github.com/skycoin/skywire-utilities/pkg/cipher"
 	"github.com/skycoin/skywire-utilities/pkg/netutil"
@@ -20,6 +19,8 @@ import (
 	"github.com/skycoin/skywire/pkg/app/appserver"
 	"github.com/skycoin/skywire/pkg/routing"
 	"github.com/skycoin/skywire/pkg/visor/visorconfig"
+
+	"github.com/skycoin/skywire-services/internal/skysocks"
 )
 
 const (
