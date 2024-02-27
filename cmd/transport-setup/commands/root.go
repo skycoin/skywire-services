@@ -23,15 +23,6 @@ var (
 func init() {
 	RootCmd.Flags().StringVarP(&configFile, "config", "c", "", "path to config file\033[0m")
 	RootCmd.Flags().StringVarP(&logLvl, "loglvl", "l", "info", "set log level one of: info, error, warn, debug, trace, panic")
-	err := RootCmd.MarkFlagRequired("config")
-	if err != nil {
-		log.Fatal("config flag is not specified")
-	}
-	var helpflag bool
-	RootCmd.SetUsageTemplate(help)
-	RootCmd.PersistentFlags().BoolVarP(&helpflag, "help", "h", false, "help for transport-setup")
-	RootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
-	RootCmd.PersistentFlags().MarkHidden("help") //nolint
 }
 
 // RootCmd contains the root command
@@ -48,6 +39,9 @@ var RootCmd = &cobra.Command{
 	DisableFlagsInUseLine: true,
 	Version:               buildinfo.Version(),
 	Run: func(_ *cobra.Command, args []string) {
+		if configFile == "" {
+			log.Fatal("please specify config file")
+		}
 		const loggerTag = "transport_setup"
 		log := logging.MustGetLogger(loggerTag)
 		lvl, err := logging.LevelFromString(logLvl)
