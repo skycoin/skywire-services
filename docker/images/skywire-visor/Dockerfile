@@ -11,8 +11,6 @@ ENV CGO_ENABLED=${CGO_ENABLED} \
 
 WORKDIR /
 
-ARG CACHEBUST=1 
-
 RUN apk add --no-cache make git build-base && \
     git clone -b develop https://github.com/skycoin/skywire && \
     cd skywire && \
