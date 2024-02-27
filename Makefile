@@ -63,7 +63,6 @@ build: dep ## Build binaries
 	${OPTS} go build ${BUILD_OPTS} -o ./bin/transport-discovery ./cmd/transport-discovery
 	${OPTS} go build ${BUILD_OPTS} -o ./bin/address-resolver ./cmd/address-resolver
 	${OPTS} go build ${BUILD_OPTS} -o ./bin/sw-env ./cmd/sw-env
-	${OPTS} go build ${BUILD_OPTS} -o ./bin/keys-gen ./cmd/keys-gen
 	${OPTS} go build ${BUILD_OPTS} -o ./bin/network-monitor ./cmd/network-monitor
 	${OPTS} go build ${BUILD_OPTS} -o ./apps/vpn-client ./cmd/vpn-lite-client
 	${OPTS} go build ${BUILD_OPTS} -o ./bin/transport-setup ./cmd/transport-setup
@@ -102,7 +101,6 @@ build-race: dep ## Build binaries
 	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/transport-discovery ./cmd/transport-discovery
 	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/address-resolver ./cmd/address-resolver
 	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/sw-env ./cmd/sw-env
-	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/keys-gen ./cmd/keys-gen
 	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/network-monitor ./cmd/network-monitor
 	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/vpn-client ./cmd/vpn-lite-client
 	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/transport-setup ./cmd/transport-setup
@@ -114,13 +112,12 @@ build-race: dep ## Build binaries
 	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/skysocks-client ./cmd/skysocks-lite-client
 	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/public-visor-monitor ./cmd/public-visor-monitor
 
-install: ## Install route-finder, transport-discovery, address-resolver, sw-env, keys-gen, network-monitor, node-visualizer
+install: ## Install route-finder, transport-discovery, address-resolver, sw-env, network-monitor, node-visualizer
 	${OPTS} go install ${BUILD_OPTS} \
 		./cmd/route-finder \
 		./cmd/transport-discovery \
 		./cmd/address-resolver \
 		./cmd/sw-env \
-		./cmd/keys-gen \
 		./cmd/network-monitor \
 		./cmd/node-visualizer
 

@@ -11,7 +11,6 @@ import (
 	ar "github.com/skycoin/skywire-services/cmd/address-resolver/commands"
 	confbs "github.com/skycoin/skywire-services/cmd/config-bootstrapper/commands"
 	dmsgm "github.com/skycoin/skywire-services/cmd/dmsg-monitor/commands"
-	kg "github.com/skycoin/skywire-services/cmd/keys-gen/commands"
 	lc "github.com/skycoin/skywire-services/cmd/liveness-checker/commands"
 	nv "github.com/skycoin/skywire-services/cmd/node-visualizer/commands"
 	pvm "github.com/skycoin/skywire-services/cmd/public-visor-monitor/commands"
@@ -30,7 +29,6 @@ func init() {
 		ar.RootCmd,
 		rf.RootCmd,
 		confbs.RootCmd,
-		kg.RootCmd,
 		lc.RootCmd,
 		nv.RootCmd,
 		pvm.RootCmd,
