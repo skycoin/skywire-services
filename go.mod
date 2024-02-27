@@ -9,7 +9,7 @@ require (
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/docker/docker v1.13.1
 	github.com/flopp/go-staticmaps v0.0.0-20220221183018-c226716bec53
-	github.com/go-chi/chi/v5 v5.0.10
+	github.com/go-chi/chi/v5 v5.0.11
 	github.com/go-playground/validator/v10 v10.15.1
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-redis/redis/v8 v8.11.5
@@ -157,6 +157,7 @@ require (
 
 // Uncomment it for tests with alternative branches and run `make dep`
 // replace github.com/skycoin/dmsg => ../dmsg
+replace github.com/skycoin/dmsg => github.com/skycoin/dmsg v1.3.18-0.20240226072009-86c43e8d4ca4
 
 // replace github.com/skycoin/skywire => ../skywire
 

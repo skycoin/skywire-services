@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/rand"
 	"net"
 	"sync"
 	"time"
@@ -31,10 +32,10 @@ type ClientCallbacks struct {
 
 func (sc *ClientCallbacks) ensure() {
 	if sc.OnSessionDial == nil {
-		sc.OnSessionDial = func(network, addr string) (err error) { return nil }
+		sc.OnSessionDial = func(network, addr string) (err error) { return nil } //nolint
 	}
 	if sc.OnSessionDisconnect == nil {
-		sc.OnSessionDisconnect = func(network, addr string, err error) {}
+		sc.OnSessionDisconnect = func(network, addr string, err error) {} //nolint
 	}
 }
 
@@ -43,6 +44,7 @@ type Config struct {
 	MinSessions    int
 	UpdateInterval time.Duration // Duration between discovery entry updates.
 	Callbacks      *ClientCallbacks
+	ClientType     string
 }
 
 // Ensure ensures all config values are set.
@@ -107,10 +109,9 @@ func NewClient(pk cipher.PubKey, sk cipher.SecKey, dc disc.APIClient, conf *Conf
 
 	// Init callback: on set session.
 	c.EntityCommon.setSessionCallback = func(ctx context.Context) error {
-		if err := c.EntityCommon.updateClientEntry(ctx, c.done); err != nil {
+		if err := c.EntityCommon.updateClientEntry(ctx, c.done, c.conf.ClientType); err != nil {
 			return err
 		}
-
 		// Client is 'ready' once we have successfully updated the discovery entry
 		// with at least one delegated server.
 		c.readyOnce.Do(func() { close(c.ready) })
@@ -119,7 +120,7 @@ func NewClient(pk cipher.PubKey, sk cipher.SecKey, dc disc.APIClient, conf *Conf
 
 	// Init callback: on delete session.
 	c.EntityCommon.delSessionCallback = func(ctx context.Context) error {
-		err := c.EntityCommon.updateClientEntry(ctx, c.done)
+		err := c.EntityCommon.updateClientEntry(ctx, c.done, c.conf.ClientType)
 		return err
 	}
 
@@ -174,9 +175,18 @@ func (ce *Client) Serve(ctx context.Context) {
 					entries = entries[ind : ind+1]
 				}
 			}
+		} else if ctx.Value("setupNode") != nil {
+			entries, err = ce.discoverServers(cancellabelCtx, true)
+			if err != nil {
+				ce.log.WithError(err).Warn("Failed to discover dmsg servers.")
+				if err == context.Canceled || err == context.DeadlineExceeded {
+					return
+				}
+				ce.serveWait()
+				continue
+			}
 		} else {
 			entries, err = ce.discoverServers(cancellabelCtx, false)
-
 			if err != nil {
 				ce.log.WithError(err).Warn("Failed to discover dmsg servers.")
 				if err == context.Canceled || err == context.DeadlineExceeded {
@@ -190,7 +200,10 @@ func (ce *Client) Serve(ctx context.Context) {
 			ce.log.Warnf("No entries found. Retrying after %s...", ce.bo.String())
 			ce.serveWait()
 		}
-
+		// randomize dmsg servers list
+		rand.Shuffle(len(entries), func(i, j int) {
+			entries[i], entries[j] = entries[j], entries[i]
+		})
 		for n, entry := range entries {
 			if isClosed(ce.done) {
 				return
@@ -445,7 +458,7 @@ func (ce *Client) dialSession(ctx context.Context, entry *disc.Entry) (cs Client
 
 // AllStreams returns all the streams of the current client.
 func (ce *Client) AllStreams() (out []*Stream) {
-	fn := func(port uint16, pv netutil.PorterValue) (next bool) {
+	fn := func(port uint16, pv netutil.PorterValue) (next bool) { //nolint
 		if str, ok := pv.Value.(*Stream); ok {
 			out = append(out, str)
 			return true
@@ -465,6 +478,15 @@ func (ce *Client) AllStreams() (out []*Stream) {
 
 // AllEntries returns all the entries registered in discovery
 func (ce *Client) AllEntries(ctx context.Context) (entries []string, err error) {
+	err = netutil.NewDefaultRetrier(ce.log).Do(ctx, func() error {
+		entries, err = ce.dc.AllEntries(ctx)
+		return err
+	})
+	return entries, err
+}
+
+// AllVisorEntries returns all the entries registered in discovery that are visor
+func (ce *Client) AllVisorEntries(ctx context.Context) (entries []string, err error) {
 	err = netutil.NewDefaultRetrier(ce.log).Do(ctx, func() error {
 		entries, err = ce.dc.AllEntries(ctx)
 		return err
