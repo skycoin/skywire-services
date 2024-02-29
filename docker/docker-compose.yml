@@ -570,6 +570,27 @@ services:
     stdin_open: true # docker run -i
     tty: true        # docker run -t
 
+  skysocks-monitor:
+    image: "${REGISTRY}/skysocks-monitor:${DOCKER_TAG}"
+    hostname: skysocks-monitor
+    container_name: "skysocks-monitor"
+    networks:
+      srv:
+        ipv4_address: 175.0.0.35
+      intra:
+        ipv4_address: 174.0.0.35
+    volumes:
+      - type: bind
+        source: ../docker/config/skysocks-monitor.json
+        target: /release/skysocks-monitor.json
+        read_only: false
+    ports:
+      - "9085:9085"
+    entrypoint: "/release/skysocks-monitor -a :9085 -c /release/skysocks-monitor.json"
+    restart: always
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t
+
 volumes:
   db:
     driver: local

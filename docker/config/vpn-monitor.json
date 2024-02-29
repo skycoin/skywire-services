@@ -1,5 +1,5 @@
 {
-	"version": "v1.3.10",
+	"version": "v1.3.18",
 	"sk": "69306af6cb18525e6fcd60cf830126d8b1310ef5bfb2ce908dd6e56956fecb48",
 	"pk": "023ab76d2d6cd92b2651cf52e8d392d912e799665dbf5ceae56baef42e0d9700dd",
 	"dmsg": {
@@ -38,7 +38,7 @@
 				"name": "vpn-client",
 				"binary": "vpn-client",
 				"args": [
-					"-dns",
+					"--dns",
 					"1.1.1.1"
 				],
 				"auto_start": false,

@@ -69,6 +69,7 @@ func NewEnv() *TestEnv {
 			"/tpd-monitor",
 			"/vpn-monitor",
 			"/public-visor-monitor",
+			"/skysocks-monitor",
 		},
 		visorNames: []string{
 			"/" + visorA,

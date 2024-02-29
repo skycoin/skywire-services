@@ -20,7 +20,7 @@ declare -a images_arr=(
   "setup-node"
   "address-resolver"
   "network-monitor"
-  "node-visualizer"
+  # "node-visualizer"
   "config-bootstrapper"
   "liveness-checker"
   "vpn-monitor"
