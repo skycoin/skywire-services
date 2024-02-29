@@ -457,118 +457,139 @@ services:
     restart: always
     entrypoint: /release/skywire-visor -c /opt/skywire/skywire-visor.json
 
-  # network-monitor:
-  #   image: "${REGISTRY}/network-monitor:${DOCKER_TAG}"
-  #   hostname: network-monitor
-  #   container_name: "network-monitor"
-  #   networks:
-  #     srv:
-  #       ipv4_address: 175.0.0.30  
-  #     intra:
-  #       ipv4_address: 174.0.0.30
-  #   ports:
-  #     - "9080:9080"
-  #   entrypoint: /release/network-monitor --redis redis://nm-redis:6379 --config /release/network-monitor.json
-  #   depends_on:
-  #     - nm-redis
-  #     - visor-c
-  #   volumes:
-  #     - type: bind
-  #       source: ../docker/config/network-monitor.json
-  #       target: /release/network-monitor.json
-  #       read_only: false
-  #   stdin_open: true # docker run -i
-  #   tty: true        # docker run -t
+  network-monitor:
+    image: "${REGISTRY}/network-monitor:${DOCKER_TAG}"
+    hostname: network-monitor
+    container_name: "network-monitor"
+    networks:
+      srv:
+        ipv4_address: 175.0.0.30  
+      intra:
+        ipv4_address: 174.0.0.30
+    ports:
+      - "9080:9080"
+    entrypoint: /release/network-monitor --redis redis://nm-redis:6379 --config /release/network-monitor.json
+    depends_on:
+      - nm-redis
+      - visor-c
+    volumes:
+      - type: bind
+        source: ../docker/config/network-monitor.json
+        target: /release/network-monitor.json
+        read_only: false
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t
 
-  # dmsg-monitor:
-  #   image: "${REGISTRY}/dmsg-monitor:${DOCKER_TAG}"
-  #   hostname: dmsg-monitor
-  #   container_name: "dmsg-monitor"
-  #   networks:
-  #     srv:
-  #       ipv4_address: 175.0.0.31
-  #     intra:
-  #       ipv4_address: 174.0.0.31
-  #   volumes:
-  #     - type: bind
-  #       source: ../docker/config/dmsg-monitor.json
-  #       target: /release/dmsg-monitor.json
-  #       read_only: false
-  #   ports:
-  #     - "9081:9081"
-  #   entrypoint: /release/dmsg-monitor -d http://dmsg-discovery:9090 -u http://uptime-tracker:9096 -a :9081 --config /release/dmsg-monitor.json
-  #   depends_on:
-  #     - visor-c
-  #   restart: always
-  #   stdin_open: true # docker run -i
-  #   tty: true        # docker run -t
+  dmsg-monitor:
+    image: "${REGISTRY}/dmsg-monitor:${DOCKER_TAG}"
+    hostname: dmsg-monitor
+    container_name: "dmsg-monitor"
+    networks:
+      srv:
+        ipv4_address: 175.0.0.31
+      intra:
+        ipv4_address: 174.0.0.31
+    volumes:
+      - type: bind
+        source: ../docker/config/dmsg-monitor.json
+        target: /release/dmsg-monitor.json
+        read_only: false
+    ports:
+      - "9081:9081"
+    entrypoint: /release/dmsg-monitor -d http://dmsg-discovery:9090 -u http://uptime-tracker:9096 -a :9081 --config /release/dmsg-monitor.json
+    depends_on:
+      - visor-c
+    restart: always
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t
 
-  # tpd-monitor:
-  #   image: "${REGISTRY}/tpd-monitor:${DOCKER_TAG}"
-  #   hostname: tpd-monitor
-  #   container_name: "tpd-monitor"
-  #   networks:
-  #     srv:
-  #       ipv4_address: 175.0.0.32
-  #     intra:
-  #       ipv4_address: 174.0.0.32
-  #   volumes:
-  #     - type: bind
-  #       source: ../docker/config/tpd-monitor.json
-  #       target: /release/tpd-monitor.json
-  #       read_only: false
-  #   ports:
-  #     - "9082:9082"
-  #   entrypoint: /release/tpd-monitor --dmsg-url http://dmsg-discovery:9090 --tpd-url http://transport-discovery:9091 --ar-url http://address-resolver:9093 -a :9082 --config /release/tpd-monitor.json
-  #   depends_on:
-  #     - visor-c
-  #   restart: always
-  #   stdin_open: true # docker run -i
-  #   tty: true        # docker run -t
+  tpd-monitor:
+    image: "${REGISTRY}/tpd-monitor:${DOCKER_TAG}"
+    hostname: tpd-monitor
+    container_name: "tpd-monitor"
+    networks:
+      srv:
+        ipv4_address: 175.0.0.32
+      intra:
+        ipv4_address: 174.0.0.32
+    volumes:
+      - type: bind
+        source: ../docker/config/tpd-monitor.json
+        target: /release/tpd-monitor.json
+        read_only: false
+    ports:
+      - "9082:9082"
+    entrypoint: /release/tpd-monitor --dmsg-url http://dmsg-discovery:9090 --tpd-url http://transport-discovery:9091 --ar-url http://address-resolver:9093 -a :9082 --config /release/tpd-monitor.json
+    depends_on:
+      - visor-c
+    restart: always
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t
 
-  # vpn-monitor:
-  #   image: "${REGISTRY}/vpn-monitor:${DOCKER_TAG}"
-  #   hostname: vpn-monitor
-  #   container_name: "vpn-monitor"
-  #   networks:
-  #     srv:
-  #       ipv4_address: 175.0.0.33
-  #     intra:
-  #       ipv4_address: 174.0.0.33
-  #   volumes:
-  #     - type: bind
-  #       source: ../docker/config/vpn-monitor.json
-  #       target: /release/vpn-monitor.json
-  #       read_only: false
-  #   ports:
-  #     - "9083:9083"
-  #   entrypoint: "/release/vpn-monitor -a :9083 -c /release/vpn-monitor.json"
-  #   depends_on:
-  #     - visor-c
-  #   restart: always
-  #   stdin_open: true # docker run -i
-  #   tty: true        # docker run -t
+  vpn-monitor:
+    image: "${REGISTRY}/vpn-monitor:${DOCKER_TAG}"
+    hostname: vpn-monitor
+    container_name: "vpn-monitor"
+    networks:
+      srv:
+        ipv4_address: 175.0.0.33
+      intra:
+        ipv4_address: 174.0.0.33
+    volumes:
+      - type: bind
+        source: ../docker/config/vpn-monitor.json
+        target: /release/vpn-monitor.json
+        read_only: false
+    ports:
+      - "9083:9083"
+    entrypoint: "/release/vpn-monitor -a :9083 -c /release/vpn-monitor.json"
+    depends_on:
+      - visor-c
+    restart: always
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t
 
-  # public-visor-monitor:
-  #   image: "${REGISTRY}/public-visor-monitor:${DOCKER_TAG}"
-  #   hostname: public-visor-monitor
-  #   container_name: "public-visor-monitor"
-  #   networks:
-  #     srv:
-  #       ipv4_address: 175.0.0.34
-  #     intra:
-  #       ipv4_address: 174.0.0.34
-  #   volumes:
-  #     - type: bind
-  #       source: ../docker/config/public-visor-monitor.json
-  #       target: /release/public-visor-monitor.json
-  #       read_only: false
-  #   ports:
-  #     - "9084:9084"
-  #   entrypoint: "/release/public-visor-monitor -a :9084 -c /release/public-visor-monitor.json"
-  #   restart: always
-  #   stdin_open: true # docker run -i
-  #   tty: true        # docker run -t
+  public-visor-monitor:
+    image: "${REGISTRY}/public-visor-monitor:${DOCKER_TAG}"
+    hostname: public-visor-monitor
+    container_name: "public-visor-monitor"
+    networks:
+      srv:
+        ipv4_address: 175.0.0.34
+      intra:
+        ipv4_address: 174.0.0.34
+    volumes:
+      - type: bind
+        source: ../docker/config/public-visor-monitor.json
+        target: /release/public-visor-monitor.json
+        read_only: false
+    ports:
+      - "9084:9084"
+    entrypoint: "/release/public-visor-monitor -a :9084 -c /release/public-visor-monitor.json"
+    restart: always
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t
+
+  skysocks-monitor:
+    image: "${REGISTRY}/skysocks:${DOCKER_TAG}"
+    hostname: skysocks
+    container_name: "skysocks"
+    networks:
+      srv:
+        ipv4_address: 175.0.0.35
+      intra:
+        ipv4_address: 174.0.0.35
+    volumes:
+      - type: bind
+        source: ../docker/config/skysocks.json
+        target: /release/skysocks.json
+        read_only: false
+    ports:
+      - "9084:9084"
+    entrypoint: "/release/skysocks -a :9084 -c /release/skysocks.json"
+    restart: always
+    stdin_open: true # docker run -i
+    tty: true        # docker run -t
 
 volumes:
   db:
