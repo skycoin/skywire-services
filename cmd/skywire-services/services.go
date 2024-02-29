@@ -75,7 +75,6 @@ func main() {
 		NoExtraNewlines: true,
 		NoBottomNewline: true,
 	})
-
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
 	}
