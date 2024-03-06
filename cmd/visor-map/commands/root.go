@@ -4,6 +4,7 @@ package commands
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"image/color"
 	"image/jpeg"
 	"log"
@@ -52,7 +53,9 @@ func init() {
 
 // RootCmd contains the root command
 var RootCmd = &cobra.Command{
-	Use:   "vmap",
+	Use: func() string {
+		return strings.Split(filepath.Base(strings.ReplaceAll(strings.ReplaceAll(fmt.Sprintf("%v", os.Args), "[", ""), "]", "")), " ")[0]
+	}(),
 	Short: "Utility to render visors map",
 	Long: `
 	┬  ┬┬┌─┐┌─┐┬─┐   ┌┬┐┌─┐┌─┐

@@ -3,6 +3,9 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 
 	cc "github.com/ivanpirog/coloredcobra"
 	"github.com/skycoin/skywire-utilities/pkg/buildinfo"
@@ -37,6 +40,18 @@ func init() {
 		se.RootCmd,
 		dmsgm.RootCmd,
 	)
+	tpd.RootCmd.Use = "tpd"
+	tps.RootCmd.Use = "tps"
+	tpdm.RootCmd.Use = "tpdm"
+	ar.RootCmd.Use = "ar"
+	rf.RootCmd.Use = "rf"
+	confbs.RootCmd.Use = "confbs"
+	kg.RootCmd.Use = "kg"
+	lc.RootCmd.Use = "lc"
+	nv.RootCmd.Use = "nv"
+	pvm.RootCmd.Use = "pvm"
+	se.RootCmd.Use = "se"
+	dmsgm.RootCmd.Use = "dmsgm"
 
 	var helpflag bool
 	RootCmd.SetUsageTemplate(help)
@@ -49,7 +64,9 @@ func init() {
 
 // RootCmd contains all subcommands
 var RootCmd = &cobra.Command{
-	Use:   "svc",
+	Use: func() string {
+		return strings.Split(filepath.Base(strings.ReplaceAll(strings.ReplaceAll(fmt.Sprintf("%v", os.Args), "[", ""), "]", "")), " ")[0]
+	}(),
 	Short: "Skywire services",
 	Long: `
 	┌─┐┬┌─┬ ┬┬ ┬┬┬─┐┌─┐  ┌─┐┌─┐┬─┐┬  ┬┬┌─┐┌─┐┌─┐
@@ -80,8 +97,9 @@ func main() {
 	}
 }
 
-const help = "{{if gt (len .Aliases) 0}}" +
-	"{{.NameAndAliases}}{{end}}{{if .HasAvailableSubCommands}}" +
+const help = "Usage:\r\n" +
+	"  {{.UseLine}}{{if .HasAvailableSubCommands}}{{end}} {{if gt (len .Aliases) 0}}\r\n\r\n" +
+	"{{.NameAndAliases}}{{end}}{{if .HasAvailableSubCommands}}\r\n\r\n" +
 	"Available Commands:{{range .Commands}}{{if (or .IsAvailableCommand)}}\r\n  " +
 	"{{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}\r\n\r\n" +
 	"Flags:\r\n" +

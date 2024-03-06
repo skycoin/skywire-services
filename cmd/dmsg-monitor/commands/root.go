@@ -3,9 +3,12 @@ package commands
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"log/syslog"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	logrussyslog "github.com/sirupsen/logrus/hooks/syslog"
@@ -45,12 +48,15 @@ func init() {
 
 // RootCmd contains the root command
 var RootCmd = &cobra.Command{
-	Use:   "mon",
-	Short: "DMSG monitor of DMSG discoery.",
+	Use: func() string {
+		return strings.Split(filepath.Base(strings.ReplaceAll(strings.ReplaceAll(fmt.Sprintf("%v", os.Args), "[", ""), "]", "")), " ")[0]
+	}(),
+	Short: "DMSG monitor of DMSG discovery entries.",
 	Long: `
 	┌┬┐┌┬┐┌─┐┌─┐   ┌┬┐┌─┐┌┐┌┬┌┬┐┌─┐┬─┐
 	 │││││└─┐│ ┬───││││ │││││ │ │ │├┬┘
-	─┴┘┴ ┴└─┘└─┘   ┴ ┴└─┘┘└┘┴ ┴ └─┘┴└─`,
+	─┴┘┴ ┴└─┘└─┘   ┴ ┴└─┘┘└┘┴ ┴ └─┘┴└─
+`,
 	SilenceErrors:         true,
 	SilenceUsage:          true,
 	DisableSuggestions:    true,
