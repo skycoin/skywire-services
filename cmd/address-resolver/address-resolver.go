@@ -9,9 +9,7 @@ import (
 )
 
 func init() {
-	var helpflag bool
 	commands.RootCmd.SetUsageTemplate(help)
-	commands.RootCmd.PersistentFlags().BoolVarP(&helpflag, "help", "h", false, "help for dmsgpty-cli")
 	commands.RootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
 	commands.RootCmd.PersistentFlags().MarkHidden("help") //nolint
 }
