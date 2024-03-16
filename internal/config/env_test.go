@@ -81,11 +81,8 @@ func ExampleEnvConfig_AddVisorExplicitly() {
 func ExampleEnvConfig_AddVisor() {
 	publicEnv := &EnvConfig{
 		Description: "Example of environment configuration with global skywire-services and 3 skywire-visors",
-		ExternalServices: ExternalServicesConfig{
-			SyslogAddress: "localhost:514",
-		},
 		Runners: RunnersConfig{
-			SkywireVisor: "go run ./cmd/skywire-visor {{.Name}}.json --syslog {{.Syslog}} --tag {{.Name}}",
+			SkywireVisor: "go run ./cmd/skywire-visor {{.Name}}.json --tag {{.Name}}",
 		},
 		Skywire: DefaultPublicSkywire(),
 	}
@@ -107,25 +104,24 @@ func ExampleEnvConfig_AddVisor() {
 		fmt.Printf("%v %v: %v\n", n, visor.Name, visor.Cmd)
 	}
 
-	// Output: 0 VisorA: go run ./cmd/skywire-visor VisorA.json --syslog localhost:514 --tag VisorA
-	// 1 VisorB: go run ./cmd/skywire-visor VisorB.json --syslog localhost:514 --tag VisorB
-	// 2 VisorC: go run ./cmd/skywire-visor VisorC.json --syslog localhost:514 --tag VisorC
+	// Output: 0 VisorA: go run ./cmd/skywire-visor VisorA.json --tag VisorA
+	// 1 VisorB: go run ./cmd/skywire-visor VisorB.json --tag VisorB
+	// 2 VisorC: go run ./cmd/skywire-visor VisorC.json --tag VisorC
 }
 
 func ExampleEnvConfig_Skywire() {
 	localEnv := &EnvConfig{
 		Description: "Example of environment configuration with local skywire-services running from source",
 		ExternalServices: ExternalServicesConfig{
-			SyslogAddress: "localhost:514",
-			RedisAddress:  "localhost:6379",
+			RedisAddress: "localhost:6379",
 		},
 		Runners: RunnersConfig{
-			DmsgDiscovery:      "go run ./cmd/dmsg-discovery --address {{.Address}} --syslog {{.Syslog}} --tag {{.Name}}",
-			DmsgServer:         "go run ./cmd/dmsg-server {{.Name}}.json --syslog {{.Syslog}} --tag {{.Name}}",
-			TransportDiscovery: "go run ./cmd/transport-discovery --address {{.Address}} --syslog {{.Syslog}} --tag {{.Name}}",
-			RouteFinder:        "go run ./cmd/route-finder --address {{.Address}} --syslog {{.Syslog}} --tag {{.Name}}",
-			SetupNode:          "go run ./cmd/setup-node {{.Name}}.json --syslog {{.Syslog}} --tag {{.Name}}",
-			AddressResolver:    "go run ./cmd/address-resolver {{.Name}}.json --address {{.Address}} --syslog {{.Syslog}} --tag {{.Name}}",
+			DmsgDiscovery:      "go run ./cmd/dmsg-discovery --address {{.Address}} --tag {{.Name}}",
+			DmsgServer:         "go run ./cmd/dmsg-server {{.Name}}.json --tag {{.Name}}",
+			TransportDiscovery: "go run ./cmd/transport-discovery --address {{.Address}} --tag {{.Name}}",
+			RouteFinder:        "go run ./cmd/route-finder --address {{.Address}} --tag {{.Name}}",
+			SetupNode:          "go run ./cmd/setup-node {{.Name}}.json --tag {{.Name}}",
+			AddressResolver:    "go run ./cmd/address-resolver {{.Name}}.json --address {{.Address}} --tag {{.Name}}",
 		},
 	}
 
@@ -147,12 +143,12 @@ func ExampleEnvConfig_Skywire() {
 	fmt.Println(env.Skywire.AddressResolver.Cmd)
 
 	// Output: Example of environment configuration with local skywire-services running from source
-	// go run ./cmd/dmsg-discovery --address localhost:12001 --syslog localhost:514 --tag MSGD
-	// go run ./cmd/dmsg-server MSG.json --syslog localhost:514 --tag MSG
-	// go run ./cmd/transport-discovery --address localhost:12003 --syslog localhost:514 --tag TRD
-	// go run ./cmd/route-finder --address localhost:12004 --syslog localhost:514 --tag RF
-	// go run ./cmd/setup-node SN.json --syslog localhost:514 --tag SN
-	// go run ./cmd/address-resolver AR.json --address localhost:12005 --syslog localhost:514 --tag AR
+	// go run ./cmd/dmsg-discovery --address localhost:12001 --tag MSGD
+	// go run ./cmd/dmsg-server MSG.json --tag MSG
+	// go run ./cmd/transport-discovery --address localhost:12003 --tag TRD
+	// go run ./cmd/route-finder --address localhost:12004 --tag RF
+	// go run ./cmd/setup-node SN.json --tag SN
+	// go run ./cmd/address-resolver AR.json --address localhost:12005 --tag AR
 }
 
 func ExampleDefaultDockerRunners() {
@@ -160,8 +156,7 @@ func ExampleDefaultDockerRunners() {
 	dockerEnv := &EnvConfig{
 		Description: "Example of environment configuration with dockerized skywire",
 		ExternalServices: ExternalServicesConfig{
-			SyslogAddress: "syslog:514",
-			RedisAddress:  "redis:6379",
+			RedisAddress: "redis:6379",
 		},
 		Runners: DefaultDockerRunners("SKYNET_001"),
 	}
