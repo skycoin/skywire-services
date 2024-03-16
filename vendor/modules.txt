@@ -454,7 +454,6 @@ github.com/rs/cors
 # github.com/sirupsen/logrus v1.9.3
 ## explicit; go 1.13
 github.com/sirupsen/logrus
-github.com/sirupsen/logrus/hooks/syslog
 # github.com/skycoin/dmsg v1.3.18-0.20240226072009-86c43e8d4ca4 => github.com/skycoin/dmsg v1.3.18-0.20240226072009-86c43e8d4ca4
 ## explicit; go 1.21
 github.com/skycoin/dmsg/internal/servermetrics
@@ -500,7 +499,6 @@ github.com/skycoin/skywire/pkg/router/setupmetrics
 github.com/skycoin/skywire/pkg/routing
 github.com/skycoin/skywire/pkg/servicedisc
 github.com/skycoin/skywire/pkg/skyenv
-github.com/skycoin/skywire/pkg/syslog
 github.com/skycoin/skywire/pkg/transport
 github.com/skycoin/skywire/pkg/transport/network
 github.com/skycoin/skywire/pkg/transport/network/addrresolver

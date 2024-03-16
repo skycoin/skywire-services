@@ -5,13 +5,11 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"log/syslog"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
-	logrussyslog "github.com/sirupsen/logrus/hooks/syslog"
 	"github.com/skycoin/skywire-utilities/pkg/buildinfo"
 	"github.com/skycoin/skywire-utilities/pkg/cipher"
 	"github.com/skycoin/skywire-utilities/pkg/cmdutil"
@@ -30,7 +28,6 @@ var (
 	addr                string
 	logLvl              string
 	tag                 string
-	syslogAddr          string
 	sleepDeregistration time.Duration
 )
 
@@ -43,7 +40,6 @@ func init() {
 	RootCmd.Flags().StringVar(&tpdURL, "tpd-url", "", "url to transport discovery.\033[0m")
 	RootCmd.Flags().StringVar(&arURL, "ar-url", "", "url to address resolver.\033[0m")
 	RootCmd.Flags().StringVar(&tag, "tag", "tpd-monitor", "logging tag\033[0m")
-	RootCmd.Flags().StringVar(&syslogAddr, "syslog", "", "syslog server address. E.g. localhost:514\033[0m")
 }
 
 // RootCmd contains the root command
@@ -91,14 +87,6 @@ var RootCmd = &cobra.Command{
 		srvURLs.DMSG = dmsgURL
 		srvURLs.TPD = tpdURL
 		srvURLs.AR = arURL
-
-		if syslogAddr != "" {
-			hook, err := logrussyslog.NewSyslogHook("udp", syslogAddr, syslog.LOG_INFO, tag)
-			if err != nil {
-				logger.Fatalf("Unable to connect to syslog daemon on %v", syslogAddr)
-			}
-			logging.AddHook(hook)
-		}
 
 		logger.WithField("addr", addr).Info("Serving TPD-Monitor API...")
 
