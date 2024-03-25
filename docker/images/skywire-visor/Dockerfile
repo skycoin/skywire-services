@@ -15,7 +15,7 @@ RUN apk add --no-cache make git build-base && \
     git clone -b develop https://github.com/skycoin/skywire && \
     cd skywire && \
     sh -c /skywire/docker/images/visor/install-preq.sh && \
-    make build-race && \
+    make build-race
 
 ## Resulting image
 FROM ${base} as visor-runner
