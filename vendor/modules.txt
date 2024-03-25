@@ -371,9 +371,6 @@ github.com/klauspost/cpuid/v2
 # github.com/klauspost/reedsolomon v1.11.8
 ## explicit; go 1.17
 github.com/klauspost/reedsolomon
-# github.com/konsorten/go-windows-terminal-sequences v1.0.3
-## explicit
-github.com/konsorten/go-windows-terminal-sequences
 # github.com/leodido/go-urn v1.2.4
 ## explicit; go 1.16
 github.com/leodido/go-urn
@@ -467,7 +464,7 @@ github.com/rs/cors
 ## explicit; go 1.13
 github.com/sirupsen/logrus
 github.com/sirupsen/logrus/hooks/syslog
-# github.com/skycoin/dmsg v1.3.18-0.20240226072009-86c43e8d4ca4 => github.com/skycoin/dmsg v1.3.18-0.20240226072009-86c43e8d4ca4
+# github.com/skycoin/dmsg v1.3.18-0.20240311074627-0ba753f65a88 => github.com/skycoin/dmsg v1.3.18-0.20240226072009-86c43e8d4ca4
 ## explicit; go 1.21
 github.com/skycoin/dmsg/internal/servermetrics
 github.com/skycoin/dmsg/pkg/direct
@@ -491,7 +488,7 @@ github.com/skycoin/skycoin/src/cipher/ripemd160
 github.com/skycoin/skycoin/src/cipher/secp256k1-go
 github.com/skycoin/skycoin/src/cipher/secp256k1-go/secp256k1-go2
 github.com/skycoin/skycoin/src/util/logging
-# github.com/skycoin/skywire v1.3.19-0.20240227211000-4150aff77db0
+# github.com/skycoin/skywire v1.3.21-0.20240325224529-17f630c7a259
 ## explicit; go 1.21
 github.com/skycoin/skywire/cmd/setup-node/commands
 github.com/skycoin/skywire/internal/httpauth
@@ -512,7 +509,6 @@ github.com/skycoin/skywire/pkg/router/setupmetrics
 github.com/skycoin/skywire/pkg/routing
 github.com/skycoin/skywire/pkg/servicedisc
 github.com/skycoin/skywire/pkg/skyenv
-github.com/skycoin/skywire/pkg/syslog
 github.com/skycoin/skywire/pkg/transport
 github.com/skycoin/skywire/pkg/transport/network
 github.com/skycoin/skywire/pkg/transport/network/addrresolver
