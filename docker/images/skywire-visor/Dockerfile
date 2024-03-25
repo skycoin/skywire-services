@@ -30,7 +30,7 @@ RUN sh -c /release/install-preq.sh \
 
 STOPSIGNAL SIGINT
 
-ENTRYPOINT [ "/release/skywire-visor" ]
+ENTRYPOINT [ "/release/skywire" ]
 
 # default target
 FROM visor-runner as prod
