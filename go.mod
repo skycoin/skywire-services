@@ -10,6 +10,8 @@ require (
 	github.com/docker/docker v1.13.1
 	github.com/flopp/go-staticmaps v0.0.0-20220221183018-c226716bec53
 	github.com/go-chi/chi/v5 v5.0.11
+	github.com/go-chi/httprate v0.9.0
+	github.com/go-echarts/go-echarts/v2 v2.3.3
 	github.com/go-playground/validator/v10 v10.15.1
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-redis/redis/v8 v8.11.5
@@ -29,6 +31,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	github.com/xtaci/kcp-go v5.4.20+incompatible
 	golang.org/x/net v0.14.0
+	golang.zx2c4.com/wireguard v0.0.0-20230223181233-21636207a675
 	gorm.io/driver/postgres v1.3.8
 	gorm.io/gorm v1.23.8
 )
@@ -145,7 +148,6 @@ require (
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.12.1-0.20230815132531-74c255bcf846 // indirect
 	golang.zx2c4.com/wintun v0.0.0-20230126152724-0fa3db229ce2 // indirect
-	golang.zx2c4.com/wireguard v0.0.0-20230223181233-21636207a675 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
