@@ -23,7 +23,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/rs/cors v1.8.2
 	github.com/sirupsen/logrus v1.9.3
-	github.com/skycoin/dmsg v1.3.18-0.20240311074627-0ba753f65a88
+	github.com/skycoin/dmsg v1.3.20
 	github.com/skycoin/skywire v1.3.21-0.20240325224529-17f630c7a259
 	github.com/skycoin/skywire-utilities v1.3.18-0.20240208220612-9f31eda72f33
 	github.com/songgao/water v0.0.0-20200317203138-2b4b6d7c09d8
@@ -158,7 +158,6 @@ require (
 
 // Uncomment it for tests with alternative branches and run `make dep`
 // replace github.com/skycoin/dmsg => ../dmsg
-replace github.com/skycoin/dmsg => github.com/skycoin/dmsg v1.3.18-0.20240226072009-86c43e8d4ca4
 
 // replace github.com/skycoin/skywire => ../skywire
 
