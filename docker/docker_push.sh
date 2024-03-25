@@ -19,6 +19,7 @@ declare -a images_arr=(
   "route-finder"
   "setup-node"
   "address-resolver"
+  "uptime-tracker"
   "network-monitor"
   # "node-visualizer"
   "config-bootstrapper"

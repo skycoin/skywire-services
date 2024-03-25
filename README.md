@@ -10,6 +10,7 @@
 - Setup Node (SN)
 - Service Discovery (SD)
 - Address Resolver (AR)
+- Uptime Tracker (UT)
 
 ## Running the services locally
 
@@ -71,3 +72,4 @@ Check the [docs](docs/Deployments.md) for more documentation on the deployments.
 - [Dmsg Discovery](https://github.com/skycoin/dmsg/blob/develop/cmd/dmsg-discovery/README.md)
 - [Dmsg Server](https://github.com/skycoin/dmsg/blob/develop/cmd/dmsg-server/README.md)
 - [Service Discovery](https://github.com/skycoin/skycoin-service-discovery/blob/master/README.md#http-api)
+- [Uptime Tracker](cmd/uptime-tracker/README.md)
