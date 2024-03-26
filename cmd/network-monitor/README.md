@@ -1,4 +1,4 @@
-# Network Monitor
+# DMSG Monitor
 
 ## API endpoints
 
@@ -14,6 +14,3 @@ Gets the health info of the service. e.g.
     "started_at": "2022-10-25T11:10:45.152629597Z"
 }
 ```
-
-### GET `/status`
-Gets the status of all the transports in the deployment.

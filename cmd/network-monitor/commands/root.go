@@ -2,7 +2,6 @@
 package commands
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"os"
@@ -12,52 +11,34 @@ import (
 
 	"github.com/skycoin/skywire-utilities/pkg/buildinfo"
 	"github.com/skycoin/skywire-utilities/pkg/cipher"
-	"github.com/skycoin/skywire-utilities/pkg/cmdutil"
 	"github.com/skycoin/skywire-utilities/pkg/logging"
-	"github.com/skycoin/skywire-utilities/pkg/metricsutil"
-	"github.com/skycoin/skywire-utilities/pkg/storeconfig"
 	"github.com/skycoin/skywire-utilities/pkg/tcpproxy"
 	"github.com/spf13/cobra"
 
-	"github.com/skycoin/skywire-services/internal/nmmetrics"
+	"github.com/skycoin/skywire-services/internal/monitors"
 	"github.com/skycoin/skywire-services/pkg/network-monitor/api"
-	"github.com/skycoin/skywire-services/pkg/network-monitor/store"
-)
-
-const (
-	redisScheme = "redis://"
 )
 
 var (
-	sleepDeregistration time.Duration
 	confPath            string
-	sdURL               string
-	arURL               string
+	dmsgURL             string
 	utURL               string
+	arURL               string
 	addr                string
 	tag                 string
 	logLvl              string
-	metricsAddr         string
-	redisURL            string
-	testing             bool
-	redisPoolSize       int
-	batchSize           int
+	sleepDeregistration time.Duration
 )
 
 func init() {
-	RootCmd.Flags().StringVarP(&addr, "addr", "a", ":9080", "address to bind to.\033[0m")
-	RootCmd.Flags().DurationVar(&sleepDeregistration, "sleep-deregistration", 10, "Sleep time for derigstration process in minutes\033[0m")
-	RootCmd.Flags().IntVarP(&batchSize, "batchsize", "b", 30, "Batch size of deregistration\033[0m")
-	RootCmd.Flags().StringVarP(&confPath, "config", "c", "network-monitor.json", "config file location.\033[0m")
-	RootCmd.Flags().StringVarP(&sdURL, "sd-url", "n", "", "url to service discovery.\033[0m")
-	RootCmd.Flags().StringVarP(&arURL, "ar-url", "v", "", "url to address resolver.\033[0m")
-	RootCmd.Flags().StringVarP(&utURL, "ut-url", "u", "", "url to uptime tracker visor data.\033[0m")
+	RootCmd.Flags().StringVarP(&addr, "addr", "a", "", "address to bind to.\033[0m")
+	RootCmd.Flags().DurationVarP(&sleepDeregistration, "sleep-deregistration", "s", 0, "Sleep time for derigstration process in minutes\033[0m")
+	RootCmd.Flags().StringVar(&dmsgURL, "dmsg-url", "", "url to dmsg data.\033[0m")
+	RootCmd.Flags().StringVar(&utURL, "ut-url", "", "url to uptime tracker visor data.\033[0m")
+	RootCmd.Flags().StringVar(&arURL, "ar-url", "", "url to ar data.\033[0m")
+	RootCmd.Flags().StringVarP(&confPath, "config", "c", "network-monitor.json", "path of network-monitor config\033[0m")
 	RootCmd.Flags().StringVar(&tag, "tag", "network_monitor", "logging tag\033[0m")
-	RootCmd.Flags().StringVarP(&logLvl, "loglvl", "l", "info", "set log level one of: info, error, warn, debug, trace, panic")
-	RootCmd.Flags().StringVarP(&metricsAddr, "metrics", "m", "", "address to bind metrics API to\033[0m")
-	RootCmd.Flags().StringVar(&redisURL, "redis", "redis://localhost:6379", "connections string for a redis store\033[0m")
-	RootCmd.Flags().BoolVarP(&testing, "testing", "t", false, "enable testing to start without redis\033[0m")
-	RootCmd.Flags().IntVar(&redisPoolSize, "redis-pool-size", 10, "redis connection pool size\033[0m")
+	RootCmd.Flags().StringVarP(&logLvl, "loglvl", "l", "", "set log level one of: info, error, warn, debug, trace, panic")
 }
 
 // RootCmd contains the root command
@@ -65,7 +46,7 @@ var RootCmd = &cobra.Command{
 	Use: func() string {
 		return strings.Split(filepath.Base(strings.ReplaceAll(strings.ReplaceAll(fmt.Sprintf("%v", os.Args), "[", ""), "]", "")), " ")[0]
 	}(),
-	Short: "Network monitor for skywire VPN and Visor.",
+	Short: "DMSG monitor of DMSG discovery entries.",
 	Long: `
 	┌┐┌┌─┐┌┬┐┬ ┬┌─┐┬─┐┬┌─   ┌┬┐┌─┐┌┐┌┬┌┬┐┌─┐┬─┐
 	│││├┤  │ ││││ │├┬┘├┴┐───││││ │││││ │ │ │├┬┘
@@ -80,89 +61,57 @@ var RootCmd = &cobra.Command{
 			log.Printf("Failed to output build info: %v", err)
 		}
 
-		if !strings.HasPrefix(redisURL, redisScheme) {
-			redisURL = redisScheme + redisURL
-		}
-
-		storeConfig := storeconfig.Config{
-			Type:     storeconfig.Redis,
-			URL:      redisURL,
-			Password: storeconfig.RedisPassword(),
-			PoolSize: redisPoolSize,
-		}
-
-		if testing {
-			storeConfig.Type = storeconfig.Memory
-		}
-
-		s, err := store.New(storeConfig)
-		if err != nil {
-			log.Fatal("Failed to initialize redis store: ", err)
-		}
-
 		mLogger := logging.NewMasterLogger()
-		lvl, err := logging.LevelFromString(logLvl)
+		conf, err := monitors.ReadConfig(confPath)
 		if err != nil {
-			mLogger.Fatal("Invalid loglvl detected")
+			mLogger.Fatal("Invalid config file")
 		}
 
-		logging.SetLevel(lvl)
-		conf := api.InitConfig(confPath, mLogger)
-
-		if sdURL == "" {
-			sdURL = conf.Launcher.ServiceDisc
-		}
-		if arURL == "" {
-			arURL = conf.Transport.AddressResolver
+		// use overwrite config values if flags not set
+		if dmsgURL == "" {
+			dmsgURL = conf.DMSGUrl
 		}
 		if utURL == "" {
-			utURL = conf.UptimeTracker.Addr + "/uptimes"
+			utURL = conf.UTUrl + "/uptimes"
+		}
+		if arURL == "" {
+			arURL = conf.ARUrl
+		}
+		if addr == "" {
+			addr = conf.Addr
+		}
+		if sleepDeregistration == 0 {
+			sleepDeregistration = conf.SleepDeregistration
+		}
+		if logLvl == "" {
+			logLvl = conf.LogLevel
 		}
 
-		var srvURLs api.ServicesURLs
-		srvURLs.SD = sdURL
-		srvURLs.AR = arURL
-		srvURLs.UT = utURL
-
-		logger := mLogger.PackageLogger("network_monitor")
-
-		logger.WithField("addr", addr).Info("Serving discovery API...")
-
-		metricsutil.ServeHTTPMetrics(logger, metricsAddr)
-
-		var m nmmetrics.Metrics
-		if metricsAddr == "" {
-			m = nmmetrics.NewEmpty()
-		} else {
-			m = nmmetrics.NewVictoriaMetrics()
+		lvl, err := logging.LevelFromString(logLvl)
+		if err != nil {
+			mLogger.Fatal("Invalid log level")
 		}
-		enableMetrics := metricsAddr != ""
+		logging.SetLevel(lvl)
 
-		nmSign, _ := cipher.SignPayload([]byte(conf.PK.Hex()), conf.SK) //nolint
+		logger := mLogger.PackageLogger(tag)
 
-		var nmConfig api.NetworkMonitorConfig
-		nmConfig.PK = conf.PK
-		nmConfig.SK = conf.SK
-		nmConfig.Sign = nmSign
-		nmConfig.BatchSize = batchSize
+		logger.WithField("addr", addr).Info("Serving DMSG-Monitor API...")
 
-		nmAPI := api.New(s, logger, srvURLs, enableMetrics, m, nmConfig)
+		monitorSign, _ := cipher.SignPayload([]byte(conf.PK.Hex()), conf.SK) //nolint
 
-		ctx, cancel := cmdutil.SignalContext(context.Background(), logger)
-		defer cancel()
+		var monitorConfig api.MonitorConfig
+		monitorConfig.PK = conf.PK
+		monitorConfig.Sign = monitorSign
+		monitorConfig.DMSG = dmsgURL
+		monitorConfig.UT = utURL
+		monitorConfig.AR = arURL
 
-		go nmAPI.InitDeregistrationLoop(ctx, conf, sleepDeregistration)
+		dmsgMonitorAPI := api.New(logger, monitorConfig)
 
-		go func() {
-			if err := tcpproxy.ListenAndServe(addr, nmAPI); err != nil {
-				logger.Errorf("serve: %v", err)
-				cancel()
-			}
-		}()
+		go dmsgMonitorAPI.InitDeregistrationLoop(sleepDeregistration)
 
-		<-ctx.Done()
-		if err := nmAPI.Visor.Close(); err != nil {
-			logger.WithError(err).Error("Visor closed with error.")
+		if err := tcpproxy.ListenAndServe(addr, dmsgMonitorAPI); err != nil {
+			logger.Errorf("serve: %v", err)
 		}
 	},
 }
