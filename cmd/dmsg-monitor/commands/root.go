@@ -15,6 +15,7 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/tcpproxy"
 	"github.com/spf13/cobra"
 
+	"github.com/skycoin/skywire-services/internal/monitors"
 	"github.com/skycoin/skywire-services/pkg/dmsg-monitor/api"
 )
 
@@ -60,7 +61,7 @@ var RootCmd = &cobra.Command{
 		}
 
 		mLogger := logging.NewMasterLogger()
-		conf, err := api.ReadConfig(confPath)
+		conf, err := monitors.ReadConfig(confPath)
 		if err != nil {
 			mLogger.Fatal("Invalid config file")
 		}
