@@ -65,7 +65,6 @@ func NewEnv() *TestEnv {
 			"/address-resolver",
 			"/service-discovery",
 			"/network-monitor",
-			"/dmsg-monitor",
 			"/tpd-monitor",
 			"/vpn-monitor",
 			"/public-visor-monitor",

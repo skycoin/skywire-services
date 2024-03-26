@@ -237,14 +237,6 @@ DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/public-visor-monitor/Doc
   $platform \
   -t "$registry"/public-visor-monitor:"$image_tag" .
 
-echo "building dmsg monitor image"
-DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/dmsg-monitor/Dockerfile \
-  --build-arg base_image="$base_image" \
-  --build-arg build_opts="$go_buildopts" \
-  --build-arg image_tag="$image_tag" \
-  $platform \
-  -t "$registry"/dmsg-monitor:"$image_tag" .
-
 echo "building tpd monitor image"
 DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/tpd-monitor/Dockerfile \
   --build-arg base_image="$base_image" \

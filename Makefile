@@ -47,7 +47,7 @@ export REGISTRY=${DOCKER_REGISTRY}
 dep: ## Sorts dependencies
 #	GO111MODULE=on GOPRIVATE=github.com/skycoin/* go get -v github.com/skycoin/skywire@master
 	GO111MODULE=on GOPRIVATE=github.com/skycoin/* go mod vendor -v
-	yarn --cwd ./pkg/node-visualizer/web install
+	# yarn --cwd ./pkg/node-visualizer/web install
 
 format: dep ## Formats the code. Must have goimports and goimports-reviser installed (use make install-linters).
 	goimports -w -local github.com/skycoin/skywire-services ./pkg
@@ -69,7 +69,6 @@ build: dep ## Build binaries
 	${OPTS} go build ${BUILD_OPTS} -o ./bin/transport-setup ./cmd/transport-setup
 	${OPTS} go build ${BUILD_OPTS} -o ./bin/config-bootstrapper ./cmd/config-bootstrapper
 	${OPTS} go build ${BUILD_OPTS} -o ./bin/liveness-checker ./cmd/liveness-checker
-	${OPTS} go build ${BUILD_OPTS} -o ./bin/dmsg-monitor ./cmd/dmsg-monitor
 	${OPTS} go build ${BUILD_OPTS} -o ./bin/tpd-monitor ./cmd/tpd-monitor
 	${OPTS} go build ${BUILD_OPTS} -o ./bin/vpn-monitor ./cmd/vpn-monitor
 	${OPTS} go build ${BUILD_OPTS} -o ./bin/skysocks-monitor ./cmd/skysocks-monitor
@@ -90,7 +89,6 @@ build-deploy: ## Build for deployment Docker images
 	${DOCKER_OPTS} go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/vpn-client ./cmd/vpn-lite-client
 	${DOCKER_OPTS} go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/transport-setup ./cmd/transport-setup
 	${DOCKER_OPTS} go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/node-visualizer ./cmd/node-visualizer
-	${DOCKER_OPTS} go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/dmsg-monitor ./cmd/dmsg-monitor
 	${DOCKER_OPTS} go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/tpd-monitor ./cmd/tpd-monitor
 	${DOCKER_OPTS} go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/vpn-monitor ./cmd/vpn-monitor
 	${DOCKER_OPTS} go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o /release/skysocks-monitor ./cmd/skysocks-monitor
@@ -109,7 +107,6 @@ build-race: dep ## Build binaries
 	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/vpn-client ./cmd/vpn-lite-client
 	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/transport-setup ./cmd/transport-setup
 	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/node-visualizer ./cmd/node-visualizer
-	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/dmsg-monitor ./cmd/dmsg-monitor
 	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/tpd-monitor ./cmd/tpd-monitor
 	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/vpn-monitor ./cmd/vpn-monitor
 	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/skysocks-monitor ./cmd/skysocks-monitor

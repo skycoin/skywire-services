@@ -13,7 +13,6 @@ import (
 
 	ar "github.com/skycoin/skywire-services/cmd/address-resolver/commands"
 	confbs "github.com/skycoin/skywire-services/cmd/config-bootstrapper/commands"
-	dmsgm "github.com/skycoin/skywire-services/cmd/dmsg-monitor/commands"
 	kg "github.com/skycoin/skywire-services/cmd/keys-gen/commands"
 	lc "github.com/skycoin/skywire-services/cmd/liveness-checker/commands"
 	nv "github.com/skycoin/skywire-services/cmd/node-visualizer/commands"
@@ -38,7 +37,6 @@ func init() {
 		nv.RootCmd,
 		pvm.RootCmd,
 		se.RootCmd,
-		dmsgm.RootCmd,
 	)
 	tpd.RootCmd.Use = "tpd"
 	tps.RootCmd.Use = "tps"
@@ -51,7 +49,6 @@ func init() {
 	nv.RootCmd.Use = "nv"
 	pvm.RootCmd.Use = "pvm"
 	se.RootCmd.Use = "se"
-	dmsgm.RootCmd.Use = "dmsgm"
 
 	var helpflag bool
 	RootCmd.SetUsageTemplate(help)
