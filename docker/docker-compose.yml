@@ -395,7 +395,7 @@ services:
     depends_on:
       - visor-b
     restart: on-failure
-    entrypoint: /release/skywire-visor -c /opt/skywire/skywire-visor.json
+    entrypoint: /release/skywire visor -c /opt/skywire/skywire-visor.json
 
   visor-b:
     privileged: true
@@ -430,7 +430,7 @@ services:
       - route-finder
       - address-resolver
     restart: always
-    entrypoint: /release/skywire-visor -c /opt/skywire/skywire-visor.json
+    entrypoint: /release/skywire visor -c /opt/skywire/skywire-visor.json
 
   visor-c:
     privileged: true
@@ -455,7 +455,7 @@ services:
     depends_on:
       - visor-a
     restart: always
-    entrypoint: /release/skywire-visor -c /opt/skywire/skywire-visor.json
+    entrypoint: /release/skywire visor -c /opt/skywire/skywire-visor.json
 
   network-monitor:
     image: "${REGISTRY}/network-monitor:${DOCKER_TAG}"

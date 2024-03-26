@@ -45,19 +45,6 @@ if [[ "$image_tag" == "e2e" ]]; then
       exit 1
   fi
 
-  # TODO(ersonp): instead of cloning the git branch we should directly use the docker image od SD from dockerhub like we doing for dmsg 
-  # if [[ "$GIT_TOKEN" != "" ]]; then
-  #   git clone https://"$GIT_TOKEN"@github.com/skycoin/skywire-ut --depth 1 --branch "$git_branch" ./tmp/skywire-ut
-  # else
-  #   git clone git@github.com:skycoin/skywire-ut --depth 1 --branch "$git_branch" ./tmp/skywire-ut
-  # fi
-  git clone https://github.com/skycoin/skywire-ut.git --depth 1 --branch "$git_branch" ./tmp/skywire-ut
-
-  if [ ! -d ./tmp/skywire-ut ]; then
-    echo "failed to clone skywire-ut" &&
-      exit 1
-  fi
-
   echo ====================================================
   echo "BUILDING SKYWIRE VISOR"
 
@@ -180,6 +167,14 @@ DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/address-resolver/Dockerf
   --build-arg image_tag="$image_tag" \
   $platform \
   -t "$registry"/address-resolver:"$image_tag" .
+
+echo "build uptime tracker image"
+DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/uptime-tracker/Dockerfile \
+  --build-arg build_opts="$go_buildopts" \
+  --build-arg image_tag="$image_tag" \
+  --build-arg base_image="$base_image" \
+  $platform \
+  -t "$registry"/uptime-tracker:"$image_tag" .
 
 if [[ "$image_tag" == "test" ]]; then
   echo "build node visualizer DEV image"

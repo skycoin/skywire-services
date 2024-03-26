@@ -15,20 +15,13 @@ RUN apk add --no-cache make git build-base && \
     git clone -b develop https://github.com/skycoin/skywire && \
     cd skywire && \
     sh -c /skywire/docker/images/visor/install-preq.sh && \
-    make build-race && \
-    mkdir -p /apps && \
-    cp ./build/apps/vpn-server /apps/ && \
-    cp ./build/apps/vpn-client /apps/ && \
-	cp ./build/apps/skysocks /apps/ && \
-	cp ./build/apps/skysocks-client /apps/ && \
-	cp ./build/apps/skychat /apps/
+    make build-race
 
 ## Resulting image
 FROM ${base} as visor-runner
 
 COPY --from=builder /skywire/docker/images/visor/install-preq.sh /release/install-preq.sh
 COPY --from=builder /release /release
-COPY --from=builder /apps /apps
 
 RUN sh -c /release/install-preq.sh \
     && rm -rf /release/install-preq.sh \
@@ -37,7 +30,7 @@ RUN sh -c /release/install-preq.sh \
 
 STOPSIGNAL SIGINT
 
-ENTRYPOINT [ "/release/skywire-visor" ]
+ENTRYPOINT [ "/release/skywire" ]
 
 # default target
 FROM visor-runner as prod

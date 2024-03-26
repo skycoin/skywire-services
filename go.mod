@@ -10,6 +10,8 @@ require (
 	github.com/docker/docker v1.13.1
 	github.com/flopp/go-staticmaps v0.0.0-20220221183018-c226716bec53
 	github.com/go-chi/chi/v5 v5.0.11
+	github.com/go-chi/httprate v0.9.0
+	github.com/go-echarts/go-echarts/v2 v2.3.3
 	github.com/go-playground/validator/v10 v10.15.1
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-redis/redis/v8 v8.11.5
@@ -21,14 +23,15 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/rs/cors v1.8.2
 	github.com/sirupsen/logrus v1.9.3
-	github.com/skycoin/dmsg v1.3.18-0.20240226072009-86c43e8d4ca4
-	github.com/skycoin/skywire v1.3.19-0.20240227211000-4150aff77db0
+	github.com/skycoin/dmsg v1.3.20
+	github.com/skycoin/skywire v1.3.21-0.20240325224529-17f630c7a259
 	github.com/skycoin/skywire-utilities v1.3.18-0.20240208220612-9f31eda72f33
 	github.com/songgao/water v0.0.0-20200317203138-2b4b6d7c09d8
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.4
 	github.com/xtaci/kcp-go v5.4.20+incompatible
 	golang.org/x/net v0.14.0
+	golang.zx2c4.com/wireguard v0.0.0-20230223181233-21636207a675
 	gorm.io/driver/postgres v1.3.8
 	gorm.io/gorm v1.23.8
 )
@@ -99,7 +102,6 @@ require (
 	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.5 // indirect
 	github.com/klauspost/reedsolomon v1.11.8 // indirect
-	github.com/konsorten/go-windows-terminal-sequences v1.0.3 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
@@ -145,7 +147,6 @@ require (
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/tools v0.12.1-0.20230815132531-74c255bcf846 // indirect
 	golang.zx2c4.com/wintun v0.0.0-20230126152724-0fa3db229ce2 // indirect
-	golang.zx2c4.com/wireguard v0.0.0-20230223181233-21636207a675 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
@@ -157,7 +158,6 @@ require (
 
 // Uncomment it for tests with alternative branches and run `make dep`
 // replace github.com/skycoin/dmsg => ../dmsg
-replace github.com/skycoin/dmsg => github.com/skycoin/dmsg v1.3.18-0.20240226072009-86c43e8d4ca4
 
 // replace github.com/skycoin/skywire => ../skywire
 

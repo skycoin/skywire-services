@@ -75,6 +75,7 @@ build: dep ## Build binaries
 	${OPTS} go build ${BUILD_OPTS} -o ./bin/skysocks-monitor ./cmd/skysocks-monitor
 	${OPTS} go build ${BUILD_OPTS} -o ./apps/skysocks-client ./cmd/skysocks-lite-client
 	${OPTS} go build ${BUILD_OPTS} -o ./bin/public-visor-monitor ./cmd/public-visor-monitor
+	${OPTS} go build ${BUILD_OPTS} -o ./bin/uptime-tracker ./cmd/uptime-tracker
 	# yarn --cwd ./pkg/node-visualizer/web build
 	# rm -rf ./pkg/node-visualizer/api/build/static
 	# mv ./pkg/node-visualizer/web/build/* ./pkg/node-visualizer/api/build
@@ -95,6 +96,7 @@ build-deploy: ## Build for deployment Docker images
 	${DOCKER_OPTS} go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o /release/skysocks-monitor ./cmd/skysocks-monitor
 	${DOCKER_OPTS} go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o /release/skysocks-client ./cmd/skysocks-lite-client
 	${DOCKER_OPTS} go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/public-visor-monitor ./cmd/public-visor-monitor
+	${DOCKER_OPTS} go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o /release/uptime-tracker ./cmd/uptime-tracker
 
 build-race: dep ## Build binaries
 	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/route-finder ./cmd/route-finder
@@ -113,6 +115,7 @@ build-race: dep ## Build binaries
 	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/skysocks-monitor ./cmd/skysocks-monitor
 	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/skysocks-client ./cmd/skysocks-lite-client
 	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/public-visor-monitor ./cmd/public-visor-monitor
+	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/uptime-tracker ./cmd/uptime-tracker
 
 install: ## Install route-finder, transport-discovery, address-resolver, sw-env, keys-gen, network-monitor, node-visualizer
 	${OPTS} go install ${BUILD_OPTS} \
@@ -122,6 +125,7 @@ install: ## Install route-finder, transport-discovery, address-resolver, sw-env,
 		./cmd/sw-env \
 		./cmd/keys-gen \
 		./cmd/network-monitor \
+		./cmd/uptime-tracker \
 		./cmd/node-visualizer
 
 clean: ## Clean compiled binaries

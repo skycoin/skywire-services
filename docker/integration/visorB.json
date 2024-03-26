@@ -38,19 +38,27 @@
 		"apps": [
 			{
 				"name": "vpn-client",
-				"binary": "vpn-client",
+				"binary": "skywire",
+				"args": [
+					"app",
+					"vpn-client"
+				],
 				"auto_start": false,
 				"port": 43
 			},
 			{
 				"name": "vpn-server",
-				"binary": "vpn-server",
+				"binary": "skywire",
+				"args": [
+					"app",
+					"vpn-server"
+				],
 				"auto_start": false,
 				"port": 44
 			}
 		],
 		"server_addr": ":5506",
-		"bin_path": "/apps"
+		"bin_path": "./release"
 	},
 	"hypervisors": [],
 	"cli_addr": "0.0.0.0:3435",
