@@ -1,10 +1,10 @@
 {
     "sk":"f9fee80460daa7b1648753d5145f99a0869c3c22c747ce9e3b9c7626671263d8",
     "pk":"03ba70a1430a3c3d0ffef56a309139cae32809de06f930421b0f7cdb909238491f",
-    "dmsg_url":"http://dmsgd.skywire.skycoin.com",
-    "ut_url":"http://ut.skywire.skycoin.com",
-    "ar_url":"http://ar.skywire.skycoin.com",
-    "sleep_deregistration":1,
-    "addr":":8080",
+    "dmsg_url":"http://dmsg-discovery:9090",
+    "ut_url":"http://uptime-tracker:9096",
+    "ar_url":"http://address-resolver:9093",
+    "sleep_deregistration":10,
+    "addr":":9081",
     "log_level":"debug"
 }
