@@ -3,13 +3,13 @@ package api
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"math/rand"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -22,17 +22,12 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/httputil"
 	"github.com/skycoin/skywire-utilities/pkg/logging"
 	utilenv "github.com/skycoin/skywire-utilities/pkg/skyenv"
-	"github.com/skycoin/skywire/pkg/app/appserver"
-	"github.com/skycoin/skywire/pkg/visor"
-	"github.com/skycoin/skywire/pkg/visor/visorconfig"
 )
 
 // API register all the API endpoints.
 // It implements a net/http.Handler.
 type API struct {
 	http.Handler
-
-	Visor *visor.Visor
 
 	dmsgURL   string
 	utURL     string
@@ -42,19 +37,13 @@ type API struct {
 
 	nmPk           cipher.PubKey
 	nmSign         cipher.Sig
-	batchSize      int
 	whitelistedPKs map[string]bool
 }
 
 // DMSGMonitorConfig is struct for Keys and Sign value of dmsg monitor
 type DMSGMonitorConfig struct {
-	PK        cipher.PubKey
-	Sign      cipher.Sig
-	BatchSize int
-}
-
-// ServicesURLs is struct for organize URL of services
-type ServicesURLs struct {
+	PK   cipher.PubKey
+	Sign cipher.Sig
 	DMSG string
 	UT   string
 }
@@ -71,16 +60,15 @@ type Error struct {
 }
 
 // New returns a new *chi.Mux object, which can be started as a server
-func New(logger *logging.Logger, srvURLs ServicesURLs, monitorConfig DMSGMonitorConfig) *API {
+func New(logger *logging.Logger, monitorConfig DMSGMonitorConfig) *API {
 
 	api := &API{
-		dmsgURL:        srvURLs.DMSG,
-		utURL:          srvURLs.UT,
 		logger:         *logger,
 		startedAt:      time.Now(),
 		nmPk:           monitorConfig.PK,
 		nmSign:         monitorConfig.Sign,
-		batchSize:      monitorConfig.BatchSize,
+		dmsgURL:        monitorConfig.DMSG,
+		utURL:          monitorConfig.UT,
 		whitelistedPKs: whitelistedPKs(),
 	}
 	r := chi.NewRouter()
@@ -127,23 +115,16 @@ func (api *API) log(r *http.Request) logrus.FieldLogger {
 }
 
 // InitDeregistrationLoop is function which runs periodic background tasks of API.
-func (api *API) InitDeregistrationLoop(ctx context.Context, conf *visorconfig.V1, sleepDeregistration time.Duration) {
-	// Start a visor
-	api.startVisor(ctx, conf)
-
+func (api *API) InitDeregistrationLoop(sleepDeregistration time.Duration) {
+	deadDmsgCandidate := make(map[string]bool)
 	for {
-		select {
-		case <-ctx.Done():
-			return
-		default:
-			api.deregister()
-			time.Sleep(sleepDeregistration * time.Minute)
-		}
+		api.deregister(deadDmsgCandidate)
+		time.Sleep(sleepDeregistration * time.Minute)
 	}
 }
 
 // deregister use as routine to deregister old/dead entries in the network
-func (api *API) deregister() {
+func (api *API) deregister(deadDmsgCandidate map[string]bool) {
 	api.logger.Info("Deregistration routine start.")
 	defer api.dMu.Unlock()
 	api.dMu.Lock()
@@ -155,13 +136,13 @@ func (api *API) deregister() {
 		return
 	}
 
-	api.dmsgDeregistration(uptimes)
+	api.dmsgDeregistration(deadDmsgCandidate, uptimes)
 
 	api.logger.Info("Deregistration routine completed.")
 }
 
 // dmsgDeregistration is a routine to deregister dead dmsg entries in dmsg discovery
-func (api *API) dmsgDeregistration(uptimes map[string]bool) {
+func (api *API) dmsgDeregistration(deadDmsgCandidate, uptimes map[string]bool) {
 	api.logger.Info("DMSGD Deregistration started.")
 
 	// get list of all dmsg clients, not servers
@@ -176,36 +157,26 @@ func (api *API) dmsgDeregistration(uptimes map[string]bool) {
 	})
 	// check dmsg clients either alive or dead
 	checkerConfig := dmsgCheckerConfig{
-		wg:        new(sync.WaitGroup),
-		locker:    new(sync.Mutex),
-		uptimes:   uptimes,
-		transport: "dmsg",
+		wg:      new(sync.WaitGroup),
+		locker:  new(sync.Mutex),
+		uptimes: uptimes,
 	}
 	deadDmsg := []string{}
-	var tmpBatchSize, deadDmsgCount int
-	for i, client := range clients {
+	for _, client := range clients {
 		if _, ok := api.whitelistedPKs[client]; !ok {
 			checkerConfig.wg.Add(1)
 			checkerConfig.client = client
-			go api.dmsgChecker(checkerConfig, &deadDmsg)
-		}
-		tmpBatchSize++
-		if tmpBatchSize == api.batchSize || i == len(clients)-1 {
-			checkerConfig.wg.Wait()
-			// deregister clients from dmsg-discovery
-			if len(deadDmsg) > 0 {
-				api.dmsgDeregister(deadDmsg)
-				deadDmsgCount += len(deadDmsg)
-			}
-			deadDmsg = []string{}
-			tmpBatchSize = 0
+			go api.dmsgChecker(checkerConfig, deadDmsgCandidate, &deadDmsg)
 		}
 	}
-
-	api.logger.WithField("Number of dead DMSG entries", deadDmsgCount).Info("DMSGD Deregistration completed.")
+	checkerConfig.wg.Wait()
+	if len(deadDmsg) > 0 {
+		api.dmsgDeregister(deadDmsg)
+	}
+	api.logger.WithField("List of dead DMSG entries", deadDmsg).WithField("Number of dead DMSG entries", len(deadDmsg)).Info("DMSGD Deregistration completed.")
 }
 
-func (api *API) dmsgChecker(cfg dmsgCheckerConfig, deadDmsg *[]string) {
+func (api *API) dmsgChecker(cfg dmsgCheckerConfig, deadDmsgCandidate map[string]bool, deadDmsg *[]string) {
 	defer cfg.wg.Done()
 
 	key := cipher.PubKey{}
@@ -215,34 +186,15 @@ func (api *API) dmsgChecker(cfg dmsgCheckerConfig, deadDmsg *[]string) {
 		return
 	}
 
-	var trp bool
-	retrier := 3
-	for retrier > 0 {
-		tp, err := api.Visor.AddTransport(key, cfg.transport, time.Second*3)
-		if err != nil {
-			api.logger.WithField("Retry", 4-retrier).WithError(err).Warnf("Failed to establish %v transport to %v", cfg.transport, key)
-			retrier--
-			if strings.Contains(err.Error(), "unknown network type") {
-				trp = true
-				retrier = 0
-			}
-		} else {
-			api.logger.Infof("Established %v transport to %v", cfg.transport, key)
-			trp = true
-			err = api.Visor.RemoveTransport(tp.ID)
-			if err != nil {
-				api.logger.Warnf("Error removing %v transport of %v: %v", cfg.transport, key, err)
-			}
-			retrier = 0
-		}
-	}
-
-	if !trp {
-		if status, ok := cfg.uptimes[key.Hex()]; !ok || !status {
-			cfg.locker.Lock()
+	if status, ok := cfg.uptimes[key.Hex()]; !ok || !status {
+		cfg.locker.Lock()
+		if _, ok := deadDmsgCandidate[key.Hex()]; ok {
 			*deadDmsg = append(*deadDmsg, key.Hex())
-			cfg.locker.Unlock()
+			delete(deadDmsgCandidate, key.Hex())
+		} else {
+			deadDmsgCandidate[key.Hex()] = true
 		}
+		cfg.locker.Unlock()
 	}
 }
 
@@ -256,11 +208,10 @@ func (api *API) dmsgDeregister(keys []string) {
 }
 
 type dmsgCheckerConfig struct {
-	client    string
-	transport string
-	uptimes   map[string]bool
-	wg        *sync.WaitGroup
-	locker    *sync.Mutex
+	client  string
+	uptimes map[string]bool
+	wg      *sync.WaitGroup
+	locker  *sync.Mutex
 }
 
 // deregisterRequest is dereigstration handler for all services
@@ -350,74 +301,51 @@ type uptimes struct {
 	Online bool   `json:"online"`
 }
 
-func (api *API) startVisor(ctx context.Context, conf *visorconfig.V1) {
-	conf.SetLogger(logging.NewMasterLogger())
-	v, ok := visor.NewVisor(ctx, conf)
-	if !ok {
-		api.logger.Fatal("Failed to start visor.")
-	}
-	api.Visor = v
+// MonitorConfig is the structure of dmsg-monitor's config
+type MonitorConfig struct {
+	SK                  cipher.SecKey `json:"sk,omitempty"`
+	PK                  cipher.PubKey `json:"pk,omitempty"`
+	DMSGUrl             string        `json:"dmsg_url,omitempty"`
+	UTUrl               string        `json:"ut_url,omitempty"`
+	Addr                string        `json:"addr,omitempty"`
+	LogLevel            string        `json:"log_level,omitempty"`
+	SleepDeregistration time.Duration `json:"sleep_deregistration,omitempty"`
 }
 
-// InitConfig to initilise config
-func InitConfig(confPath string, mLog *logging.MasterLogger) *visorconfig.V1 {
-	log := mLog.PackageLogger("network_monitor:config")
-	log.Info("Reading config from file.")
-	log.WithField("filepath", confPath).Info()
+func (c *MonitorConfig) ensureKeys() error {
+	if !c.PK.Null() {
+		return nil
+	}
+	if c.SK.Null() {
+		c.PK, c.SK = cipher.GenerateKeyPair()
+		return nil
+	}
+	var err error
+	if c.PK, err = c.SK.PubKey(); err != nil {
+		return err
+	}
+	return nil
+}
 
-	oldConf, err := visorconfig.ReadFile(confPath)
+// ReadConfig reads the config file without opening or writing to it
+func ReadConfig(confPath string) (*MonitorConfig, error) {
+	f, err := os.ReadFile(confPath) //nolint
 	if err != nil {
-		log.WithError(err).Fatal("Failed to read config file.")
+		return nil, fmt.Errorf("%w", err)
 	}
-	var testEnv bool
-	if oldConf.Dmsg.Discovery == utilenv.TestDmsgDiscAddr {
-		testEnv = true
-	}
-	// have same services as old config
-	services := &visorconfig.Services{
-		DmsgDiscovery:      oldConf.Dmsg.Discovery,
-		TransportDiscovery: oldConf.Transport.Discovery,
-		AddressResolver:    oldConf.Transport.AddressResolver,
-		RouteFinder:        oldConf.Routing.RouteFinder,
-		RouteSetupNodes:    oldConf.Routing.RouteSetupNodes,
-		UptimeTracker:      oldConf.UptimeTracker.Addr,
-		ServiceDiscovery:   oldConf.Launcher.ServiceDisc,
-	}
-	// update oldconfig
-	conf, err := visorconfig.MakeDefaultConfig(mLog, &oldConf.SK, false, false, testEnv, false, false, confPath, "", services)
+	raw, err := io.ReadAll(bytes.NewReader(f))
 	if err != nil {
-		log.WithError(err).Fatal("Failed to create config.")
+		return nil, fmt.Errorf("%w", err)
 	}
-
-	// have the same apps that the old config had
-	var newConfLauncherApps []appserver.AppConfig
-	for _, app := range conf.Launcher.Apps {
-		for _, oldApp := range oldConf.Launcher.Apps {
-			if app.Name == oldApp.Name {
-				newConfLauncherApps = append(newConfLauncherApps, app)
-			}
-		}
+	var conf *MonitorConfig
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	if err := dec.Decode(&conf); err != nil {
+		return nil, fmt.Errorf("failed to decode json: %w", err)
 	}
-	conf.Launcher.Apps = newConfLauncherApps
-
-	conf.Version = oldConf.Version
-	conf.LocalPath = oldConf.LocalPath
-	conf.Launcher.BinPath = oldConf.Launcher.BinPath
-	conf.Launcher.ServerAddr = oldConf.Launcher.ServerAddr
-	conf.CLIAddr = oldConf.CLIAddr
-	conf.Transport.TransportSetupPKs = oldConf.Transport.TransportSetupPKs
-
-	// following services are not needed
-	conf.STCP = nil
-	conf.Dmsgpty = nil
-	conf.Transport.PublicAutoconnect = false
-
-	// save the config file
-	if err := conf.Flush(); err != nil {
-		log.WithError(err).Fatal("Failed to flush config to file.")
+	if err := conf.ensureKeys(); err != nil {
+		return nil, fmt.Errorf("%v: %w", "config has invalid secret key", err)
 	}
-
-	return conf
+	return conf, nil
 }
 
 func whitelistedPKs() map[string]bool {
