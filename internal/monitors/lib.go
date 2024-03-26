@@ -12,7 +12,7 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/cipher"
 )
 
-// MonitorConfig is the structure of dmsg-monitor's config
+// MonitorConfig is the structure of monitor's config
 type MonitorConfig struct {
 	SK                  cipher.SecKey `json:"sk,omitempty"`
 	PK                  cipher.PubKey `json:"pk,omitempty"`

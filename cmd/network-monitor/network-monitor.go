@@ -11,7 +11,7 @@ import (
 func init() {
 	var helpflag bool
 	commands.RootCmd.SetUsageTemplate(help)
-	commands.RootCmd.PersistentFlags().BoolVarP(&helpflag, "help", "h", false, "help for dmsg-monitor")
+	commands.RootCmd.PersistentFlags().BoolVarP(&helpflag, "help", "h", false, "help for network-monitor")
 	commands.RootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
 	commands.RootCmd.PersistentFlags().MarkHidden("help") //nolint
 }

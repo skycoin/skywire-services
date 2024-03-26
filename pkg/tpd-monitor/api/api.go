@@ -1,4 +1,4 @@
-// Package api pkg/dmsg-monitor/api.go
+// Package api pkg/tpd-monitor/api.go
 package api
 
 import (
