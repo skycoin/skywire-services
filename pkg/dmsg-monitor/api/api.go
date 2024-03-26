@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"strings"
@@ -30,6 +29,7 @@ type API struct {
 
 	dmsgURL   string
 	utURL     string
+	arURL     string
 	logger    logging.Logger
 	dMu       sync.RWMutex
 	startedAt time.Time
@@ -39,12 +39,13 @@ type API struct {
 	whitelistedPKs map[string]bool
 }
 
-// DMSGMonitorConfig is struct for Keys and Sign value of dmsg monitor
-type DMSGMonitorConfig struct {
+// MonitorConfig is struct for Keys and Sign value of network monitor
+type MonitorConfig struct {
 	PK   cipher.PubKey
 	Sign cipher.Sig
 	DMSG string
 	UT   string
+	AR   string
 }
 
 // HealthCheckResponse is struct of /health endpoint
@@ -59,7 +60,7 @@ type Error struct {
 }
 
 // New returns a new *chi.Mux object, which can be started as a server
-func New(logger *logging.Logger, monitorConfig DMSGMonitorConfig) *API {
+func New(logger *logging.Logger, monitorConfig MonitorConfig) *API {
 
 	api := &API{
 		logger:         *logger,
@@ -68,6 +69,7 @@ func New(logger *logging.Logger, monitorConfig DMSGMonitorConfig) *API {
 		nmSign:         monitorConfig.Sign,
 		dmsgURL:        monitorConfig.DMSG,
 		utURL:          monitorConfig.UT,
+		arURL:          monitorConfig.AR,
 		whitelistedPKs: whitelistedPKs(),
 	}
 	r := chi.NewRouter()
@@ -116,15 +118,17 @@ func (api *API) log(r *http.Request) logrus.FieldLogger {
 // InitDeregistrationLoop is function which runs periodic background tasks of API.
 func (api *API) InitDeregistrationLoop(sleepDeregistration time.Duration) {
 	deadDmsgCandidate := make(map[string]bool)
+	deadStcprCandidate := make(map[string]bool)
+	deadSudphCandidate := make(map[string]bool)
 	for {
-		api.deregister(deadDmsgCandidate)
+		api.deregister(deadDmsgCandidate, deadStcprCandidate, deadSudphCandidate)
 		time.Sleep(sleepDeregistration * time.Minute)
 	}
 }
 
 // deregister use as routine to deregister old/dead entries in the network
-func (api *API) deregister(deadDmsgCandidate map[string]bool) {
-	api.logger.Info("Deregistration routine start.")
+func (api *API) deregister(deadDmsgCandidate, deadStcprCandidate, deadSudphCandidate map[string]bool) {
+	api.logger.Info("Deregistration routine started.")
 	defer api.dMu.Unlock()
 	api.dMu.Lock()
 
@@ -135,51 +139,94 @@ func (api *API) deregister(deadDmsgCandidate map[string]bool) {
 		return
 	}
 
-	api.dmsgDeregistration(deadDmsgCandidate, uptimes)
+	api.networkDeregistration(deadDmsgCandidate, deadStcprCandidate, deadSudphCandidate, uptimes)
 
 	api.logger.Info("Deregistration routine completed.")
 }
 
 // dmsgDeregistration is a routine to deregister dead dmsg entries in dmsg discovery
-func (api *API) dmsgDeregistration(deadDmsgCandidate, uptimes map[string]bool) {
-	api.logger.Info("DMSGD Deregistration started.")
-
-	// get list of all dmsg clients, not servers
-	clients, err := getClients(api.dmsgURL)
-	if err != nil {
-		api.logger.Warnf("Error occur during get dmsg clients list due to %s", err)
-		return
-	}
-	//randomize the order of the dmsg entries
-	rand.Shuffle(len(clients), func(i, j int) {
-		clients[i], clients[j] = clients[j], clients[i]
-	})
-	// check dmsg clients either alive or dead
-	checkerConfig := dmsgCheckerConfig{
+func (api *API) networkDeregistration(deadDmsgCandidate, deadStcprCandidate, deadSudphCandidate, uptimes map[string]bool) {
+	conf := checkerConfig{
 		wg:      new(sync.WaitGroup),
 		locker:  new(sync.Mutex),
 		uptimes: uptimes,
 	}
+	api.dmsgDeregistration(conf, deadDmsgCandidate)
+	api.arDeregistration(conf, deadStcprCandidate, deadSudphCandidate)
+}
+
+func (api *API) dmsgDeregistration(conf checkerConfig, deadDmsgCandidate map[string]bool) {
+	api.logger.Info("DMSG deregistraion routine started.")
+	// get list of all dmsg clients, not servers
+	dmsgEntries, err := getDMSGEntries(api.dmsgURL)
+	if err != nil {
+		api.logger.Warnf("Error occur during get dmsg entries list due to %s", err)
+		return
+	}
+
+	// DMSG deregistration
 	deadDmsg := []string{}
-	for _, client := range clients {
-		if _, ok := api.whitelistedPKs[client]; !ok {
-			checkerConfig.wg.Add(1)
-			checkerConfig.client = client
-			go api.dmsgChecker(checkerConfig, deadDmsgCandidate, &deadDmsg)
+	for _, entry := range dmsgEntries {
+		if _, ok := api.whitelistedPKs[entry]; !ok {
+			conf.wg.Add(1)
+			conf.entry = entry
+			go api.entryChecker(conf, deadDmsgCandidate, &deadDmsg)
 		}
 	}
-	checkerConfig.wg.Wait()
+	conf.wg.Wait()
 	if len(deadDmsg) > 0 {
 		api.dmsgDeregister(deadDmsg)
 	}
 	api.logger.WithField("List of dead DMSG entries", deadDmsg).WithField("Number of dead DMSG entries", len(deadDmsg)).Info("DMSGD Deregistration completed.")
+	api.logger.Info("DMSG deregistraion routine completed.")
 }
 
-func (api *API) dmsgChecker(cfg dmsgCheckerConfig, deadDmsgCandidate map[string]bool, deadDmsg *[]string) {
+func (api *API) arDeregistration(conf checkerConfig, deadStcprCandidate, deadSudphCandidate map[string]bool) {
+	api.logger.Info("AR deregistraion routine started.")
+	// get list of all ar entries
+	arEntries, err := getAREntries(api.arURL)
+	if err != nil {
+		api.logger.Warnf("error occur during get ar entries list due to %s", err)
+		return
+	}
+
+	// STCPR deregistration
+	deadStcpr := []string{}
+	for _, entry := range arEntries.Stcpr {
+		if _, ok := api.whitelistedPKs[entry]; !ok {
+			conf.wg.Add(1)
+			conf.entry = entry
+			go api.entryChecker(conf, deadStcprCandidate, &deadStcpr)
+		}
+	}
+	conf.wg.Wait()
+	if len(deadStcpr) > 0 {
+		api.arDeregister(deadStcpr, "stcpr")
+	}
+	api.logger.WithField("list of dead stcpr entries", deadStcpr).WithField("number of dead stcpr entries", len(deadStcpr)).Info("stcpr deregistration completed.")
+
+	// SUDPH deregistration
+	deadSudph := []string{}
+	for _, entry := range arEntries.Sudph {
+		if _, ok := api.whitelistedPKs[entry]; !ok {
+			conf.wg.Add(1)
+			conf.entry = entry
+			go api.entryChecker(conf, deadSudphCandidate, &deadSudph)
+		}
+	}
+	conf.wg.Wait()
+	if len(deadSudph) > 0 {
+		api.arDeregister(deadSudph, "sudph")
+	}
+	api.logger.WithField("list of dead sudph entries", deadSudph).WithField("number of dead sudph entries", len(deadSudph)).Info("sudph deregistration completed.")
+	api.logger.Info("AR deregistraion routine completed.")
+}
+
+func (api *API) entryChecker(cfg checkerConfig, deadCandidate map[string]bool, deadEntries *[]string) {
 	defer cfg.wg.Done()
 
 	key := cipher.PubKey{}
-	err := key.UnmarshalText([]byte(cfg.client))
+	err := key.UnmarshalText([]byte(cfg.entry))
 	if err != nil {
 		api.logger.Warnf("Error marshaling key: %s", err)
 		return
@@ -187,11 +234,11 @@ func (api *API) dmsgChecker(cfg dmsgCheckerConfig, deadDmsgCandidate map[string]
 
 	if status, ok := cfg.uptimes[key.Hex()]; !ok || !status {
 		cfg.locker.Lock()
-		if _, ok := deadDmsgCandidate[key.Hex()]; ok {
-			*deadDmsg = append(*deadDmsg, key.Hex())
-			delete(deadDmsgCandidate, key.Hex())
+		if _, ok := deadCandidate[key.Hex()]; ok {
+			*deadEntries = append(*deadEntries, key.Hex())
+			delete(deadCandidate, key.Hex())
 		} else {
-			deadDmsgCandidate[key.Hex()] = true
+			deadCandidate[key.Hex()] = true
 		}
 		cfg.locker.Unlock()
 	}
@@ -206,8 +253,17 @@ func (api *API) dmsgDeregister(keys []string) {
 	api.logger.Info("Deregister request send to DSMGD")
 }
 
-type dmsgCheckerConfig struct {
-	client  string
+func (api *API) arDeregister(keys []string, entryType string) {
+	err := api.deregisterRequest(keys, fmt.Sprintf(api.arURL+"/deregister/%s", entryType), "address resolver")
+	if err != nil {
+		api.logger.Warn(err)
+		return
+	}
+	api.logger.Info("Deregister request send to DSMGD")
+}
+
+type checkerConfig struct {
+	entry   string
 	uptimes map[string]bool
 	wg      *sync.WaitGroup
 	locker  *sync.Mutex
@@ -251,7 +307,7 @@ func (api *API) deregisterRequest(keys []string, rawReqURL, service string) erro
 
 type clientList []string
 
-func getClients(dmsgURL string) (data clientList, err error) {
+func getDMSGEntries(dmsgURL string) (data clientList, err error) {
 	res, err := http.Get(dmsgURL + "/dmsg-discovery/visorEntries") //nolint
 
 	if err != nil {
@@ -298,6 +354,30 @@ func getUptimeTracker(utURL string) (map[string]bool, error) {
 type uptimes struct {
 	Key    string `json:"key"`
 	Online bool   `json:"online"`
+}
+
+type visorTransports struct {
+	Sudph []string `json:"sudph"`
+	Stcpr []string `json:"stcpr"`
+}
+
+func getAREntries(arURL string) (data visorTransports, err error) {
+	res, err := http.Get(arURL + "/transports") //nolint
+	if err != nil {
+		return visorTransports{}, err
+	}
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return visorTransports{}, err
+	}
+
+	err = json.Unmarshal(body, &data)
+	if err != nil {
+		return visorTransports{}, err
+	}
+
+	return data, err
 }
 
 func whitelistedPKs() map[string]bool {

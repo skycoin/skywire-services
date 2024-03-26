@@ -23,6 +23,7 @@ var (
 	confPath            string
 	dmsgURL             string
 	utURL               string
+	arURL               string
 	addr                string
 	tag                 string
 	logLvl              string
@@ -32,10 +33,11 @@ var (
 func init() {
 	RootCmd.Flags().StringVarP(&addr, "addr", "a", "", "address to bind to.\033[0m")
 	RootCmd.Flags().DurationVarP(&sleepDeregistration, "sleep-deregistration", "s", 0, "Sleep time for derigstration process in minutes\033[0m")
-	RootCmd.Flags().StringVarP(&dmsgURL, "dmsg-url", "d", "", "url to dmsg data.\033[0m")
-	RootCmd.Flags().StringVarP(&utURL, "ut-url", "u", "", "url to uptime tracker visor data.\033[0m")
-	RootCmd.Flags().StringVarP(&confPath, "config", "c", "dmsg-monitor.json", "path of dmsg-monitor config\033[0m")
-	RootCmd.Flags().StringVar(&tag, "tag", "dmsg_monitor", "logging tag\033[0m")
+	RootCmd.Flags().StringVar(&dmsgURL, "dmsg-url", "", "url to dmsg data.\033[0m")
+	RootCmd.Flags().StringVar(&utURL, "ut-url", "", "url to uptime tracker visor data.\033[0m")
+	RootCmd.Flags().StringVar(&arURL, "ar-url", "", "url to ar data.\033[0m")
+	RootCmd.Flags().StringVarP(&confPath, "config", "c", "network-monitor.json", "path of network-monitor config\033[0m")
+	RootCmd.Flags().StringVar(&tag, "tag", "network_monitor", "logging tag\033[0m")
 	RootCmd.Flags().StringVarP(&logLvl, "loglvl", "l", "", "set log level one of: info, error, warn, debug, trace, panic")
 }
 
@@ -46,10 +48,9 @@ var RootCmd = &cobra.Command{
 	}(),
 	Short: "DMSG monitor of DMSG discovery entries.",
 	Long: `
-	┌┬┐┌┬┐┌─┐┌─┐   ┌┬┐┌─┐┌┐┌┬┌┬┐┌─┐┬─┐
-	 │││││└─┐│ ┬───││││ │││││ │ │ │├┬┘
-	─┴┘┴ ┴└─┘└─┘   ┴ ┴└─┘┘└┘┴ ┴ └─┘┴└─
-`,
+	┌┐┌┌─┐┌┬┐┬ ┬┌─┐┬─┐┬┌─   ┌┬┐┌─┐┌┐┌┬┌┬┐┌─┐┬─┐
+	│││├┤  │ ││││ │├┬┘├┴┐───││││ │││││ │ │ │├┬┘
+	┘└┘└─┘ ┴ └┴┘└─┘┴└─┴ ┴   ┴ ┴└─┘┘└┘┴ ┴ └─┘┴└─`,
 	SilenceErrors:         true,
 	SilenceUsage:          true,
 	DisableSuggestions:    true,
@@ -73,6 +74,9 @@ var RootCmd = &cobra.Command{
 		if utURL == "" {
 			utURL = conf.UTUrl + "/uptimes"
 		}
+		if arURL == "" {
+			arURL = conf.ARUrl
+		}
 		if addr == "" {
 			addr = conf.Addr
 		}
@@ -95,11 +99,12 @@ var RootCmd = &cobra.Command{
 
 		monitorSign, _ := cipher.SignPayload([]byte(conf.PK.Hex()), conf.SK) //nolint
 
-		var monitorConfig api.DMSGMonitorConfig
+		var monitorConfig api.MonitorConfig
 		monitorConfig.PK = conf.PK
 		monitorConfig.Sign = monitorSign
 		monitorConfig.DMSG = dmsgURL
 		monitorConfig.UT = utURL
+		monitorConfig.AR = arURL
 
 		dmsgMonitorAPI := api.New(logger, monitorConfig)
 
