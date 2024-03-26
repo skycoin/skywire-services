@@ -463,40 +463,17 @@ services:
     container_name: "network-monitor"
     networks:
       srv:
-        ipv4_address: 175.0.0.30  
-      intra:
-        ipv4_address: 174.0.0.30
-    ports:
-      - "9080:9080"
-    entrypoint: /release/network-monitor --redis redis://nm-redis:6379 --config /release/network-monitor.json
-    depends_on:
-      - nm-redis
-      - visor-c
-    volumes:
-      - type: bind
-        source: ../docker/config/network-monitor.json
-        target: /release/network-monitor.json
-        read_only: false
-    stdin_open: true # docker run -i
-    tty: true        # docker run -t
-
-  dmsg-monitor:
-    image: "${REGISTRY}/dmsg-monitor:${DOCKER_TAG}"
-    hostname: dmsg-monitor
-    container_name: "dmsg-monitor"
-    networks:
-      srv:
         ipv4_address: 175.0.0.31
       intra:
         ipv4_address: 174.0.0.31
     volumes:
       - type: bind
-        source: ../docker/config/dmsg-monitor.json
-        target: /release/dmsg-monitor.json
+        source: ../docker/config/network-monitor.json
+        target: /release/network-monitor.json
         read_only: false
     ports:
       - "9081:9081"
-    entrypoint: /release/dmsg-monitor -d http://dmsg-discovery:9090 -u http://uptime-tracker:9096 -a :9081 --config /release/dmsg-monitor.json
+    entrypoint: /release/network-monitor --dmsg-url http://dmsg-discovery:9090 --ut-url http://uptime-tracker:9096 --ar-url http://address-resolver:9093 -a :9081 --config /release/network-monitor.json
     depends_on:
       - visor-c
     restart: always

@@ -26,7 +26,6 @@ declare -a images_arr=(
   "liveness-checker"
   "vpn-monitor"
   "public-visor-monitor"
-  "dmsg-monitor"
   "tpd-monitor"
   "transport-setup"
   "skysocks-monitor"
