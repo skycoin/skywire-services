@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/skycoin/skywire-utilities/pkg/buildinfo"
 	"github.com/skycoin/skywire-utilities/pkg/cipher"
@@ -20,19 +19,17 @@ import (
 )
 
 var (
-	confPath            string
-	dmsgURL             string
-	utURL               string
-	arURL               string
-	addr                string
-	tag                 string
-	logLvl              string
-	sleepDeregistration time.Duration
+	confPath string
+	dmsgURL  string
+	utURL    string
+	arURL    string
+	addr     string
+	tag      string
+	logLvl   string
 )
 
 func init() {
 	RootCmd.Flags().StringVarP(&addr, "addr", "a", "", "address to bind to.\033[0m")
-	RootCmd.Flags().DurationVarP(&sleepDeregistration, "sleep-deregistration", "s", 0, "Sleep time for derigstration process in minutes\033[0m")
 	RootCmd.Flags().StringVar(&dmsgURL, "dmsg-url", "", "url to dmsg data.\033[0m")
 	RootCmd.Flags().StringVar(&utURL, "ut-url", "", "url to uptime tracker visor data.\033[0m")
 	RootCmd.Flags().StringVar(&arURL, "ar-url", "", "url to ar data.\033[0m")
@@ -72,16 +69,13 @@ var RootCmd = &cobra.Command{
 			dmsgURL = conf.DMSGUrl
 		}
 		if utURL == "" {
-			utURL = conf.UTUrl + "/uptimes"
+			utURL = conf.UTUrl
 		}
 		if arURL == "" {
 			arURL = conf.ARUrl
 		}
 		if addr == "" {
 			addr = conf.Addr
-		}
-		if sleepDeregistration == 0 {
-			sleepDeregistration = conf.SleepDeregistration
 		}
 		if logLvl == "" {
 			logLvl = conf.LogLevel
@@ -95,7 +89,7 @@ var RootCmd = &cobra.Command{
 
 		logger := mLogger.PackageLogger(tag)
 
-		logger.WithField("addr", addr).Info("Serving DMSG-Monitor API...")
+		logger.WithField("addr", addr).Info("Serving Network-Monitor API...")
 
 		monitorSign, _ := cipher.SignPayload([]byte(conf.PK.Hex()), conf.SK) //nolint
 
@@ -106,11 +100,11 @@ var RootCmd = &cobra.Command{
 		monitorConfig.UT = utURL
 		monitorConfig.AR = arURL
 
-		dmsgMonitorAPI := api.New(logger, monitorConfig)
+		networkMonitorAPI := api.New(logger, monitorConfig)
 
-		go dmsgMonitorAPI.InitDeregistrationLoop(sleepDeregistration)
+		go networkMonitorAPI.InitDeregistrationLoop(conf.SleepDeregistration)
 
-		if err := tcpproxy.ListenAndServe(addr, dmsgMonitorAPI); err != nil {
+		if err := tcpproxy.ListenAndServe(addr, networkMonitorAPI); err != nil {
 			logger.Errorf("serve: %v", err)
 		}
 	},

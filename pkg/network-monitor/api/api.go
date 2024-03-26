@@ -329,7 +329,7 @@ func getDMSGEntries(dmsgURL string) (data clientList, err error) {
 
 func getUptimeTracker(utURL string) (map[string]bool, error) {
 	response := make(map[string]bool)
-	res, err := http.Get(utURL) //nolint
+	res, err := http.Get(utURL + "/uptimes") //nolint
 	if err != nil {
 		return response, err
 	}
