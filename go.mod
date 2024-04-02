@@ -5,6 +5,7 @@ go 1.21
 toolchain go1.21.5
 
 require (
+	github.com/bitfield/script v0.22.0
 	github.com/ccding/go-stun/stun v0.0.0-20200514191101-4dc67bcdb029
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/docker/docker v1.13.1
@@ -29,6 +30,7 @@ require (
 	github.com/songgao/water v0.0.0-20200317203138-2b4b6d7c09d8
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.4
+	github.com/tidwall/pretty v1.2.1
 	github.com/xtaci/kcp-go v5.4.20+incompatible
 	golang.org/x/net v0.14.0
 	golang.zx2c4.com/wireguard v0.0.0-20230223181233-21636207a675
@@ -43,7 +45,6 @@ require (
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/StackExchange/wmi v1.2.1 // indirect
 	github.com/VictoriaMetrics/metrics v1.24.0 // indirect
-	github.com/bitfield/script v0.22.0 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/bytedance/sonic v1.10.0 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
