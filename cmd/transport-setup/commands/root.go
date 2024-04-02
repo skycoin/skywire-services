@@ -2,6 +2,7 @@
 package commands
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -9,30 +10,30 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-	"encoding/json"
 
+	"github.com/bitfield/script"
 	"github.com/google/uuid"
-	"github.com/skycoin/skywire-utilities/pkg/cipher"
 	"github.com/skycoin/skywire-utilities/pkg/buildinfo"
+	"github.com/skycoin/skywire-utilities/pkg/cipher"
 	"github.com/skycoin/skywire-utilities/pkg/logging"
 	"github.com/spf13/cobra"
 	"github.com/tidwall/pretty"
-	"github.com/bitfield/script"
+
 	"github.com/skycoin/skywire-services/pkg/transport-setup/api"
 	"github.com/skycoin/skywire-services/pkg/transport-setup/config"
 )
 
 var (
-	pk1	cipher.PubKey
-	pk2	cipher.PubKey
+	pk1        cipher.PubKey
+	pk2        cipher.PubKey
 	logLvl     string
 	configFile string
-	tpsnAddr	string
-	fromPK	string
-	toPK	string
-	tpID	string
-	tpType	string
-	nice	bool
+	tpsnAddr   string
+	fromPK     string
+	toPK       string
+	tpID       string
+	tpType     string
+	nice       bool
 )
 
 func init() {
@@ -114,9 +115,9 @@ Takes config in the following format:
 }
 
 var addTPCmd = &cobra.Command{
-	Use: "add",
-	Short: "add transport to remote visor",
-	Long: ``,
+	Use:                   "add",
+	Short:                 "add transport to remote visor",
+	Long:                  ``,
 	SilenceErrors:         true,
 	SilenceUsage:          true,
 	DisableSuggestions:    true,
@@ -142,22 +143,22 @@ var addTPCmd = &cobra.Command{
 		if err != nil {
 			log.Fatalf("Error: ", err)
 		}
-		res, err := script.Echo(string(addtpJSON)).Post(tpsnAddr+"/add").String()
+		res, err := script.Echo(string(addtpJSON)).Post(tpsnAddr + "/add").String()
 		if err != nil {
-			log.Fatalf("error: ",err)
+			log.Fatalf("error: ", err)
 		}
 		if nice {
-			fmt.Printf("%v",string(pretty.Color(pretty.Pretty([]byte(res)), nil)))
+			fmt.Printf("%v", string(pretty.Color(pretty.Pretty([]byte(res)), nil)))
 		} else {
-			fmt.Printf("%v",res)
+			fmt.Printf("%v", res)
 		}
 
 	},
 }
 var rmTPCmd = &cobra.Command{
-	Use: "rm",
-	Short: "remove transport from remote visor",
-	Long: ``,
+	Use:                   "rm",
+	Short:                 "remove transport from remote visor",
+	Long:                  ``,
 	SilenceErrors:         true,
 	SilenceUsage:          true,
 	DisableSuggestions:    true,
@@ -179,34 +180,34 @@ var rmTPCmd = &cobra.Command{
 		if err != nil {
 			log.Fatalf("Error: ", err)
 		}
-		res, err := script.Echo(string(rmtpJSON)).Post(tpsnAddr+"/remove").String()
+		res, err := script.Echo(string(rmtpJSON)).Post(tpsnAddr + "/remove").String()
 		if err != nil {
-			log.Fatalf("error: ",err)
+			log.Fatalf("error: ", err)
 		}
 		if nice {
-			fmt.Printf("%v",string(pretty.Color(pretty.Pretty([]byte(res)), nil)))
+			fmt.Printf("%v", string(pretty.Color(pretty.Pretty([]byte(res)), nil)))
 		} else {
-			fmt.Printf("%v",res)
+			fmt.Printf("%v", res)
 		}
 	},
 }
 var listTPCmd = &cobra.Command{
-	Use: "list",
-	Short: "list transports of remote visor",
-	Long: ``,
+	Use:                   "list",
+	Short:                 "list transports of remote visor",
+	Long:                  ``,
 	SilenceErrors:         true,
 	SilenceUsage:          true,
 	DisableSuggestions:    true,
 	DisableFlagsInUseLine: true,
 	Run: func(_ *cobra.Command, args []string) {
-		res, err := script.Get(tpsnAddr+"/"+fromPK+"/transports").String()
+		res, err := script.Get(tpsnAddr + "/" + fromPK + "/transports").String()
 		if err != nil {
 			log.Fatal("something unexpected happened: ", err, res)
 		}
 		if nice {
-			fmt.Printf("%v",string(pretty.Color(pretty.Pretty([]byte(res)), nil)))
+			fmt.Printf("%v", string(pretty.Color(pretty.Pretty([]byte(res)), nil)))
 		} else {
-			fmt.Printf("%v",res)
+			fmt.Printf("%v", res)
 		}
 	},
 }
