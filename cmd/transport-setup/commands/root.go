@@ -140,16 +140,16 @@ var addTPCmd = &cobra.Command{
 		}
 		addtpJSON, err := json.Marshal(addtp)
 		if err != nil {
-			log.Fatalf("Error marshalling json: %v", err)
+			log.Fatalf("Error: ", err)
 		}
 		res, err := script.Echo(string(addtpJSON)).Post(tpsnAddr+"/add").String()
 		if err != nil {
 			log.Fatalf("error: ",err)
 		}
 		if nice {
-			fmt.Printf(string(pretty.Color(pretty.Pretty([]byte(res)), nil)))
+			fmt.Printf("%v",string(pretty.Color(pretty.Pretty([]byte(res)), nil)))
 		} else {
-			fmt.Printf(res)
+			fmt.Printf("%v",res)
 		}
 
 	},
@@ -177,16 +177,16 @@ var rmTPCmd = &cobra.Command{
 		}
 		rmtpJSON, err := json.Marshal(rmtp)
 		if err != nil {
-			log.Fatalf("Error marshalling json: %v", err)
+			log.Fatalf("Error: ", err)
 		}
 		res, err := script.Echo(string(rmtpJSON)).Post(tpsnAddr+"/remove").String()
 		if err != nil {
 			log.Fatalf("error: ",err)
 		}
 		if nice {
-			fmt.Printf(string(pretty.Color(pretty.Pretty([]byte(res)), nil)))
+			fmt.Printf("%v",string(pretty.Color(pretty.Pretty([]byte(res)), nil)))
 		} else {
-			fmt.Printf(res)
+			fmt.Printf("%v",res)
 		}
 	},
 }
@@ -204,9 +204,9 @@ var listTPCmd = &cobra.Command{
 			log.Fatal("something unexpected happened: ", err, res)
 		}
 		if nice {
-			fmt.Printf(string(pretty.Color(pretty.Pretty([]byte(res)), nil)))
+			fmt.Printf("%v",string(pretty.Color(pretty.Pretty([]byte(res)), nil)))
 		} else {
-			fmt.Printf(res)
+			fmt.Printf("%v",res)
 		}
 	},
 }
