@@ -12,13 +12,6 @@ import (
 	"github.com/skycoin/dmsg/pkg/direct"
 	"github.com/skycoin/dmsg/pkg/dmsg"
 	"github.com/skycoin/dmsg/pkg/dmsghttp"
-	"github.com/skycoin/skywire-services/internal/pg"
-	"github.com/skycoin/skywire-services/internal/utmetrics"
-	"github.com/skycoin/skywire-services/pkg/uptime-tracker/api"
-	"github.com/skycoin/skywire-services/pkg/uptime-tracker/store"
-	"github.com/spf13/cobra"
-	"gorm.io/gorm"
-
 	"github.com/skycoin/skywire-utilities/pkg/buildinfo"
 	"github.com/skycoin/skywire-utilities/pkg/cipher"
 	"github.com/skycoin/skywire-utilities/pkg/cmdutil"
@@ -28,6 +21,13 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/metricsutil"
 	"github.com/skycoin/skywire-utilities/pkg/storeconfig"
 	"github.com/skycoin/skywire-utilities/pkg/tcpproxy"
+	"github.com/spf13/cobra"
+	"gorm.io/gorm"
+
+	"github.com/skycoin/skywire-services/internal/pg"
+	"github.com/skycoin/skywire-services/internal/utmetrics"
+	"github.com/skycoin/skywire-services/pkg/uptime-tracker/api"
+	"github.com/skycoin/skywire-services/pkg/uptime-tracker/store"
 )
 
 const (
