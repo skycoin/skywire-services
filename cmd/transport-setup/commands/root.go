@@ -125,11 +125,11 @@ var addTPCmd = &cobra.Command{
 	Run: func(_ *cobra.Command, args []string) {
 		err := pk1.Set(fromPK)
 		if err != nil {
-			log.Fatal("-1 invalid public key: ", err)
+			log.Fatalf("-1 invalid public key: %v\n", err)
 		}
 		err = pk2.Set(toPK)
 		if err != nil {
-			log.Fatal("-2 invalid public key: ", err)
+			log.Fatalf("-2 invalid public key: %v\n", err)
 		}
 		if tpType != "dmsg" && tpType != "stcpr" && tpType != "sudph" {
 			log.Fatal("invalid transport type specified: ", tpType)
@@ -141,11 +141,11 @@ var addTPCmd = &cobra.Command{
 		}
 		addtpJSON, err := json.Marshal(addtp)
 		if err != nil {
-			log.Fatalf("Error: ", err)
+			log.Fatalf("Error occurred: %v\n", err)
 		}
 		res, err := script.Echo(string(addtpJSON)).Post(tpsnAddr + "/add").String()
 		if err != nil {
-			log.Fatalf("error: ", err)
+			log.Fatalf("Error occurred: %v\n", err)
 		}
 		if nice {
 			fmt.Printf("%v", string(pretty.Color(pretty.Pretty([]byte(res)), nil)))
@@ -166,11 +166,11 @@ var rmTPCmd = &cobra.Command{
 	Run: func(_ *cobra.Command, args []string) {
 		err := pk1.Set(fromPK)
 		if err != nil {
-			log.Fatal("invalid public key: ", err)
+			log.Fatalf("invalid public key: %v\n", err)
 		}
 		tpid, err := uuid.Parse(tpID)
 		if err != nil {
-			log.Fatal("invalid tp id: ", err)
+			log.Fatalf("invalid tp id: %v\n", err)
 		}
 		rmtp := api.UUIDRequest{
 			From: pk1,
@@ -178,11 +178,11 @@ var rmTPCmd = &cobra.Command{
 		}
 		rmtpJSON, err := json.Marshal(rmtp)
 		if err != nil {
-			log.Fatalf("Error: ", err)
+			log.Fatalf("Error occurred: %v\n", err)
 		}
 		res, err := script.Echo(string(rmtpJSON)).Post(tpsnAddr + "/remove").String()
 		if err != nil {
-			log.Fatalf("error: ", err)
+			log.Fatalf("Error occurred: %v\n", err)
 		}
 		if nice {
 			fmt.Printf("%v", string(pretty.Color(pretty.Pretty([]byte(res)), nil)))
