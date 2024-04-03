@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	ipc "github.com/james-barrow/golang-ipc"
-
 	"github.com/skycoin/skywire/pkg/skyenv"
 )
 
