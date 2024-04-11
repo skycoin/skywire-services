@@ -4,6 +4,7 @@ package commands
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"image/color"
 	"image/jpeg"
 	"log"
@@ -14,7 +15,6 @@ import (
 
 	sm "github.com/flopp/go-staticmaps"
 	"github.com/golang/geo/s2"
-	cc "github.com/ivanpirog/coloredcobra"
 	"github.com/skycoin/skywire-utilities/pkg/buildinfo"
 	"github.com/skycoin/skywire-utilities/pkg/logging"
 	"github.com/spf13/cobra"
@@ -45,19 +45,17 @@ var (
 )
 
 func init() {
-	rootCmd.Flags().IntVar(&width, "width", 1200, "image width\033[0m")
-	rootCmd.Flags().IntVar(&height, "height", 800, "image height\033[0m")
-	rootCmd.Flags().StringVarP(&output, "output", "o", "./map"+imageExtension, "output .jpg file\033[0m")
-	rootCmd.Flags().StringVar(&trackerURL, "tracker-url", defaultUptimeTrackerHost, "uptime tracker URL\033[0m")
-	var helpflag bool
-	rootCmd.SetUsageTemplate(help)
-	rootCmd.PersistentFlags().BoolVarP(&helpflag, "help", "h", false, "help for "+rootCmd.Use)
-	rootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
-	rootCmd.PersistentFlags().MarkHidden("help") //nolint
+	RootCmd.Flags().IntVar(&width, "width", 1200, "image width\033[0m")
+	RootCmd.Flags().IntVar(&height, "height", 800, "image height\033[0m")
+	RootCmd.Flags().StringVarP(&output, "output", "o", "./map"+imageExtension, "output .jpg file\033[0m")
+	RootCmd.Flags().StringVar(&trackerURL, "tracker-url", defaultUptimeTrackerHost, "uptime tracker URL\033[0m")
 }
 
-var rootCmd = &cobra.Command{
-	Use:   "visor-map",
+// RootCmd contains the root command
+var RootCmd = &cobra.Command{
+	Use: func() string {
+		return strings.Split(filepath.Base(strings.ReplaceAll(strings.ReplaceAll(fmt.Sprintf("%v", os.Args), "[", ""), "]", "")), " ")[0]
+	}(),
 	Short: "Utility to render visors map",
 	Long: `
 	┬  ┬┬┌─┐┌─┐┬─┐   ┌┬┐┌─┐┌─┐
@@ -141,20 +139,7 @@ var rootCmd = &cobra.Command{
 
 // Execute executes root CLI command.
 func Execute() {
-	cc.Init(&cc.Config{
-		RootCmd:       rootCmd,
-		Headings:      cc.HiBlue + cc.Bold, //+ cc.Underline,
-		Commands:      cc.HiBlue + cc.Bold,
-		CmdShortDescr: cc.HiBlue,
-		Example:       cc.HiBlue + cc.Italic,
-		ExecName:      cc.HiBlue + cc.Bold,
-		Flags:         cc.HiBlue + cc.Bold,
-		//FlagsDataType: cc.HiBlue,
-		FlagsDescr:      cc.HiBlue,
-		NoExtraNewlines: true,
-		NoBottomNewline: true,
-	})
-	if err := rootCmd.Execute(); err != nil {
+	if err := RootCmd.Execute(); err != nil {
 		log.Fatal("Failed to execute command: ", err)
 	}
 }
@@ -167,13 +152,3 @@ type VisorDef struct {
 	Lat float64 `json:"lat"`
 	Lon float64 `json:"lon"`
 }
-
-const help = "Usage:\r\n" +
-	"  {{.UseLine}}{{if .HasAvailableSubCommands}}{{end}} {{if gt (len .Aliases) 0}}\r\n\r\n" +
-	"{{.NameAndAliases}}{{end}}{{if .HasAvailableSubCommands}}\r\n\r\n" +
-	"Available Commands:{{range .Commands}}{{if (or .IsAvailableCommand)}}\r\n  " +
-	"{{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}\r\n\r\n" +
-	"Flags:\r\n" +
-	"{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}\r\n\r\n" +
-	"Global Flags:\r\n" +
-	"{{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}\r\n\r\n"

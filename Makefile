@@ -14,7 +14,7 @@ DATE := $(shell date -u $(RFC_3339))
 COMMIT := $(shell git rev-list -1 HEAD)
 
 OPTS?=GO111MODULE=on
-DOCKER_OPTS?=GO111MODULE=on GOOS=linux # go options for compiling for docker container
+DOCKER_OPTS?=GO111MODULE=on GOOS=linux
 DOCKER_NETWORK?=SKYWIRE
 DOCKER_COMPOSE_FILE:=./docker/docker-compose.yml
 DOCKER_REGISTRY:=skycoin
@@ -45,78 +45,32 @@ export REGISTRY=${DOCKER_REGISTRY}
 ## : ## _ [Prepare code]
 
 dep: ## Sorts dependencies
+	@command -v yarn >/dev/null 2>&1 && yarn --cwd ./pkg/node-visualizer/web install || true
 #	GO111MODULE=on GOPRIVATE=github.com/skycoin/* go get -v github.com/skycoin/skywire@master
-	GO111MODULE=on GOPRIVATE=github.com/skycoin/* go mod vendor -v
-	yarn --cwd ./pkg/node-visualizer/web install
+#	GO111MODULE=on GOPRIVATE=github.com/skycoin/* go mod vendor -v
 
 format: dep ## Formats the code. Must have goimports and goimports-reviser installed (use make install-linters).
-	goimports -w -local github.com/skycoin/skywire-services ./pkg
-	goimports -w -local github.com/skycoin/skywire-services ./cmd
-	goimports -w -local github.com/skycoin/skywire-services ./internal
-	find . -type f -name '*.go' -not -path "./vendor/*" -exec goimports-reviser -project-name ${PROJECT_BASE} {} \;
+	goimports -w -local github.com/skycoin/skywire-services ./pkg ./cmd ./internal
+	find . -type f -name '*.go' -not -path "./.git/*" -not -path "./vendor/*"  -exec goimports-reviser -project-name ${PROJECT_BASE} {} \;
 
 ## : ## _ [Build, install, clean]
 
 build: dep ## Build binaries
-	${OPTS} go build ${BUILD_OPTS} -o ./bin/route-finder ./cmd/route-finder
-	${OPTS} go build ${BUILD_OPTS} -o ./bin/setup-node ./cmd/setup-node
-	${OPTS} go build ${BUILD_OPTS} -o ./bin/transport-discovery ./cmd/transport-discovery
-	${OPTS} go build ${BUILD_OPTS} -o ./bin/address-resolver ./cmd/address-resolver
-	${OPTS} go build ${BUILD_OPTS} -o ./bin/sw-env ./cmd/sw-env
-	${OPTS} go build ${BUILD_OPTS} -o ./bin/keys-gen ./cmd/keys-gen
-	${OPTS} go build ${BUILD_OPTS} -o ./bin/network-monitor ./cmd/network-monitor
-	${OPTS} go build ${BUILD_OPTS} -o ./apps/vpn-client ./cmd/vpn-lite-client
-	${OPTS} go build ${BUILD_OPTS} -o ./bin/transport-setup ./cmd/transport-setup
-	${OPTS} go build ${BUILD_OPTS} -o ./bin/config-bootstrapper ./cmd/config-bootstrapper
-	${OPTS} go build ${BUILD_OPTS} -o ./bin/liveness-checker ./cmd/liveness-checker
-	${OPTS} go build ${BUILD_OPTS} -o ./bin/dmsg-monitor ./cmd/dmsg-monitor
-	${OPTS} go build ${BUILD_OPTS} -o ./bin/tpd-monitor ./cmd/tpd-monitor
-	${OPTS} go build ${BUILD_OPTS} -o ./bin/vpn-monitor ./cmd/vpn-monitor
-	${OPTS} go build ${BUILD_OPTS} -o ./bin/public-visor-monitor ./cmd/public-visor-monitor
+	${OPTS} go build ${BUILD_OPTS} -o ./bin/skywire-services ./cmd/skywire-services
+
 	# yarn --cwd ./pkg/node-visualizer/web build
 	# rm -rf ./pkg/node-visualizer/api/build/static
 	# mv ./pkg/node-visualizer/web/build/* ./pkg/node-visualizer/api/build
 	# ${OPTS} go build ${BUILD_OPTS} -o ./bin/node-visualizer ./cmd/node-visualizer
 
 build-deploy: ## Build for deployment Docker images
-	go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o /release/address-resolver ./cmd/address-resolver
-	go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o /release/route-finder ./cmd/route-finder
-	go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o /release/setup-node ./cmd/setup-node
-	go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o /release/transport-discovery ./cmd/transport-discovery
-	go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o /release/network-monitor ./cmd/network-monitor
-	go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o /release/vpn-client ./cmd/vpn-lite-client
-	go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o /release/transport-setup ./cmd/transport-setup
-	go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o /release/node-visualizer ./cmd/node-visualizer
-	go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o /release/dmsg-monitor ./cmd/dmsg-monitor
-	go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o /release/tpd-monitor ./cmd/tpd-monitor
-	go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o /release/vpn-monitor ./cmd/vpn-monitor
-	go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o /release/public-visor-monitor ./cmd/public-visor-monitor
+	${DOCKER_OPTS} go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/skywire-services ./cmd/skywire-services
 
 build-race: dep ## Build binaries
-	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/route-finder ./cmd/route-finder
-	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/setup-node ./cmd/setup-node
-	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/transport-discovery ./cmd/transport-discovery
-	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/address-resolver ./cmd/address-resolver
-	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/sw-env ./cmd/sw-env
-	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/keys-gen ./cmd/keys-gen
-	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/network-monitor ./cmd/network-monitor
-	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/vpn-client ./cmd/vpn-lite-client
-	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/transport-setup ./cmd/transport-setup
-	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/node-visualizer ./cmd/node-visualizer
-	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/dmsg-monitor ./cmd/dmsg-monitor
-	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/tpd-monitor ./cmd/tpd-monitor
-	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/vpn-monitor ./cmd/vpn-monitor
-	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/public-visor-monitor ./cmd/public-visor-monitor
+	${OPTS} go build ${BUILD_OPTS} -race -o ./bin/skywire-services ./cmd/skywire-services
 
 install: ## Install route-finder, transport-discovery, address-resolver, sw-env, keys-gen, network-monitor, node-visualizer
-	${OPTS} go install ${BUILD_OPTS} \
-		./cmd/route-finder \
-		./cmd/transport-discovery \
-		./cmd/address-resolver \
-		./cmd/sw-env \
-		./cmd/keys-gen \
-		./cmd/network-monitor \
-		./cmd/node-visualizer
+	${OPTS} go install ${BUILD_OPTS} ./cmd/skywire-services
 
 clean: ## Clean compiled binaries
 	rm -rf bin
@@ -188,9 +142,15 @@ e2e-help: ## E2E. Show env-vars and useful commands
 	@echo -e "   docker-compose up/down/start/stop"
 	@echo -e "\nConsult with:\n\n   docker-compose help\n"
 
+docker-build-test:
+	bash ./docker/docker_build.sh test ${BUILD_OPTS_DEPLOY}
+
+docker-build:
+	bash ./docker/docker_build.sh prod ${BUILD_OPTS_DEPLOY}
+
 docker-push-test:
 	bash ./docker/docker_build.sh test ${BUILD_OPTS_DEPLOY}
-	# bash ./docker/docker_push.sh test
+	bash ./docker/docker_push.sh test
 
 docker-push:
 	bash ./docker/docker_build.sh prod ${BUILD_OPTS_DEPLOY}
@@ -235,11 +195,6 @@ vendor-integration-check: ## Check compatibility of master@skywire-services with
 	./ci_scripts/vendor-integration-check.sh
 
 ## : ## _ [Other]
-
-run-syslog: ## Run syslog-ng in docker. Logs are mounted under /tmp/syslog
-	-mkdir -p /tmp/syslog
-	-docker container rm syslog-ng -f
-	docker run -d -p 514:514/udp  -v /tmp/syslog:/var/log  --name syslog-ng balabit/syslog-ng:latest
 
 help:
 	@grep -E '^[a-zA-Z0-9_-]+:.*?## .*$$|^##.*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

@@ -2,52 +2,96 @@
 package commands
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
-	cc "github.com/ivanpirog/coloredcobra"
+	"github.com/bitfield/script"
+	"github.com/google/uuid"
 	"github.com/skycoin/skywire-utilities/pkg/buildinfo"
+	"github.com/skycoin/skywire-utilities/pkg/cipher"
 	"github.com/skycoin/skywire-utilities/pkg/logging"
 	"github.com/spf13/cobra"
+	"github.com/tidwall/pretty"
 
 	"github.com/skycoin/skywire-services/pkg/transport-setup/api"
 	"github.com/skycoin/skywire-services/pkg/transport-setup/config"
 )
 
 var (
+	pk1        cipher.PubKey
+	pk2        cipher.PubKey
 	logLvl     string
 	configFile string
+	tpsnAddr   string
+	fromPK     string
+	toPK       string
+	tpID       string
+	tpType     string
+	nice       bool
 )
 
 func init() {
-	rootCmd.Flags().StringVarP(&configFile, "config", "c", "", "path to config file\033[0m")
-	rootCmd.Flags().StringVarP(&logLvl, "loglvl", "l", "info", "set log level one of: info, error, warn, debug, trace, panic")
-	err := rootCmd.MarkFlagRequired("config")
-	if err != nil {
-		log.Fatal("config flag is not specified")
-	}
-	var helpflag bool
-	rootCmd.SetUsageTemplate(help)
-	rootCmd.PersistentFlags().BoolVarP(&helpflag, "help", "h", false, "help for "+rootCmd.Use)
-	rootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
-	rootCmd.PersistentFlags().MarkHidden("help") //nolint
+	RootCmd.Flags().SortFlags = false
+	addTPCmd.Flags().SortFlags = false
+	rmTPCmd.Flags().SortFlags = false
+	listTPCmd.Flags().SortFlags = false
+	RootCmd.Flags().StringVarP(&configFile, "config", "c", "", "path to config file\033[0m")
+	RootCmd.Flags().StringVarP(&logLvl, "loglvl", "l", "debug", "[info|error|warn|debug|trace|panic]")
+	RootCmd.AddCommand(addTPCmd, rmTPCmd, listTPCmd)
+	addTPCmd.Flags().StringVarP(&fromPK, "from", "1", "", "PK to request transport setup")
+	addTPCmd.Flags().StringVarP(&toPK, "to", "2", "", "other transport edge PK")
+	addTPCmd.Flags().StringVarP(&tpType, "type", "t", "", "transport type to request creation of [stcpr|sudph|dmsg]")
+	rmTPCmd.Flags().StringVarP(&fromPK, "from", "1", "", "PK to request transport takedown")
+	rmTPCmd.Flags().StringVarP(&tpID, "tpid", "i", "", "id of transport to remove")
+	listTPCmd.Flags().StringVarP(&fromPK, "from", "1", "", "PK to request transport list")
+	addTPCmd.Flags().BoolVarP(&nice, "pretty", "p", false, "pretty print result")
+	rmTPCmd.Flags().BoolVarP(&nice, "pretty", "p", false, "pretty print result")
+	listTPCmd.Flags().BoolVarP(&nice, "pretty", "p", false, "pretty print result")
+	addTPCmd.Flags().StringVarP(&tpsnAddr, "addr", "z", "http://127.0.0.1:8080", "address of the transport setup-node")
+	rmTPCmd.Flags().StringVarP(&tpsnAddr, "addr", "z", "http://127.0.0.1:8080", "address of the transport setup-node")
+	listTPCmd.Flags().StringVarP(&tpsnAddr, "addr", "z", "http://127.0.0.1:8080", "address of the transport setup-node")
 }
 
-var rootCmd = &cobra.Command{
-	Use:   "transport-setup [config.json]",
-	Short: "Transport setup node for skywire",
+// RootCmd contains the root command
+var RootCmd = &cobra.Command{
+	Use: func() string {
+		return strings.Split(filepath.Base(strings.ReplaceAll(strings.ReplaceAll(fmt.Sprintf("%v", os.Args), "[", ""), "]", "")), " ")[0]
+	}(),
+	Short: "Transport setup server for skywire",
 	Long: `
 	┌┬┐┬─┐┌─┐┌┐┌┌─┐┌─┐┌─┐┬─┐┌┬┐  ┌─┐┌─┐┌┬┐┬ ┬┌─┐
 	 │ ├┬┘├─┤│││└─┐├─┘│ │├┬┘ │───└─┐├┤  │ │ │├─┘
-	 ┴ ┴└─┴ ┴┘└┘└─┘┴  └─┘┴└─ ┴   └─┘└─┘ ┴ └─┘┴  `,
+	 ┴ ┴└─┴ ┴┘└┘└─┘┴  └─┘┴└─ ┴   └─┘└─┘ ┴ └─┘┴
+
+Transport setup server for skywire
+Takes config in the following format:
+{
+    "dmsg": {
+        "discovery": "http://dmsgd.skywire.skycoin.com",
+        "servers": [],
+        "sessions_count": 2
+    },
+    "log_level": "",
+    "port":8080,
+    "public_key": "",
+    "secret_key": "",
+    "transport_discovery": "http://tpd.skywire.skycoin.com"
+}`,
 	SilenceErrors:         true,
 	SilenceUsage:          true,
 	DisableSuggestions:    true,
 	DisableFlagsInUseLine: true,
 	Version:               buildinfo.Version(),
 	Run: func(_ *cobra.Command, args []string) {
+		if configFile == "" {
+			log.Fatal("please specify config file")
+		}
 		const loggerTag = "transport_setup"
 		log := logging.MustGetLogger(loggerTag)
 		lvl, err := logging.LevelFromString(logLvl)
@@ -70,32 +114,107 @@ var rootCmd = &cobra.Command{
 	},
 }
 
+var addTPCmd = &cobra.Command{
+	Use:                   "add",
+	Short:                 "add transport to remote visor",
+	Long:                  ``,
+	SilenceErrors:         true,
+	SilenceUsage:          true,
+	DisableSuggestions:    true,
+	DisableFlagsInUseLine: true,
+	Run: func(_ *cobra.Command, args []string) {
+		err := pk1.Set(fromPK)
+		if err != nil {
+			log.Fatalf("-1 invalid public key: %v\n", err)
+		}
+		err = pk2.Set(toPK)
+		if err != nil {
+			log.Fatalf("-2 invalid public key: %v\n", err)
+		}
+		if tpType != "dmsg" && tpType != "stcpr" && tpType != "sudph" {
+			log.Fatal("invalid transport type specified: ", tpType)
+		}
+		addtp := api.TransportRequest{
+			From: pk1,
+			To:   pk2,
+			Type: tpType,
+		}
+		addtpJSON, err := json.Marshal(addtp)
+		if err != nil {
+			log.Fatalf("Error occurred: %v\n", err)
+		}
+		res, err := script.Echo(string(addtpJSON)).Post(tpsnAddr + "/add").String()
+		if err != nil {
+			log.Fatalf("Error occurred: %v\n", err)
+		}
+		if nice {
+			fmt.Printf("%v", string(pretty.Color(pretty.Pretty([]byte(res)), nil)))
+		} else {
+			fmt.Printf("%v", res)
+		}
+
+	},
+}
+var rmTPCmd = &cobra.Command{
+	Use:                   "rm",
+	Short:                 "remove transport from remote visor",
+	Long:                  ``,
+	SilenceErrors:         true,
+	SilenceUsage:          true,
+	DisableSuggestions:    true,
+	DisableFlagsInUseLine: true,
+	Run: func(_ *cobra.Command, args []string) {
+		err := pk1.Set(fromPK)
+		if err != nil {
+			log.Fatalf("invalid public key: %v\n", err)
+		}
+		tpid, err := uuid.Parse(tpID)
+		if err != nil {
+			log.Fatalf("invalid tp id: %v\n", err)
+		}
+		rmtp := api.UUIDRequest{
+			From: pk1,
+			ID:   tpid,
+		}
+		rmtpJSON, err := json.Marshal(rmtp)
+		if err != nil {
+			log.Fatalf("Error occurred: %v\n", err)
+		}
+		res, err := script.Echo(string(rmtpJSON)).Post(tpsnAddr + "/remove").String()
+		if err != nil {
+			log.Fatalf("Error occurred: %v\n", err)
+		}
+		if nice {
+			fmt.Printf("%v", string(pretty.Color(pretty.Pretty([]byte(res)), nil)))
+		} else {
+			fmt.Printf("%v", res)
+		}
+	},
+}
+var listTPCmd = &cobra.Command{
+	Use:                   "list",
+	Short:                 "list transports of remote visor",
+	Long:                  ``,
+	SilenceErrors:         true,
+	SilenceUsage:          true,
+	DisableSuggestions:    true,
+	DisableFlagsInUseLine: true,
+	Run: func(_ *cobra.Command, args []string) {
+		res, err := script.Get(tpsnAddr + "/" + fromPK + "/transports").String()
+		if err != nil {
+			log.Fatal("something unexpected happened: ", err, res)
+		}
+		if nice {
+			fmt.Printf("%v", string(pretty.Color(pretty.Pretty([]byte(res)), nil)))
+		} else {
+			fmt.Printf("%v", res)
+		}
+	},
+}
+
 // Execute executes root CLI command.
 func Execute() {
-	cc.Init(&cc.Config{
-		RootCmd:       rootCmd,
-		Headings:      cc.HiBlue + cc.Bold, //+ cc.Underline,
-		Commands:      cc.HiBlue + cc.Bold,
-		CmdShortDescr: cc.HiBlue,
-		Example:       cc.HiBlue + cc.Italic,
-		ExecName:      cc.HiBlue + cc.Bold,
-		Flags:         cc.HiBlue + cc.Bold,
-		//FlagsDataType: cc.HiBlue,
-		FlagsDescr:      cc.HiBlue,
-		NoExtraNewlines: true,
-		NoBottomNewline: true,
-	})
-	if err := rootCmd.Execute(); err != nil {
+	if err := RootCmd.Execute(); err != nil {
 		log.Fatal("Failed to execute command: ", err)
 	}
 }
-
-const help = "Usage:\r\n" +
-	"  {{.UseLine}}{{if .HasAvailableSubCommands}}{{end}} {{if gt (len .Aliases) 0}}\r\n\r\n" +
-	"{{.NameAndAliases}}{{end}}{{if .HasAvailableSubCommands}}\r\n\r\n" +
-	"Available Commands:{{range .Commands}}{{if (or .IsAvailableCommand)}}\r\n  " +
-	"{{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}\r\n\r\n" +
-	"Flags:\r\n" +
-	"{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}\r\n\r\n" +
-	"Global Flags:\r\n" +
-	"{{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}\r\n\r\n"

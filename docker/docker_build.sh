@@ -15,7 +15,7 @@ platform="--platform=linux/amd64"
 registry="$REGISTRY"
 
 # shellcheck disable=SC2153
-base_image=golang:1.19-alpine
+base_image=golang:1.21-alpine
 
 if [[ "$#" != 2 ]]; then
   echo "docker_build.sh <IMAGE_TAG> <GO_BUILDOPTS>"
@@ -42,19 +42,6 @@ if [[ "$image_tag" == "e2e" ]]; then
 
   if [ ! -d ./tmp/skycoin-service-discovery ]; then
     echo "failed to clone skycoin-service-discovery" &&
-      exit 1
-  fi
-
-  # TODO(ersonp): instead of cloning the git branch we should directly use the docker image od SD from dockerhub like we doing for dmsg 
-  # if [[ "$GIT_TOKEN" != "" ]]; then
-  #   git clone https://"$GIT_TOKEN"@github.com/skycoin/skywire-ut --depth 1 --branch "$git_branch" ./tmp/skywire-ut
-  # else
-  #   git clone git@github.com:skycoin/skywire-ut --depth 1 --branch "$git_branch" ./tmp/skywire-ut
-  # fi
-  git clone https://"$GIT_USER":"$GIT_TOKEN"@github.com/skycoin/skywire-ut.git --depth 1 --branch "$git_branch" ./tmp/skywire-ut
-
-  if [ ! -d ./tmp/skywire-ut ]; then
-    echo "failed to clone skywire-ut" &&
       exit 1
   fi
 
@@ -154,6 +141,7 @@ DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/transport-discovery/Dock
   --build-arg base_image="$base_image" \
   --build-arg build_opts="$go_buildopts" \
   --build-arg image_tag="$image_tag" \
+  $platform \
   -t "$registry"/transport-discovery:"$image_tag" .
 
 echo "build route finder image"
@@ -161,6 +149,7 @@ DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/route-finder/Dockerfile 
   --build-arg base_image="$base_image" \
   --build-arg build_opts="$go_buildopts" \
   --build-arg image_tag="$image_tag" \
+  $platform \
   -t "$registry"/route-finder:"$image_tag" .
 
 echo "build setup node image"
@@ -168,15 +157,24 @@ DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/setup-node/Dockerfile \
   --build-arg base_image="$base_image" \
   --build-arg build_opts="$go_buildopts" \
   --build-arg image_tag="$image_tag" \
+  $platform \
   -t "$registry"/setup-node:"$image_tag" .
 
 echo "build address resolver image"
 DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/address-resolver/Dockerfile \
+  --build-arg base_image="$base_image" \
+  --build-arg build_opts="$go_buildopts" \
+  --build-arg image_tag="$image_tag" \
+  $platform \
+  -t "$registry"/address-resolver:"$image_tag" .
+
+echo "build uptime tracker image"
+DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/uptime-tracker/Dockerfile \
   --build-arg build_opts="$go_buildopts" \
   --build-arg image_tag="$image_tag" \
   --build-arg base_image="$base_image" \
   $platform \
-  -t "$registry"/address-resolver:"$image_tag" .
+  -t "$registry"/uptime-tracker:"$image_tag" .
 
 if [[ "$image_tag" == "test" ]]; then
   echo "build node visualizer DEV image"
@@ -192,38 +190,43 @@ elif [[ "$image_tag" == "integration" ]]; then
   echo "REACT_APP_SKY_NODEVIZ_URL=${nv_e2e_url}" > ./pkg/node-visualizer/web/.env
 fi
 
-DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/node-visualizer/Dockerfile \
-  --build-arg base_image="$base_image" \
-  --build-arg build_opts="$go_buildopts" \
-  --build-arg image_tag="$image_tag" \
-  -t "$registry"/node-visualizer:"$image_tag" .
+# DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/node-visualizer/Dockerfile \
+#   --build-arg base_image="$base_image" \
+#   --build-arg build_opts="$go_buildopts" \
+#   --build-arg image_tag="$image_tag" \
+#   $platform \
+#   -t "$registry"/node-visualizer:"$image_tag" .
 
 echo "building network monitor image"
 DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/network-monitor/Dockerfile \
   --build-arg base_image="$base_image" \
   --build-arg build_opts="$go_buildopts" \
   --build-arg image_tag="$image_tag" \
+  $platform \
   -t "$registry"/network-monitor:"$image_tag" .
-
-echo "building config bootstrapper image"
-DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/config-bootstrapper/Dockerfile \
-  --build-arg base_image="$base_image" \
-  --build-arg build_opts="$go_buildopts" \
-  --build-arg image_tag="$image_tag" \
-  -t "$registry"/config-bootstrapper:"$image_tag" .
 
 echo "building liveness checker image"
 DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/liveness-checker/Dockerfile \
   --build-arg base_image="$base_image" \
   --build-arg build_opts="$go_buildopts" \
   --build-arg image_tag="$image_tag" \
+  $platform \
   -t "$registry"/liveness-checker:"$image_tag" .
+
+echo "building config bootstrapper image"
+DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/config-bootstrapper/Dockerfile \
+  --build-arg base_image="$base_image" \
+  --build-arg build_opts="$go_buildopts" \
+  --build-arg image_tag="$image_tag" \
+  $platform \
+  -t "$registry"/config-bootstrapper:"$image_tag" .
 
 echo "building vpn monitor image"
 DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/vpn-monitor/Dockerfile \
   --build-arg base_image="$base_image" \
   --build-arg build_opts="$go_buildopts" \
   --build-arg image_tag="$image_tag" \
+  $platform \
   -t "$registry"/vpn-monitor:"$image_tag" .
 
 echo "building public visor monitor image"
@@ -231,6 +234,7 @@ DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/public-visor-monitor/Doc
   --build-arg base_image="$base_image" \
   --build-arg build_opts="$go_buildopts" \
   --build-arg image_tag="$image_tag" \
+  $platform \
   -t "$registry"/public-visor-monitor:"$image_tag" .
 
 echo "building dmsg monitor image"
@@ -238,6 +242,7 @@ DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/dmsg-monitor/Dockerfile 
   --build-arg base_image="$base_image" \
   --build-arg build_opts="$go_buildopts" \
   --build-arg image_tag="$image_tag" \
+  $platform \
   -t "$registry"/dmsg-monitor:"$image_tag" .
 
 echo "building tpd monitor image"
@@ -245,15 +250,24 @@ DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/tpd-monitor/Dockerfile \
   --build-arg base_image="$base_image" \
   --build-arg build_opts="$go_buildopts" \
   --build-arg image_tag="$image_tag" \
+  $platform \
   -t "$registry"/tpd-monitor:"$image_tag" .
+
+echo "building skysocks monitor image"
+DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/skysocks-monitor/Dockerfile \
+  --build-arg base_image="$base_image" \
+  --build-arg build_opts="$go_buildopts" \
+  --build-arg image_tag="$image_tag" \
+  $platform \
+  -t "$registry"/skysocks-monitor:"$image_tag" .
 
 echo "building transport setup image"
 DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/transport-setup/Dockerfile \
   --build-arg base_image="$base_image" \
   --build-arg build_opts="$go_buildopts" \
   --build-arg image_tag="$image_tag" \
+  $platform \
   -t "$registry"/transport-setup:"$image_tag" .
-
 
 wait
 

@@ -1,0 +1,53 @@
+{
+	"version": "v0.2.0-1392-geff996ba",
+	"sk": "7cc6c5f12cf79e4cd003e2f49e8bc9a8a12c6b0a9353c296d6b6a4d400749d2d",
+	"pk": "0216a2b84c5ec409c1aef3fc7c73770d2182cfda8d51ee1dc6bfd507424894b038",
+	"dmsg": {
+		"discovery": "http://dmsg-discovery:9090",
+		"sessions_count": 1,
+		"servers": []
+	},
+	"transport": {
+		"discovery": "http://transport-discovery:9091",
+		"address_resolver": "http://address-resolver:9093",
+		"public_autoconnect": false,
+		"transport_setup": null,
+		"log_store": {
+			"type": "file",
+			"location": "./local/transport_logs",
+			"rotation_interval": "168h0m0s"
+		},
+		"stcpr_port": 0,
+		"sudph_port": 0
+	},
+	"routing": {
+		"route_setup_nodes": [
+			"0324579f003e6b4048bae2def4365e634d8e0e3054a20fc7af49daf2a179658557",
+			"024fbd3997d4260f731b01abcfce60b8967a6d4c6a11d1008812810ea1437ce438",
+			"03b87c282f6e9f70d97aeea90b07cf09864a235ef718725632d067873431dd1015"
+		],
+		"route_finder": "http://route-finder:9092",
+		"route_finder_timeout": "10s",
+		"min_hops": 0
+	},
+	"uptime_tracker": {
+		"addr": "http://uptime-tracker:9096"
+	},
+	"launcher": {
+		"service_discovery": "http://service-discovery:9098",
+		"apps": null,
+		"server_addr": "localhost:5510",
+		"bin_path": "./release",
+		"display_node_ip": false
+	},
+	"survey_whitelist": null,
+	"hypervisors": [],
+	"cli_addr": "localhost:3435",
+	"log_level": "info",
+	"local_path": "./local/network-monitor",
+	"dmsghttp_server_path": "./local/custom",
+	"stun_servers": null,
+	"shutdown_timeout": "10s",
+	"is_public": false,
+	"persistent_transports": null
+}

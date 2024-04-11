@@ -19,8 +19,9 @@ declare -a images_arr=(
   "route-finder"
   "setup-node"
   "address-resolver"
+  "uptime-tracker"
   "network-monitor"
-  "node-visualizer"
+  # "node-visualizer"
   "config-bootstrapper"
   "liveness-checker"
   "vpn-monitor"
@@ -28,6 +29,7 @@ declare -a images_arr=(
   "dmsg-monitor"
   "tpd-monitor"
   "transport-setup"
+  "skysocks-monitor"
 )
 
 echo "Pushing to $registry using tag: $tag"

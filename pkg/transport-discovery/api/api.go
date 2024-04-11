@@ -52,13 +52,15 @@ type API struct {
 	store                       store.Store
 	startedAt                   time.Time
 	dmsgAddr                    string
+	DmsgServers                 []string
 }
 
 // HealthCheckResponse is struct of /health endpoint
 type HealthCheckResponse struct {
-	BuildInfo *buildinfo.Info `json:"build_info,omitempty"`
-	StartedAt time.Time       `json:"started_at"`
-	DmsgAddr  string          `json:"dmsg_address,omitempty"`
+	BuildInfo   *buildinfo.Info `json:"build_info,omitempty"`
+	StartedAt   time.Time       `json:"started_at"`
+	DmsgAddr    string          `json:"dmsg_address,omitempty"`
+	DmsgServers []string        `json:"dmsg_servers,omitempty"`
 }
 
 // New constructs a new API instance.
@@ -74,6 +76,7 @@ func New(log logrus.FieldLogger, s store.Store, nonceStore httpauth.NonceStore,
 		store:                       s,
 		startedAt:                   time.Now(),
 		dmsgAddr:                    dmsgAddr,
+		DmsgServers:                 []string{},
 	}
 
 	r := chi.NewRouter()
@@ -95,11 +98,11 @@ func New(log logrus.FieldLogger, s store.Store, nonceStore httpauth.NonceStore,
 		r.Get("/transports/edge:{edge}", api.getTransportByEdge)
 		r.Post("/transports/", api.registerTransport)
 		r.Delete("/transports/id:{id}", api.deleteTransport)
-		r.Delete("/transports/deregister", api.deregisterTransport)
 	})
 
 	r.Get("/health", api.health)
 	r.Get("/all-transports", api.getAllTransports)
+	r.Delete("/transports/deregister", api.deregisterTransport)
 	r.Post("/statuses", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusGone)
 	})

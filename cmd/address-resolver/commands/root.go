@@ -5,12 +5,12 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"log/syslog"
 	"os"
+	"path/filepath"
 	"strings"
+	"time"
 
 	cc "github.com/ivanpirog/coloredcobra"
-	logrussyslog "github.com/sirupsen/logrus/hooks/syslog"
 	"github.com/skycoin/dmsg/pkg/direct"
 	"github.com/skycoin/dmsg/pkg/dmsg"
 	"github.com/skycoin/dmsg/pkg/dmsghttp"
@@ -41,7 +41,6 @@ var (
 	metricsAddr     string
 	redisURL        string
 	redisPoolSize   int
-	syslogAddr      string
 	tag             string
 	logLvl          string
 	testing         bool
@@ -53,33 +52,42 @@ var (
 )
 
 func init() {
-	rootCmd.Flags().StringVarP(&addr, "addr", "a", ":9093", "address to bind to\033[0m")
-	rootCmd.Flags().StringVarP(&metricsAddr, "metrics", "m", "", "address to bind metrics API to\033[0m")
-	rootCmd.Flags().StringVar(&redisURL, "redis", "redis://localhost:6379", "connections string for a redis store\033[0m")
-	rootCmd.Flags().IntVar(&redisPoolSize, "redis-pool-size", 10, "redis connection pool size\033[0m")
-	rootCmd.Flags().StringVarP(&logLvl, "loglvl", "l", "info", "set log level one of: info, error, warn, debug, trace, panic")
-	rootCmd.Flags().StringVar(&syslogAddr, "syslog", "", "syslog server address. E.g. localhost:514\033[0m")
-	rootCmd.Flags().StringVar(&tag, "tag", "address_resolver", "logging tag\033[0m")
-	rootCmd.Flags().BoolVarP(&testing, "testing", "t", false, "enable testing to start without redis\033[0m")
-	rootCmd.Flags().StringVar(&dmsgDisc, "dmsg-disc", "http://dmsgd.skywire.skycoin.com", "url of dmsg-discovery\033[0m")
-	rootCmd.Flags().StringVar(&whitelistKeys, "whitelist-keys", "", "list of whitelisted keys of network monitor used for deregistration\033[0m")
-	rootCmd.Flags().BoolVar(&testEnvironment, "test-environment", false, "distinguished between prod and test environment\033[0m")
-	rootCmd.Flags().Var(&sk, "sk", "dmsg secret key\r")
-	rootCmd.Flags().Uint16Var(&dmsgPort, "dmsgPort", dmsg.DefaultDmsgHTTPPort, "dmsg port value\r")
+	RootCmd.Flags().StringVarP(&addr, "addr", "a", ":9093", "address to bind to\033[0m")
+	RootCmd.Flags().StringVarP(&metricsAddr, "metrics", "m", "", "address to bind metrics API to\033[0m")
+	RootCmd.Flags().StringVar(&redisURL, "redis", "redis://localhost:6379", "connections string for a redis store\033[0m")
+	RootCmd.Flags().IntVar(&redisPoolSize, "redis-pool-size", 10, "redis connection pool size\033[0m")
+	RootCmd.Flags().StringVarP(&logLvl, "loglvl", "l", "info", "set log level one of: info, error, warn, debug, trace, panic")
+	RootCmd.Flags().StringVar(&tag, "tag", "address_resolver", "logging tag\033[0m")
+	RootCmd.Flags().BoolVarP(&testing, "testing", "t", false, "enable testing to start without redis\033[0m")
+	RootCmd.Flags().StringVar(&dmsgDisc, "dmsg-disc", "http://dmsgd.skywire.skycoin.com", "url of dmsg-discovery\033[0m")
+	RootCmd.Flags().StringVar(&whitelistKeys, "whitelist-keys", "", "list of whitelisted keys of network monitor used for deregistration\033[0m")
+	RootCmd.Flags().BoolVar(&testEnvironment, "test-environment", false, "distinguished between prod and test environment\033[0m")
+	RootCmd.Flags().Var(&sk, "sk", "dmsg secret key\r")
+	RootCmd.Flags().Uint16Var(&dmsgPort, "dmsgPort", dmsg.DefaultDmsgHTTPPort, "dmsg port value\r")
 	var helpflag bool
-	rootCmd.SetUsageTemplate(help)
-	rootCmd.PersistentFlags().BoolVarP(&helpflag, "help", "h", false, "help for "+rootCmd.Use)
-	rootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
-	rootCmd.PersistentFlags().MarkHidden("help") //nolint
+	RootCmd.SetUsageTemplate(help)
+	RootCmd.PersistentFlags().BoolVarP(&helpflag, "help", "h", false, "help for address-resolver")
+	RootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
+	RootCmd.PersistentFlags().MarkHidden("help") //nolint
 }
 
-var rootCmd = &cobra.Command{
-	Use:   "address-resolver",
+// RootCmd contains the root command
+var RootCmd = &cobra.Command{
+	Use: func() string {
+		return strings.Split(filepath.Base(strings.ReplaceAll(strings.ReplaceAll(fmt.Sprintf("%v", os.Args), "[", ""), "]", "")), " ")[0]
+	}(),
 	Short: "Address Resolver Server for skywire",
 	Long: `
 	┌─┐┌┬┐┌┬┐┬─┐┌─┐┌─┐┌─┐   ┬─┐┌─┐┌─┐┌─┐┬ ┬  ┬┌─┐┬─┐
 	├─┤ ││ ││├┬┘├┤ └─┐└─┐───├┬┘├┤ └─┐│ ││ └┐┌┘├┤ ├┬┘
-	┴ ┴─┴┘─┴┘┴└─└─┘└─┘└─┘   ┴└─└─┘└─┘└─┘┴─┘└┘ └─┘┴└─`,
+	┴ ┴─┴┘─┴┘┴└─└─┘└─┘└─┘   ┴└─└─┘└─┘└─┘┴─┘└┘ └─┘┴└─
+
+depends: redis
+
+Note: the specified port must be accessible from the internet ip address or port forwarded for udp
+skywire cli config gen-keys > ar-config.json
+skywire svc ar --addr ":9093" --redis "redis://localhost:6379" --sk $(tail -n1 ar-config.json)
+`,
 	SilenceErrors:         true,
 	SilenceUsage:          true,
 	DisableSuggestions:    true,
@@ -145,14 +153,6 @@ var rootCmd = &cobra.Command{
 			logger.WithError(err).Warn("No SecKey found. Skipping serving on dmsghttp.")
 		}
 
-		if syslogAddr != "" {
-			hook, err := logrussyslog.NewSyslogHook("udp", syslogAddr, syslog.LOG_INFO, tag)
-			if err != nil && logger != nil {
-				logger.Fatalf("Unable to connect to syslog daemon on %v", syslogAddr)
-			}
-			logging.AddHook(hook)
-		}
-
 		metricsutil.ServeHTTPMetrics(logger, metricsAddr)
 
 		var m armetrics.Metrics
@@ -206,10 +206,17 @@ var rootCmd = &cobra.Command{
 
 			defer closeDmsgDC()
 
+			go func() {
+				for {
+					arAPI.DmsgServers = dmsgDC.ConnectedServersPK()
+					time.Sleep(time.Second)
+				}
+			}()
+
 			go dmsghttp.UpdateServers(ctx, dClient, dmsgDisc, dmsgDC, logger)
 
 			go func() {
-				if err := dmsghttp.ListenAndServe(ctx, pk, sk, arAPI, dClient, dmsg.DefaultDmsgHTTPPort, config, dmsgDC, logger); err != nil {
+				if err := dmsghttp.ListenAndServe(ctx, sk, arAPI, dClient, dmsg.DefaultDmsgHTTPPort, dmsgDC, logger); err != nil {
 					logger.Errorf("dmsghttp.ListenAndServe: %v", err)
 					cancel()
 				}
@@ -225,7 +232,7 @@ var rootCmd = &cobra.Command{
 // Execute executes root CLI command.
 func Execute() {
 	cc.Init(&cc.Config{
-		RootCmd:       rootCmd,
+		RootCmd:       RootCmd,
 		Headings:      cc.HiBlue + cc.Bold, //+ cc.Underline,
 		Commands:      cc.HiBlue + cc.Bold,
 		CmdShortDescr: cc.HiBlue,
@@ -237,7 +244,7 @@ func Execute() {
 		NoExtraNewlines: true,
 		NoBottomNewline: true,
 	})
-	if err := rootCmd.Execute(); err != nil {
+	if err := RootCmd.Execute(); err != nil {
 		log.Fatal("Failed to execute command: ", err)
 
 	}

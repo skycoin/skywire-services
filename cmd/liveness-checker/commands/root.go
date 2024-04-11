@@ -3,13 +3,12 @@ package commands
 
 import (
 	"context"
+	"fmt"
 	"log"
-	"log/syslog"
 	"os"
+	"path/filepath"
 	"strings"
 
-	cc "github.com/ivanpirog/coloredcobra"
-	logrussyslog "github.com/sirupsen/logrus/hooks/syslog"
 	"github.com/skycoin/skywire-utilities/pkg/buildinfo"
 	"github.com/skycoin/skywire-utilities/pkg/cmdutil"
 	"github.com/skycoin/skywire-utilities/pkg/logging"
@@ -26,32 +25,28 @@ const (
 )
 
 var (
-	confPath   string
-	addr       string
-	tag        string
-	syslogAddr string
-	logLvl     string
-	redisURL   string
-	testing    bool
+	confPath string
+	addr     string
+	tag      string
+	logLvl   string
+	redisURL string
+	testing  bool
 )
 
 func init() {
-	rootCmd.Flags().StringVarP(&addr, "addr", "a", ":9081", "address to bind to.\033[0m")
-	rootCmd.Flags().StringVarP(&confPath, "config", "c", "liveness-checker.json", "config file location.\033[0m")
-	rootCmd.Flags().StringVar(&tag, "tag", "liveness_checker", "logging tag\033[0m")
-	rootCmd.Flags().StringVar(&syslogAddr, "syslog", "", "syslog server address. E.g. localhost:514\033[0m")
-	rootCmd.Flags().StringVarP(&logLvl, "loglvl", "l", "info", "set log level one of: info, error, warn, debug, trace, panic")
-	rootCmd.Flags().StringVar(&redisURL, "redis", "redis://localhost:6379", "connections string for a redis store\033[0m")
-	rootCmd.Flags().BoolVarP(&testing, "testing", "t", false, "enable testing to start without redis\033[0m")
-	var helpflag bool
-	rootCmd.SetUsageTemplate(help)
-	rootCmd.PersistentFlags().BoolVarP(&helpflag, "help", "h", false, "help for "+rootCmd.Use)
-	rootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
-	rootCmd.PersistentFlags().MarkHidden("help") //nolint
+	RootCmd.Flags().StringVarP(&addr, "addr", "a", ":9081", "address to bind to.\033[0m")
+	RootCmd.Flags().StringVarP(&confPath, "config", "c", "liveness-checker.json", "config file location.\033[0m")
+	RootCmd.Flags().StringVar(&tag, "tag", "liveness_checker", "logging tag\033[0m")
+	RootCmd.Flags().StringVarP(&logLvl, "loglvl", "l", "info", "set log level one of: info, error, warn, debug, trace, panic")
+	RootCmd.Flags().StringVar(&redisURL, "redis", "redis://localhost:6379", "connections string for a redis store\033[0m")
+	RootCmd.Flags().BoolVarP(&testing, "testing", "t", false, "enable testing to start without redis\033[0m")
 }
 
-var rootCmd = &cobra.Command{
-	Use:   "liveness-checker",
+// RootCmd contains the root command
+var RootCmd = &cobra.Command{
+	Use: func() string {
+		return strings.Split(filepath.Base(strings.ReplaceAll(strings.ReplaceAll(fmt.Sprintf("%v", os.Args), "[", ""), "]", "")), " ")[0]
+	}(),
 	Short: "Liveness checker of the deployment.",
 	Long: `
 	┬  ┬┬  ┬┌─┐┌┐┌┌─┐┌─┐┌─┐   ┌─┐┬ ┬┌─┐┌─┐┬┌─┌─┐┬─┐
@@ -92,13 +87,6 @@ var rootCmd = &cobra.Command{
 		conf, confAPI := api.InitConfig(confPath, mLogger)
 
 		logger := mLogger.PackageLogger(tag)
-		if syslogAddr != "" {
-			hook, err := logrussyslog.NewSyslogHook("udp", syslogAddr, syslog.LOG_INFO, tag)
-			if err != nil {
-				logger.Fatalf("Unable to connect to syslog daemon on %v", syslogAddr)
-			}
-			logging.AddHook(hook)
-		}
 
 		ctx, cancel := cmdutil.SignalContext(context.Background(), logger)
 		defer cancel()
@@ -130,30 +118,7 @@ var rootCmd = &cobra.Command{
 
 // Execute executes root CLI command.
 func Execute() {
-	cc.Init(&cc.Config{
-		RootCmd:       rootCmd,
-		Headings:      cc.HiBlue + cc.Bold, //+ cc.Underline,
-		Commands:      cc.HiBlue + cc.Bold,
-		CmdShortDescr: cc.HiBlue,
-		Example:       cc.HiBlue + cc.Italic,
-		ExecName:      cc.HiBlue + cc.Bold,
-		Flags:         cc.HiBlue + cc.Bold,
-		//FlagsDataType: cc.HiBlue,
-		FlagsDescr:      cc.HiBlue,
-		NoExtraNewlines: true,
-		NoBottomNewline: true,
-	})
-	if err := rootCmd.Execute(); err != nil {
+	if err := RootCmd.Execute(); err != nil {
 		log.Fatal("Failed to execute command: ", err)
 	}
 }
-
-const help = "Usage:\r\n" +
-	"  {{.UseLine}}{{if .HasAvailableSubCommands}}{{end}} {{if gt (len .Aliases) 0}}\r\n\r\n" +
-	"{{.NameAndAliases}}{{end}}{{if .HasAvailableSubCommands}}\r\n\r\n" +
-	"Available Commands:{{range .Commands}}{{if (or .IsAvailableCommand)}}\r\n  " +
-	"{{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}\r\n\r\n" +
-	"Flags:\r\n" +
-	"{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}\r\n\r\n" +
-	"Global Flags:\r\n" +
-	"{{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}\r\n\r\n"

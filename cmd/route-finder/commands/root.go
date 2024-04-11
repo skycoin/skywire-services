@@ -5,11 +5,11 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"log/syslog"
 	"os"
+	"path/filepath"
+	"strings"
+	"time"
 
-	cc "github.com/ivanpirog/coloredcobra"
-	logrussyslog "github.com/sirupsen/logrus/hooks/syslog"
 	"github.com/skycoin/dmsg/pkg/direct"
 	"github.com/skycoin/dmsg/pkg/dmsg"
 	"github.com/skycoin/dmsg/pkg/dmsghttp"
@@ -29,45 +29,47 @@ import (
 )
 
 var (
-	addr        string
-	metricsAddr string
-	pgHost      string
-	pgPort      string
-	syslogAddr  string
-	logLvl      string
-	tag         string
-	testing     bool
-	dmsgDisc    string
-	sk          cipher.SecKey
-	dmsgPort    uint16
+	addr          string
+	metricsAddr   string
+	pgHost        string
+	pgPort        string
+	logLvl        string
+	tag           string
+	testing       bool
+	dmsgDisc      string
+	sk            cipher.SecKey
+	dmsgPort      uint16
+	pgMaxOpenConn int
 )
 
 func init() {
-	rootCmd.Flags().StringVarP(&addr, "addr", "a", ":9092", "address to bind to\033[0m")
-	rootCmd.Flags().StringVarP(&metricsAddr, "metrics", "m", "", "address to bind metrics API to\033[0m")
-	rootCmd.Flags().StringVar(&pgHost, "pg-host", "localhost", "host of postgres\033[0m")
-	rootCmd.Flags().StringVar(&pgPort, "pg-port", "5432", "port of postgres\033[0m")
-	rootCmd.Flags().StringVar(&syslogAddr, "syslog", "", "syslog server address. E.g. localhost:514\033[0m")
-	rootCmd.Flags().StringVarP(&logLvl, "loglvl", "l", "info", "set log level one of: info, error, warn, debug, trace, panic")
-	rootCmd.Flags().StringVar(&tag, "tag", "route_finder", "logging tag\033[0m")
-	rootCmd.Flags().BoolVarP(&testing, "testing", "t", false, "enable testing to start without redis\033[0m")
-	rootCmd.Flags().StringVar(&dmsgDisc, "dmsg-disc", "http://dmsgd.skywire.skycoin.com", "url of dmsg-discovery\033[0m")
-	rootCmd.Flags().Var(&sk, "sk", "dmsg secret key\r")
-	rootCmd.Flags().Uint16Var(&dmsgPort, "dmsgPort", dmsg.DefaultDmsgHTTPPort, "dmsg port value\r")
-	var helpflag bool
-	rootCmd.SetUsageTemplate(help)
-	rootCmd.PersistentFlags().BoolVarP(&helpflag, "help", "h", false, "help for "+rootCmd.Use)
-	rootCmd.SetHelpCommand(&cobra.Command{Hidden: true})
-	rootCmd.PersistentFlags().MarkHidden("help") //nolint
+	RootCmd.Flags().StringVarP(&addr, "addr", "a", ":9092", "address to bind to\033[0m")
+	RootCmd.Flags().StringVarP(&metricsAddr, "metrics", "m", "", "address to bind metrics API to\033[0m")
+	RootCmd.Flags().StringVar(&pgHost, "pg-host", "localhost", "host of postgres\033[0m")
+	RootCmd.Flags().StringVar(&pgPort, "pg-port", "5432", "port of postgres\033[0m")
+	RootCmd.Flags().IntVar(&pgMaxOpenConn, "pg-max-open-conn", 60, "maximum open connection of db")
+	RootCmd.Flags().StringVarP(&logLvl, "loglvl", "l", "info", "set log level one of: info, error, warn, debug, trace, panic")
+	RootCmd.Flags().StringVar(&tag, "tag", "route_finder", "logging tag\033[0m")
+	RootCmd.Flags().BoolVarP(&testing, "testing", "t", false, "enable testing to start without redis\033[0m")
+	RootCmd.Flags().StringVar(&dmsgDisc, "dmsg-disc", "http://dmsgd.skywire.skycoin.com", "url of dmsg-discovery\033[0m")
+	RootCmd.Flags().Var(&sk, "sk", "dmsg secret key\r")
+	RootCmd.Flags().Uint16Var(&dmsgPort, "dmsgPort", dmsg.DefaultDmsgHTTPPort, "dmsg port value\r")
 }
 
-var rootCmd = &cobra.Command{
-	Use:   "route-finder",
+// RootCmd contains the root command
+var RootCmd = &cobra.Command{
+	Use: func() string {
+		return strings.Split(filepath.Base(strings.ReplaceAll(strings.ReplaceAll(fmt.Sprintf("%v", os.Args), "[", ""), "]", "")), " ")[0]
+	}(),
 	Short: "Route Finder Server for skywire",
 	Long: `
 	┬─┐┌─┐┬ ┬┌┬┐┌─┐  ┌─┐┬┌┐┌┌┬┐┌─┐┬─┐
 	├┬┘│ ││ │ │ ├┤───├┤ ││││ ││├┤ ├┬┘
-	┴└─└─┘└─┘ ┴ └─┘  └  ┴┘└┘─┴┘└─┘┴└─`,
+	┴└─└─┘└─┘ ┴ └─┘  └  ┴┘└┘─┴┘└─┘┴└─
+----- depends: postgres and initial db setup -----
+sudo -iu postgres createdb rf
+skywire cli config gen-keys | tee rf-config.json
+PG_USER="postgres" PG_DATABASE="rf" PG_PASSWORD="" route-finder  --addr ":9092" --sk $(tail -n1 rf-config.json)`,
 	SilenceErrors:         true,
 	SilenceUsage:          true,
 	DisableSuggestions:    true,
@@ -99,7 +101,7 @@ var rootCmd = &cobra.Command{
 				pgPassword,
 				pgDatabase)
 
-			gormDB, err = pg.Init(dsn)
+			gormDB, err = pg.Init(dsn, pgMaxOpenConn)
 			if err != nil {
 				logger.Fatalf("Failed to connect to database %v", err)
 			}
@@ -115,14 +117,6 @@ var rootCmd = &cobra.Command{
 		pk, err := sk.PubKey()
 		if err != nil {
 			logger.WithError(err).Warn("No SecKey found. Skipping serving on dmsghttp.")
-		}
-
-		if syslogAddr != "" {
-			hook, err := logrussyslog.NewSyslogHook("udp", syslogAddr, syslog.LOG_INFO, tag)
-			if err != nil && logger != nil {
-				logger.Fatalf("Unable to connect to syslog daemon on %v", syslogAddr)
-			}
-			logging.AddHook(hook)
 		}
 
 		metricsutil.ServeHTTPMetrics(logger, metricsAddr)
@@ -167,10 +161,17 @@ var rootCmd = &cobra.Command{
 
 			defer closeDmsgDC()
 
+			go func() {
+				for {
+					rfAPI.DmsgServers = dmsgDC.ConnectedServersPK()
+					time.Sleep(time.Second)
+				}
+			}()
+
 			go dmsghttp.UpdateServers(ctx, dClient, dmsgDisc, dmsgDC, logger)
 
 			go func() {
-				if err := dmsghttp.ListenAndServe(ctx, pk, sk, rfAPI, dClient, dmsg.DefaultDmsgHTTPPort, config, dmsgDC, logger); err != nil {
+				if err := dmsghttp.ListenAndServe(ctx, sk, rfAPI, dClient, dmsg.DefaultDmsgHTTPPort, dmsgDC, logger); err != nil {
 					logger.Errorf("dmsghttp.ListenAndServe: %v", err)
 					cancel()
 				}
@@ -183,30 +184,7 @@ var rootCmd = &cobra.Command{
 
 // Execute executes root CLI command.
 func Execute() {
-	cc.Init(&cc.Config{
-		RootCmd:       rootCmd,
-		Headings:      cc.HiBlue + cc.Bold, //+ cc.Underline,
-		Commands:      cc.HiBlue + cc.Bold,
-		CmdShortDescr: cc.HiBlue,
-		Example:       cc.HiBlue + cc.Italic,
-		ExecName:      cc.HiBlue + cc.Bold,
-		Flags:         cc.HiBlue + cc.Bold,
-		//FlagsDataType: cc.HiBlue,
-		FlagsDescr:      cc.HiBlue,
-		NoExtraNewlines: true,
-		NoBottomNewline: true,
-	})
-	if err := rootCmd.Execute(); err != nil {
+	if err := RootCmd.Execute(); err != nil {
 		log.Fatal("Failed to execute command: ", err)
 	}
 }
-
-const help = "Usage:\r\n" +
-	"  {{.UseLine}}{{if .HasAvailableSubCommands}}{{end}} {{if gt (len .Aliases) 0}}\r\n\r\n" +
-	"{{.NameAndAliases}}{{end}}{{if .HasAvailableSubCommands}}\r\n\r\n" +
-	"Available Commands:{{range .Commands}}{{if (or .IsAvailableCommand)}}\r\n  " +
-	"{{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}\r\n\r\n" +
-	"Flags:\r\n" +
-	"{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}\r\n\r\n" +
-	"Global Flags:\r\n" +
-	"{{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}\r\n\r\n"

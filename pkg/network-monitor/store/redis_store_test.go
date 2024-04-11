@@ -45,9 +45,9 @@ func testNetwork(t *testing.T, store Store) {
 
 	t.Run("specific visor summary by pub key", func(t *testing.T) {
 		for pk, sum := range visorSumObj {
-			summarry, err := store.GetVisorByPk(pk.String())
+			summary, err := store.GetVisorByPk(pk.String())
 			require.NoError(t, err)
-			require.Equal(t, summarry, sum)
+			require.Equal(t, summary, sum)
 		}
 	})
 
