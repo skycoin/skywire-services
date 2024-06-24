@@ -464,7 +464,7 @@ github.com/rs/cors
 ## explicit; go 1.13
 github.com/sirupsen/logrus
 github.com/sirupsen/logrus/hooks/syslog
-# github.com/skycoin/dmsg v1.3.22-0.20240622174622-39e439d5679d
+# github.com/skycoin/dmsg v1.3.22-0.20240624173430-27926d97ea3f
 ## explicit; go 1.21
 github.com/skycoin/dmsg/internal/servermetrics
 github.com/skycoin/dmsg/pkg/direct
@@ -533,7 +533,7 @@ github.com/skycoin/skywire/pkg/visor/usermanager
 github.com/skycoin/skywire/pkg/visor/visorconfig
 github.com/skycoin/skywire/pkg/visor/visorinit
 github.com/skycoin/skywire/static/icons
-# github.com/skycoin/skywire-utilities v1.3.18-0.20240208220612-9f31eda72f33
+# github.com/skycoin/skywire-utilities v1.3.18-0.20240624172427-aeaf6f14fbdc
 ## explicit; go 1.21
 github.com/skycoin/skywire-utilities/pkg/buildinfo
 github.com/skycoin/skywire-utilities/pkg/cipher
