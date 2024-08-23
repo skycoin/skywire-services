@@ -14,6 +14,7 @@ go.mod-e
 
 # Integration test folders.
 /bin
+/build
 /logs
 /local
 /integration/generic-linode/*.json
