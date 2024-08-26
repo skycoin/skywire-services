@@ -118,29 +118,29 @@ e2e-build: set-forwarding ## E2E. Build dockers and containers for e2e-tests
 	./docker/docker_build.sh e2e ${BUILD_OPTS_DEPLOY}
 
 e2e-run: ## E2E. Start e2e environment
-	bash -c "DOCKER_TAG=e2e docker-compose up -d"
-	bash -c "DOCKER_TAG=e2e docker-compose ps"
+	bash -c "DOCKER_TAG=e2e docker compose up -d"
+	bash -c "DOCKER_TAG=e2e docker compose ps"
 
 e2e-logs:
-	bash -c "docker-compose logs --tail=all --follow"
+	bash -c "docker compose logs --tail=all --follow"
 
 e2e-test: set-forwarding ## E2E. Run e2e-tests suite. Prepare e2e environment with `make e2e-build && make e2e-run`
 	-go clean -testcache
 	go test  -v -timeout=15m ./internal/integration
 
 e2e-stop: reset-forwarding ## E2E. Stop e2e environment without destroying it. Restart with `make e2e-run`
-	bash -c "DOCKER_TAG=e2e docker-compose -f ${COMPOSE_FILE} stop"
-	bash -c "DOCKER_TAG=e2e docker-compose -f ${COMPOSE_FILE} ps"
+	bash -c "DOCKER_TAG=e2e docker compose -f ${COMPOSE_FILE} stop"
+	bash -c "DOCKER_TAG=e2e docker compose -f ${COMPOSE_FILE} ps"
 
 e2e-clean: ## E2E. Stop e2e environment and clean everything. Restart only with `make e2e-build && make e2e-run`
-	bash -c "DOCKER_TAG=e2e docker-compose -f ${COMPOSE_FILE} down"
+	bash -c "DOCKER_TAG=e2e docker compose -f ${COMPOSE_FILE} down"
 	bash ./docker/docker_clean.sh e2e
 
 e2e-help: ## E2E. Show env-vars and useful commands
-	@echo -e "\nNow you can use docker-compose:\n"
-	@echo -e "   docker-compose ps/top/logs"
-	@echo -e "   docker-compose up/down/start/stop"
-	@echo -e "\nConsult with:\n\n   docker-compose help\n"
+	@echo -e "\nNow you can use docker compose:\n"
+	@echo -e "   docker compose ps/top/logs"
+	@echo -e "   docker compose up/down/start/stop"
+	@echo -e "\nConsult with:\n\n   docker compose help\n"
 
 docker-build-test:
 	bash ./docker/docker_build.sh test ${BUILD_OPTS_DEPLOY}
@@ -173,16 +173,16 @@ reset-forwarding:
 
 integration-env-build: set-forwarding #build
 	./docker/docker_build.sh integration ${BUILD_OPTS_DEPLOY}
-	bash -c "DOCKER_TAG=integration docker-compose up -d"
+	bash -c "DOCKER_TAG=integration docker compose up -d"
 
 integration-env-start: set-forwarding #start
-	bash -c "DOCKER_TAG=integration docker-compose up -d"
+	bash -c "DOCKER_TAG=integration docker compose up -d"
 
 integration-env-stop: reset-forwarding #stop
-	bash -c "DOCKER_TAG=integration docker-compose -f ${COMPOSE_FILE} stop"
+	bash -c "DOCKER_TAG=integration docker compose -f ${COMPOSE_FILE} stop"
 
 integration-env-clean: #clean
-	bash -c "DOCKER_TAG=integration docker-compose -f ${COMPOSE_FILE} down"
+	bash -c "DOCKER_TAG=integration docker compose -f ${COMPOSE_FILE} down"
 	bash ./docker/docker_clean.sh integration
 
 mod-comm: ## Comments the 'replace' rule in go.mod
