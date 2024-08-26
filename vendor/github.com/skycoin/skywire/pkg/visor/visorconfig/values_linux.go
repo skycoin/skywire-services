@@ -37,8 +37,7 @@ type Survey struct {
 	GOOS           string           `json:"go_os,omitempty"`
 	GOARCH         string           `json:"go_arch,omitempty"`
 	SYSINFO        sysinfo.SysInfo  `json:"zcalusic_sysinfo,omitempty"`
-	IPInfo         *IPSkycoin       `json:"ip.skycoin.com,omitempty"`
-	IPAddr         *IPAddr          `json:"ip_addr,omitempty"`
+	IPAddr         string           `json:"ip_address,omitempty"`
 	Disks          *ghw.BlockInfo   `json:"ghw_blockinfo,omitempty"`
 	Product        *ghw.ProductInfo `json:"ghw_productinfo,omitempty"`
 	Memory         *ghw.MemoryInfo  `json:"ghw_memoryinfo,omitempty"`
@@ -64,16 +63,16 @@ func SystemSurvey() (Survey, error) {
 	if err != nil && !strings.Contains(err.Error(), "Could not determine total usable bytes of memory") {
 		return Survey{}, err
 	}
-	for {
-		ipInfo := IPSkycoinFetch()
-		if ipInfo != nil {
-			break
-		}
-	}
+	//	var ipAddr string
+	//	for {
+	//		ipAddr, err = FetchIP(dmsgDisc)
+	//		if err == nil {
+	//			break
+	//		}
+	//	}
 	s := Survey{
-		Timestamp:      time.Now(),
-		IPInfo:         IPSkycoinFetch(),
-		IPAddr:         IPA(),
+		Timestamp: time.Now(),
+		//		IPAddr:         ipAddr,
 		GOOS:           runtime.GOOS,
 		GOARCH:         runtime.GOARCH,
 		SYSINFO:        si,

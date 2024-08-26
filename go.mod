@@ -2,7 +2,7 @@ module github.com/skycoin/skywire-services
 
 go 1.21
 
-toolchain go1.21.5
+toolchain go1.21.12
 
 require (
 	github.com/bitfield/script v0.22.1
@@ -24,9 +24,9 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/rs/cors v1.8.2
 	github.com/sirupsen/logrus v1.9.3
-	github.com/skycoin/dmsg v1.3.22-0.20240710131937-c1a367e17db9
-	github.com/skycoin/skywire v1.3.24-0.20240627153953-6f467e52ed17
-	github.com/skycoin/skywire-utilities v1.3.18-0.20240624172427-aeaf6f14fbdc
+	github.com/skycoin/dmsg v1.3.25
+	github.com/skycoin/skywire v1.3.25-beta
+	github.com/skycoin/skywire-utilities v1.3.25
 	github.com/songgao/water v0.0.0-20200317203138-2b4b6d7c09d8
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.9.0
