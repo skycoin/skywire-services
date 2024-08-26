@@ -349,7 +349,7 @@ func (env *TestEnv) VisorTpAddDefault(visor string, pk string) (*skyvisor.Transp
 }
 
 func (env *TestEnv) VisorTpAdd(visor, pk string, tpType network.Type) (*skyvisor.TransportSummary, error) {
-	cmd := fmt.Sprintf("/release/skywire cli --rpc %v:3435 tp add %v --type %s --json", visor, pk, tpType)
+	cmd := fmt.Sprintf("/release/skywire cli --rpc %v:3435 tp add --rpk %v --type %s --sdurl http://localhost:9098 --json", visor, pk, tpType)
 	output, err := env.visorTpExec(cmd)
 	if err != nil {
 		return nil, err
