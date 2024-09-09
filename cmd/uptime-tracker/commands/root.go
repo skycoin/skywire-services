@@ -53,6 +53,7 @@ var (
 	dmsgDisc          string
 	sk                cipher.SecKey
 	dmsgPort          uint16
+	dmsgServerType    string
 	storeDataCutoff   int
 	storeDataPath     string
 )
@@ -76,6 +77,7 @@ func init() {
 	rootCmd.Flags().StringVar(&dmsgDisc, "dmsg-disc", "http://dmsgd.skywire.skycoin.com", "url of dmsg-discovery")
 	rootCmd.Flags().Var(&sk, "sk", "dmsg secret key")
 	rootCmd.Flags().Uint16Var(&dmsgPort, "dmsgPort", dmsg.DefaultDmsgHTTPPort, "dmsg port value\r")
+	rootCmd.Flags().StringVar(&dmsgServerType, "dmsg-server-type", "", "type of dmsg server on dmsghttp handler")
 }
 
 var rootCmd = &cobra.Command{
@@ -184,8 +186,9 @@ var rootCmd = &cobra.Command{
 			keys = append(keys, pk)
 			dClient := direct.NewClient(direct.GetAllEntries(keys, servers), logger)
 			config := &dmsg.Config{
-				MinSessions:    0, // listen on all available servers
-				UpdateInterval: dmsg.DefaultUpdateInterval,
+				MinSessions:          0, // listen on all available servers
+				UpdateInterval:       dmsg.DefaultUpdateInterval,
+				ConnectedServersType: dmsgServerType,
 			}
 
 			dmsgDC, closeDmsgDC, err := direct.StartDmsg(ctx, logger, pk, sk, dClient, config)
