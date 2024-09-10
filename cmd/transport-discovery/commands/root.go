@@ -200,7 +200,7 @@ PG_USER="postgres" PG_DATABASE="tpd" PG_PASSWORD="" transport-discovery --sk $(t
 		}()
 
 		if !pk.Null() {
-			servers := dmsghttp.GetServers(ctx, dmsgDisc, logger)
+			servers := dmsghttp.GetServers(ctx, dmsgDisc, dmsgServerType, logger)
 
 			var keys cipher.PubKeys
 			keys = append(keys, pk)
@@ -225,7 +225,7 @@ PG_USER="postgres" PG_DATABASE="tpd" PG_PASSWORD="" transport-discovery --sk $(t
 				}
 			}()
 
-			go dmsghttp.UpdateServers(ctx, dClient, dmsgDisc, dmsgDC, logger)
+			go dmsghttp.UpdateServers(ctx, dClient, dmsgDisc, dmsgDC, dmsgServerType, logger)
 
 			go func() {
 				if err := dmsghttp.ListenAndServe(ctx, sk, tpdAPI, dClient, dmsg.DefaultDmsgHTTPPort, dmsgDC, logger); err != nil {
