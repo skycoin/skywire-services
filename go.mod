@@ -6,7 +6,6 @@ toolchain go1.21.12
 
 require (
 	github.com/bitfield/script v0.22.1
-	github.com/ccding/go-stun/stun v0.0.0-20200514191101-4dc67bcdb029
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/docker/docker v1.13.1
 	github.com/flopp/go-staticmaps v0.0.0-20220221183018-c226716bec53
@@ -47,6 +46,7 @@ require (
 	github.com/VictoriaMetrics/metrics v1.24.0 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/bytedance/sonic v1.10.0 // indirect
+	github.com/ccding/go-stun/stun v0.0.0-20200514191101-4dc67bcdb029 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20230717121745-296ad89f973d // indirect
@@ -157,7 +157,10 @@ require (
 )
 
 // Uncomment it for tests with alternative branches and run `make dep`
-// replace github.com/skycoin/dmsg => ../dmsg
+replace github.com/skycoin/skywire => ../skywire
+
+replace github.com/skycoin/dmsg => ../dmsg
+
 // replace github.com/skycoin/dmsg => github.com/skycoin/dmsg <commit-hash>
 
 // replace github.com/skycoin/skywire => ../skywire
