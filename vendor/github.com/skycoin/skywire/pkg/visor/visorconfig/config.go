@@ -13,8 +13,8 @@ import (
 
 	"github.com/skycoin/skywire-utilities/pkg/cipher"
 	"github.com/skycoin/skywire-utilities/pkg/logging"
+	utilenv "github.com/skycoin/skywire-utilities/pkg/skyenv"
 	"github.com/skycoin/skywire/pkg/app/appserver"
-	"github.com/skycoin/skywire"
 	"github.com/skycoin/skywire/pkg/dmsgc"
 	"github.com/skycoin/skywire/pkg/routing"
 	"github.com/skycoin/skywire/pkg/skyenv"
@@ -25,20 +25,34 @@ import (
 // This is used as default values if no config is given, or for missing *required* fields.
 // This function always returns the latest config version.
 func MakeBaseConfig(common *Common, testEnv bool, dmsgHTTP bool, services *Services, dmsgHTTPServersList *DmsgHTTPServers) *V1 {
-
 	//check if any services were passed
 	if services == nil {
-		var envServices skywire.EnvServices
-		if err := json.Unmarshal([]byte(skywire.ServicesJSON), &envServices); err != nil {
-			return nil
-		}
+		//fall back on  defaults
 		if !testEnv {
-			if err := json.Unmarshal(envServices.Prod, &services); err != nil {
-				return nil
+			services = &Services{
+				DmsgDiscovery:      utilenv.DmsgDiscAddr,
+				TransportDiscovery: utilenv.TpDiscAddr,
+				AddressResolver:    utilenv.AddressResolverAddr,
+				RouteFinder:        utilenv.RouteFinderAddr,
+				RouteSetupNodes:    MustPKs(utilenv.RouteSetupPKs),
+				TransportSetupPKs:  MustPKs(utilenv.TPSetupPKs),
+				UptimeTracker:      utilenv.UptimeTrackerAddr,
+				ServiceDiscovery:   utilenv.ServiceDiscAddr,
+				StunServers:        utilenv.GetStunServers(),
+				DNSServer:          utilenv.DNSServer,
 			}
 		} else {
-			if err := json.Unmarshal(envServices.Test, &services); err != nil {
-				return nil
+			services = &Services{
+				DmsgDiscovery:      utilenv.TestDmsgDiscAddr,
+				TransportDiscovery: utilenv.TestTpDiscAddr,
+				AddressResolver:    utilenv.TestAddressResolverAddr,
+				RouteFinder:        utilenv.TestRouteFinderAddr,
+				RouteSetupNodes:    MustPKs(utilenv.TestRouteSetupPKs),
+				TransportSetupPKs:  MustPKs(utilenv.TestTPSetupPKs),
+				UptimeTracker:      utilenv.TestUptimeTrackerAddr,
+				ServiceDiscovery:   utilenv.TestServiceDiscAddr,
+				StunServers:        utilenv.GetStunServers(),
+				DNSServer:          utilenv.DNSServer,
 			}
 		}
 	}
@@ -47,14 +61,14 @@ func MakeBaseConfig(common *Common, testEnv bool, dmsgHTTP bool, services *Servi
 		conf.Common = common
 	}
 	conf.Dmsg = &dmsgc.DmsgConfig{
-		Discovery:            services.DmsgDiscovery,
+		Discovery:            services.DmsgDiscovery, //utilenv.DmsgDiscAddr,
 		SessionsCount:        1,
 		Servers:              []*disc.Entry{},
 		ConnectedServersType: "all",
 	}
 	conf.Transport = &Transport{
-		Discovery:         services.TransportDiscovery,
-		AddressResolver:   services.AddressResolver,
+		Discovery:         services.TransportDiscovery, //utilenv.TpDiscAddr,
+		AddressResolver:   services.AddressResolver,    //utilenv.AddressResolverAddr,
 		PublicAutoconnect: PublicAutoconnect,
 		LogStore: &LogStore{
 			Type:             FileLogStore,
@@ -65,25 +79,25 @@ func MakeBaseConfig(common *Common, testEnv bool, dmsgHTTP bool, services *Servi
 		StcprPort: 0,
 	}
 	conf.Routing = &Routing{
-		RouteFinder:        services.RouteFinder,
-		RouteSetupNodes:    services.RouteSetupNodes,
+		RouteFinder:        services.RouteFinder,     //utilenv.RouteFinderAddr,
+		RouteSetupNodes:    services.RouteSetupNodes, //[]cipher.PubKey{utilenv.MustPK(utilenv.SetupPK)},
 		RouteFinderTimeout: DefaultTimeout,
 	}
 	conf.Launcher = &Launcher{
-		ServiceDisc:   services.ServiceDiscovery,
+		ServiceDisc:   services.ServiceDiscovery, //utilenv.ServiceDiscAddr,
 		Apps:          nil,
 		ServerAddr:    AppSrvAddr,
 		BinPath:       AppBinPath,
 		DisplayNodeIP: false,
 	}
 	conf.UptimeTracker = &UptimeTracker{
-		Addr: services.UptimeTracker,
+		Addr: services.UptimeTracker, //utilenv.UptimeTrackerAddr,
 	}
 	conf.CLIAddr = RPCAddr
 	conf.LogLevel = LogLevel
 	conf.LocalPath = LocalPath
 	conf.DmsgHTTPServerPath = LocalPath + "/" + Custom
-	conf.StunServers = services.StunServers
+	conf.StunServers = services.StunServers //utilenv.GetStunServers()
 	conf.ShutdownTimeout = DefaultTimeout
 
 	conf.Dmsgpty = &Dmsgpty{
@@ -134,22 +148,9 @@ func MakeDefaultConfig(log *logging.MasterLogger, sk *cipher.SecKey, usrEnv bool
 	if err != nil {
 		return nil, err
 	}
-	dnsServer := ""
 	var dmsgHTTPServersList *DmsgHTTPServers
-	var envServices skywire.EnvServices
-	var svcs skywire.Services
-	if err := json.Unmarshal([]byte(skywire.ServicesJSON), &envServices); err != nil {
-		return nil, nil
-	}
-	if !testEnv {
-		if err := json.Unmarshal(envServices.Prod, &svcs); err != nil {
-			dnsServer = svcs.DNSServer
-		}
-	} else {
-		if err := json.Unmarshal(envServices.Test, &svcs); err != nil {
-			dnsServer = svcs.DNSServer
-		}
-	}
+
+	dnsServer := utilenv.DNSServer
 	if services != nil {
 		if services.DNSServer != "" {
 			dnsServer = services.DNSServer

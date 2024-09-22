@@ -24,7 +24,7 @@ require (
 	github.com/rs/cors v1.8.2
 	github.com/sirupsen/logrus v1.9.3
 	github.com/skycoin/dmsg v1.3.26-0.20240910062314-dc25f3d9ea6c
-	github.com/skycoin/skywire v1.3.25-beta
+	github.com/skycoin/skywire v1.3.26-0.20240922162315-789cef41c9a1
 	github.com/skycoin/skywire-utilities v1.3.25
 	github.com/songgao/water v0.0.0-20200317203138-2b4b6d7c09d8
 	github.com/spf13/cobra v1.7.0
