@@ -73,3 +73,13 @@ Check the [docs](docs/Deployments.md) for more documentation on the deployments.
 - [Dmsg Server](https://github.com/skycoin/dmsg/blob/develop/cmd/dmsg-server/README.md)
 - [Service Discovery](https://github.com/skycoin/skycoin-service-discovery/blob/master/README.md#http-api)
 - [Uptime Tracker](cmd/uptime-tracker/README.md)
+
+## Dependency Graph
+
+made with [goda](https://github.com/loov/goda)
+
+```
+goda graph github.com/skycoin/skywire-services/... | dot -Tsvg -o docs/skywire-services-goda-graph.svg
+```
+
+![Dependency Graph](docs/skywire-services-goda-graph.svg "github.com/skycoin/skywire-services Dependency Graph")

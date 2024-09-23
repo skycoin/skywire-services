@@ -3,6 +3,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,45 +14,36 @@ import (
 
 	ar "github.com/skycoin/skywire-services/cmd/address-resolver/commands"
 	confbs "github.com/skycoin/skywire-services/cmd/config-bootstrapper/commands"
-	dmsgm "github.com/skycoin/skywire-services/cmd/dmsg-monitor/commands"
 	kg "github.com/skycoin/skywire-services/cmd/keys-gen/commands"
-	lc "github.com/skycoin/skywire-services/cmd/liveness-checker/commands"
 	nv "github.com/skycoin/skywire-services/cmd/node-visualizer/commands"
-	pvm "github.com/skycoin/skywire-services/cmd/public-visor-monitor/commands"
 	rf "github.com/skycoin/skywire-services/cmd/route-finder/commands"
 	se "github.com/skycoin/skywire-services/cmd/sw-env/commands"
-	tpdm "github.com/skycoin/skywire-services/cmd/tpd-monitor/commands"
 	tpd "github.com/skycoin/skywire-services/cmd/transport-discovery/commands"
 	tps "github.com/skycoin/skywire-services/cmd/transport-setup/commands"
+	ut "github.com/skycoin/skywire-services/cmd/uptime-tracker/commands"
 )
 
 func init() {
 	RootCmd.AddCommand(
 		tpd.RootCmd,
 		tps.RootCmd,
-		tpdm.RootCmd,
 		ar.RootCmd,
 		rf.RootCmd,
 		confbs.RootCmd,
 		kg.RootCmd,
-		lc.RootCmd,
 		nv.RootCmd,
-		pvm.RootCmd,
 		se.RootCmd,
-		dmsgm.RootCmd,
+		ut.RootCmd,
 	)
 	tpd.RootCmd.Use = "tpd"
 	tps.RootCmd.Use = "tps"
-	tpdm.RootCmd.Use = "tpdm"
 	ar.RootCmd.Use = "ar"
 	rf.RootCmd.Use = "rf"
 	confbs.RootCmd.Use = "confbs"
 	kg.RootCmd.Use = "kg"
-	lc.RootCmd.Use = "lc"
 	nv.RootCmd.Use = "nv"
-	pvm.RootCmd.Use = "pvm"
 	se.RootCmd.Use = "se"
-	dmsgm.RootCmd.Use = "dmsgm"
+	ut.RootCmd.Use = "ut"
 
 	var helpflag bool
 	RootCmd.SetUsageTemplate(help)
@@ -71,7 +63,8 @@ var RootCmd = &cobra.Command{
 	Long: `
 	┌─┐┬┌─┬ ┬┬ ┬┬┬─┐┌─┐  ┌─┐┌─┐┬─┐┬  ┬┬┌─┐┌─┐┌─┐
 	└─┐├┴┐└┬┘││││├┬┘├┤───└─┐├┤ ├┬┘└┐┌┘││  ├┤ └─┐
-	└─┘┴ ┴ ┴ └┴┘┴┴└─└─┘  └─┘└─┘┴└─ └┘ ┴└─┘└─┘└─┘`,
+	└─┘┴ ┴ ┴ └┴┘┴┴└─└─┘  └─┘└─┘┴└─ └┘ ┴└─┘└─┘└─┘
+	Skywire services`,
 	SilenceErrors:         true,
 	SilenceUsage:          true,
 	DisableSuggestions:    true,
@@ -93,7 +86,7 @@ func main() {
 		NoBottomNewline: true,
 	})
 	if err := RootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 	}
 }
 

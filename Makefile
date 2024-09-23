@@ -110,7 +110,65 @@ test: ## Run tests for net
 	go test ${TEST_OPTS} -mod=vendor ./internal/...
 	go test ${TEST_OPTS} -mod=vendor ./pkg/...
 
-check: lint test  lint-shell ## Run lint and test
+check: lint check-help test  lint-shell ## Run lint and test
+
+check-help: ## Cursory check of the help menus
+	@echo "checking help menus for compilation without errors"
+	@echo
+	go run cmd/skywire-services/services.go --help
+	@echo
+	go run cmd/skywire-services/services.go ar --help
+	@echo
+	go run cmd/skywire-services/services.go confbs --help
+	@echo
+	go run cmd/skywire-services/services.go kg --help
+	@echo
+	go run cmd/skywire-services/services.go nv --help
+	@echo
+	go run cmd/skywire-services/services.go rf --help
+	@echo
+	go run cmd/skywire-services/services.go se --help
+	@echo
+	go run cmd/skywire-services/services.go tpd --help
+	@echo
+	go run cmd/skywire-services/services.go tps --help
+	@echo
+	go run cmd/skywire-services/services.go ut --help
+	@echo
+	go run cmd/config-bootstrapper/config.go --help
+	@echo
+	go run cmd/tpd-monitor/tpd-monitor.go --help
+	@echo
+	go run cmd/transport-discovery/transport-discovery.go --help
+	@echo
+	go run cmd/keys-gen/keys-gen.go --help
+	@echo
+	go run cmd/skysocks-monitor/skysocks-monitor.go --help
+	@echo
+	go run cmd/sw-env/sw-env.go --help
+	@echo
+	go run cmd/uptime-tracker/uptime-tracker.go --help
+	@echo
+	go run cmd/route-finder/route-finder.go --help
+	@echo
+	go run cmd/setup-node/setup-node.go --help
+	@echo
+	go run cmd/transport-setup/transport-setup.go --help
+	@echo
+	go run cmd/public-visor-monitor/public-visor-monitor.go --help
+	@echo
+	go run cmd/node-visualizer/node-visualizer.go --help
+	@echo
+#	go run cmd/skysocks-lite-client/skysocks-lite-client.go --help
+#	@echo
+	go run cmd/vpn-monitor/vpn-monitor.go --help
+	@echo
+	go run cmd/address-resolver/address-resolver.go --help
+	@echo
+#	go run cmd/vpn-lite-client/vpn-lite-client.go --help
+#	@echo
+	go run cmd/network-monitor/network-monitor.go --help
+	@echo
 
 ## : ## _ [E2E tests suite]
 

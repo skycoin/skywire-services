@@ -32,13 +32,13 @@ var (
 )
 
 func init() {
-	RootCmd.Flags().StringVarP(&addr, "addr", "a", ":9080", "address to bind to.\033[0m")
+	RootCmd.Flags().StringVarP(&addr, "addr", "a", ":9080", "address to bind to\033[0m")
 	RootCmd.Flags().DurationVarP(&sleepDeregistration, "sleep-deregistration", "s", 10, "Sleep time for deregistration process in minutes\033[0m")
-	RootCmd.Flags().StringVarP(&confPath, "config", "c", "tpd-monitor.json", "config file location.\033[0m")
-	RootCmd.Flags().StringVarP(&logLvl, "loglvl", "l", "info", "set log level one of: info, error, warn, debug, trace, panic")
+	RootCmd.Flags().StringVarP(&confPath, "config", "c", "tpd-monitor.json", "config file location\033[0m")
+	RootCmd.Flags().StringVarP(&logLvl, "loglvl", "l", "info", "[info|error|warn|debug|trace|panic]\033[0m")
 	RootCmd.Flags().StringVar(&dmsgURL, "dmsg-url", "", "url to dmsg data.\033[0m")
-	RootCmd.Flags().StringVar(&tpdURL, "tpd-url", "", "url to transport discovery.\033[0m")
-	RootCmd.Flags().StringVar(&arURL, "ar-url", "", "url to address resolver.\033[0m")
+	RootCmd.Flags().StringVar(&tpdURL, "tpd-url", "", "url to transport discovery\033[0m")
+	RootCmd.Flags().StringVar(&arURL, "ar-url", "", "url to address resolver\033[0m")
 	RootCmd.Flags().StringVar(&tag, "tag", "tpd-monitor", "logging tag\033[0m")
 }
 

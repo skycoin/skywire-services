@@ -1,6 +1,8 @@
 package config
 
-import "fmt"
+import (
+	"fmt"
+)
 
 func ExampleEnvConfig_AddThreeChatVisors() {
 	globalEnv := &EnvConfig{

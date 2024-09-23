@@ -6,7 +6,6 @@ toolchain go1.21.12
 
 require (
 	github.com/bitfield/script v0.22.1
-	github.com/ccding/go-stun/stun v0.0.0-20200514191101-4dc67bcdb029
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/docker/docker v1.13.1
 	github.com/flopp/go-staticmaps v0.0.0-20220221183018-c226716bec53
@@ -24,8 +23,8 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/rs/cors v1.8.2
 	github.com/sirupsen/logrus v1.9.3
-	github.com/skycoin/dmsg v1.3.26-0.20240910062314-dc25f3d9ea6c
-	github.com/skycoin/skywire v1.3.25-beta
+	github.com/skycoin/dmsg v1.3.26-0.20240922174815-ced25b343ec5
+	github.com/skycoin/skywire v1.3.26-0.20240922162315-789cef41c9a1
 	github.com/skycoin/skywire-utilities v1.3.25
 	github.com/songgao/water v0.0.0-20200317203138-2b4b6d7c09d8
 	github.com/spf13/cobra v1.7.0
@@ -47,6 +46,7 @@ require (
 	github.com/VictoriaMetrics/metrics v1.24.0 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/bytedance/sonic v1.10.0 // indirect
+	github.com/ccding/go-stun/stun v0.0.0-20200514191101-4dc67bcdb029 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20230717121745-296ad89f973d // indirect
@@ -157,7 +157,9 @@ require (
 )
 
 // Uncomment it for tests with alternative branches and run `make dep`
-// replace github.com/skycoin/dmsg => ../dmsg
+//replace github.com/skycoin/skywire => ../skywire
+//replace github.com/skycoin/dmsg => ../dmsg
+
 // replace github.com/skycoin/dmsg => github.com/skycoin/dmsg <commit-hash>
 
 // replace github.com/skycoin/skywire => ../skywire

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -53,36 +54,42 @@ var (
 	dmsgDisc          string
 	sk                cipher.SecKey
 	dmsgPort          uint16
-	dmsgServerType    string
 	storeDataCutoff   int
 	storeDataPath     string
 )
 
 func init() {
-	rootCmd.Flags().StringVarP(&addr, "addr", "a", ":9096", "address to bind to")
-	rootCmd.Flags().StringVarP(&pAddr, "private-addr", "p", ":9086", "private address to bind to")
-	rootCmd.Flags().StringVarP(&metricsAddr, "metrics", "m", ":2121", "address to bind metrics API to")
-	rootCmd.Flags().StringVar(&redisURL, "redis", "redis://localhost:6379", "connections string for a redis store")
-	rootCmd.Flags().IntVar(&redisPoolSize, "redis-pool-size", 10, "redis connection pool size")
-	rootCmd.Flags().StringVar(&pgHost, "pg-host", "localhost", "host of postgres")
-	rootCmd.Flags().StringVar(&pgPort, "pg-port", "5432", "port of postgres")
-	rootCmd.Flags().IntVar(&pgMaxOpenConn, "pg-max-open-conn", 60, "maximum open connection of db")
-	rootCmd.Flags().IntVar(&storeDataCutoff, "store-data-cutoff", 7, "number of days data store in db")
-	rootCmd.Flags().StringVar(&storeDataPath, "store-data-path", "/var/lib/skywire-ut/daily-data", "path of db daily data store")
-	rootCmd.Flags().BoolVarP(&logEnabled, "log", "l", true, "enable request logging")
-	rootCmd.Flags().StringVar(&tag, "tag", "uptime_tracker", "logging tag")
-	rootCmd.Flags().StringVar(&ipAPIKey, "ip-api-key", "", "geo API key")
-	rootCmd.Flags().BoolVar(&enableLoadTesting, "enable-load-testing", false, "enable load testing")
-	rootCmd.Flags().BoolVarP(&testing, "testing", "t", false, "enable testing to start without redis")
-	rootCmd.Flags().StringVar(&dmsgDisc, "dmsg-disc", "http://dmsgd.skywire.skycoin.com", "url of dmsg-discovery")
-	rootCmd.Flags().Var(&sk, "sk", "dmsg secret key")
-	rootCmd.Flags().Uint16Var(&dmsgPort, "dmsgPort", dmsg.DefaultDmsgHTTPPort, "dmsg port value\r")
-	rootCmd.Flags().StringVar(&dmsgServerType, "dmsg-server-type", "", "type of dmsg server on dmsghttp handler")
+	RootCmd.Flags().StringVarP(&addr, "addr", "a", ":9096", "address to bind to\033[0m")
+	RootCmd.Flags().StringVarP(&pAddr, "private-addr", "p", ":9086", "private address to bind to\033[0m")
+	RootCmd.Flags().StringVarP(&metricsAddr, "metrics", "m", ":2121", "address to bind metrics API to\033[0m")
+	RootCmd.Flags().StringVar(&redisURL, "redis", "redis://localhost:6379", "connections string for a redis store\033[0m")
+	RootCmd.Flags().IntVar(&redisPoolSize, "redis-pool-size", 10, "redis connection pool size\033[0m")
+	RootCmd.Flags().StringVar(&pgHost, "pg-host", "localhost", "host of postgres\033[0m")
+	RootCmd.Flags().StringVar(&pgPort, "pg-port", "5432", "port of postgres\033[0m")
+	RootCmd.Flags().IntVar(&pgMaxOpenConn, "pg-max-open-conn", 60, "maximum open connection of db\033[0m")
+	RootCmd.Flags().IntVar(&storeDataCutoff, "store-data-cutoff", 7, "number of days data store in db\033[0m")
+	RootCmd.Flags().StringVar(&storeDataPath, "store-data-path", "/var/lib/skywire-services/daily-data", "path of db daily data store\033[0m")
+	RootCmd.Flags().BoolVarP(&logEnabled, "log", "l", true, "enable request logging\033[0m")
+	RootCmd.Flags().StringVar(&tag, "tag", "uptime_tracker", "logging tag\033[0m")
+	RootCmd.Flags().StringVar(&ipAPIKey, "ip-api-key", "", "geo API key\033[0m")
+	RootCmd.Flags().BoolVar(&enableLoadTesting, "enable-load-testing", false, "enable load testing\033[0m")
+	RootCmd.Flags().BoolVarP(&testing, "testing", "t", false, "enable testing to start without redis\033[0m")
+	RootCmd.Flags().StringVar(&dmsgDisc, "dmsg-disc", dmsg.DiscAddr(false), "url of dmsg discovery\033[0m")
+	RootCmd.Flags().Var(&sk, "sk", "dmsg secret key\033[0m\n\r")
+	RootCmd.Flags().Uint16Var(&dmsgPort, "dmsgPort", dmsg.DefaultDmsgHTTPPort, "dmsg port value\033[0m")
 }
 
-var rootCmd = &cobra.Command{
-	Use:   "uptime-tracker",
+// RootCmd contains the root cli commanmd
+var RootCmd = &cobra.Command{
+	Use: func() string {
+		return strings.Split(filepath.Base(strings.ReplaceAll(strings.ReplaceAll(fmt.Sprintf("%v", os.Args), "[", ""), "]", "")), " ")[0]
+	}(),
 	Short: "Uptime Tracker Server for skywire",
+	Long: `
+	┬ ┬┌─┐┌┬┐┬┌┬┐┌─┐ ┌┬┐┬─┐┌─┐┌─┐┬┌─┌─┐┬─┐
+	│ │├─┘ │ ││││├┤───│ ├┬┘├─┤│  ├┴┐├┤ ├┬┘
+	└─┘┴   ┴ ┴┴ ┴└─┘  ┴ ┴└─┴ ┴└─┘┴ ┴└─┘┴└─
+	Uptime Tracker Server for skywire`,
 	Run: func(_ *cobra.Command, _ []string) {
 		if _, err := buildinfo.Get().WriteTo(os.Stdout); err != nil {
 			log.Printf("Failed to output build info: %v", err)
@@ -180,15 +187,14 @@ var rootCmd = &cobra.Command{
 		}()
 
 		if !pk.Null() {
-			servers := dmsghttp.GetServers(ctx, dmsgDisc, dmsgServerType, logger)
+			servers := dmsghttp.GetServers(ctx, dmsgDisc, "", logger)
 
 			var keys cipher.PubKeys
 			keys = append(keys, pk)
 			dClient := direct.NewClient(direct.GetAllEntries(keys, servers), logger)
 			config := &dmsg.Config{
-				MinSessions:          0, // listen on all available servers
-				UpdateInterval:       dmsg.DefaultUpdateInterval,
-				ConnectedServersType: dmsgServerType,
+				MinSessions:    0, // listen on all available servers
+				UpdateInterval: dmsg.DefaultUpdateInterval,
 			}
 
 			dmsgDC, closeDmsgDC, err := direct.StartDmsg(ctx, logger, pk, sk, dClient, config)
@@ -205,7 +211,7 @@ var rootCmd = &cobra.Command{
 				}
 			}()
 
-			go dmsghttp.UpdateServers(ctx, dClient, dmsgDisc, dmsgDC, dmsgServerType, logger)
+			go dmsghttp.UpdateServers(ctx, dClient, dmsgDisc, dmsgDC, "", logger)
 
 			go func() {
 				if err := dmsghttp.ListenAndServe(ctx, sk, utAPI, dClient, dmsg.DefaultDmsgHTTPPort, dmsgDC, logger); err != nil {
@@ -221,7 +227,7 @@ var rootCmd = &cobra.Command{
 
 // Execute executes root CLI command.
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
+	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
 
 		os.Exit(statusFailure)
