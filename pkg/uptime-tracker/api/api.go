@@ -21,9 +21,6 @@ import (
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
 	"github.com/sirupsen/logrus"
-	"github.com/skycoin/skywire-ut/internal/utmetrics"
-	"github.com/skycoin/skywire-ut/pkg/uptime-tracker/store"
-
 	"github.com/skycoin/skywire-utilities/pkg/buildinfo"
 	"github.com/skycoin/skywire-utilities/pkg/cipher"
 	"github.com/skycoin/skywire-utilities/pkg/geo"
@@ -32,6 +29,9 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/logging"
 	"github.com/skycoin/skywire-utilities/pkg/metricsutil"
 	"github.com/skycoin/skywire-utilities/pkg/netutil"
+
+	"github.com/skycoin/skywire-services/internal/utmetrics"
+	"github.com/skycoin/skywire-services/pkg/uptime-tracker/store"
 )
 
 const (

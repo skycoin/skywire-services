@@ -59,7 +59,7 @@ func init() {
 	RootCmd.Flags().StringVarP(&logLvl, "loglvl", "l", "info", "set log level one of: info, error, warn, debug, trace, panic")
 	RootCmd.Flags().StringVar(&tag, "tag", "address_resolver", "logging tag\033[0m")
 	RootCmd.Flags().BoolVarP(&testing, "testing", "t", false, "enable testing to start without redis\033[0m")
-	RootCmd.Flags().StringVar(&dmsgDisc, "dmsg-disc", dmsg.DmsgDiscAddr(false), "url of dmsg-discovery\033[0m")
+	RootCmd.Flags().StringVar(&dmsgDisc, "dmsg-disc", dmsg.DiscAddr(false), "url of dmsg-discovery\033[0m")
 	RootCmd.Flags().StringVar(&whitelistKeys, "whitelist-keys", "", "list of whitelisted keys of network monitor used for deregistration\033[0m")
 	RootCmd.Flags().BoolVar(&testEnvironment, "test-environment", false, "distinguished between prod and test environment\033[0m")
 	RootCmd.Flags().Var(&sk, "sk", "dmsg secret key\r")

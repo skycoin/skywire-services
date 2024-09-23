@@ -10,15 +10,15 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/skycoin/skywire-ut/internal/utmetrics"
-	"github.com/skycoin/skywire-ut/pkg/uptime-tracker/store"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-
 	"github.com/skycoin/skywire-utilities/pkg/cipher"
 	"github.com/skycoin/skywire-utilities/pkg/geo"
 	"github.com/skycoin/skywire-utilities/pkg/httpauth"
 	"github.com/skycoin/skywire-utilities/pkg/storeconfig"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/skycoin/skywire-services/internal/utmetrics"
+	"github.com/skycoin/skywire-services/pkg/uptime-tracker/store"
 )
 
 var testPubKey, testSec = cipher.GenerateKeyPair()

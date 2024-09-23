@@ -88,7 +88,7 @@ Takes config in the following format:
 	DisableSuggestions:    true,
 	DisableFlagsInUseLine: true,
 	Version:               buildinfo.Version(),
-	Run: func(_ *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		if configFile == "" {
 			log.Fatal("please specify config file")
 		}
@@ -122,7 +122,7 @@ var addTPCmd = &cobra.Command{
 	SilenceUsage:          true,
 	DisableSuggestions:    true,
 	DisableFlagsInUseLine: true,
-	Run: func(_ *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		err := pk1.Set(fromPK)
 		if err != nil {
 			log.Fatalf("-1 invalid public key: %v\n", err)
@@ -163,7 +163,7 @@ var rmTPCmd = &cobra.Command{
 	SilenceUsage:          true,
 	DisableSuggestions:    true,
 	DisableFlagsInUseLine: true,
-	Run: func(_ *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		err := pk1.Set(fromPK)
 		if err != nil {
 			log.Fatalf("invalid public key: %v\n", err)
@@ -199,7 +199,7 @@ var listTPCmd = &cobra.Command{
 	SilenceUsage:          true,
 	DisableSuggestions:    true,
 	DisableFlagsInUseLine: true,
-	Run: func(_ *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		res, err := script.Get(tpsnAddr + "/" + fromPK + "/transports").String()
 		if err != nil {
 			log.Fatal("something unexpected happened: ", err, res)
