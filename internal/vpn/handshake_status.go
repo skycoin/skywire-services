@@ -1,6 +1,8 @@
 package vpn
 
-import "errors"
+import (
+	"errors"
+)
 
 // HandshakeStatus is a status of Client/Server handshake.
 type HandshakeStatus int

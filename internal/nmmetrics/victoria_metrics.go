@@ -1,6 +1,8 @@
 package nmmetrics
 
-import "github.com/skycoin/skywire-utilities/pkg/metricsutil"
+import (
+	"github.com/skycoin/skywire-utilities/pkg/metricsutil"
+)
 
 // VictoriaMetrics implements `Metrics` using `VictoriaMetrics`.
 type VictoriaMetrics struct {

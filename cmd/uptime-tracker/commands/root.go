@@ -12,6 +12,13 @@ import (
 	"github.com/skycoin/dmsg/pkg/direct"
 	"github.com/skycoin/dmsg/pkg/dmsg"
 	"github.com/skycoin/dmsg/pkg/dmsghttp"
+	"github.com/skycoin/skywire-ut/internal/pg"
+	"github.com/skycoin/skywire-ut/internal/utmetrics"
+	"github.com/skycoin/skywire-ut/pkg/uptime-tracker/api"
+	"github.com/skycoin/skywire-ut/pkg/uptime-tracker/store"
+	"github.com/spf13/cobra"
+	"gorm.io/gorm"
+
 	"github.com/skycoin/skywire-utilities/pkg/buildinfo"
 	"github.com/skycoin/skywire-utilities/pkg/cipher"
 	"github.com/skycoin/skywire-utilities/pkg/cmdutil"
@@ -21,13 +28,6 @@ import (
 	"github.com/skycoin/skywire-utilities/pkg/metricsutil"
 	"github.com/skycoin/skywire-utilities/pkg/storeconfig"
 	"github.com/skycoin/skywire-utilities/pkg/tcpproxy"
-	"github.com/spf13/cobra"
-	"gorm.io/gorm"
-
-	"github.com/skycoin/skywire-services/internal/pg"
-	"github.com/skycoin/skywire-services/internal/utmetrics"
-	"github.com/skycoin/skywire-services/pkg/uptime-tracker/api"
-	"github.com/skycoin/skywire-services/pkg/uptime-tracker/store"
 )
 
 const (
@@ -53,7 +53,6 @@ var (
 	dmsgDisc          string
 	sk                cipher.SecKey
 	dmsgPort          uint16
-	dmsgServerType    string
 	storeDataCutoff   int
 	storeDataPath     string
 )
@@ -77,7 +76,6 @@ func init() {
 	rootCmd.Flags().StringVar(&dmsgDisc, "dmsg-disc", "http://dmsgd.skywire.skycoin.com", "url of dmsg-discovery")
 	rootCmd.Flags().Var(&sk, "sk", "dmsg secret key")
 	rootCmd.Flags().Uint16Var(&dmsgPort, "dmsgPort", dmsg.DefaultDmsgHTTPPort, "dmsg port value\r")
-	rootCmd.Flags().StringVar(&dmsgServerType, "dmsg-server-type", "", "type of dmsg server on dmsghttp handler")
 }
 
 var rootCmd = &cobra.Command{
@@ -180,15 +178,14 @@ var rootCmd = &cobra.Command{
 		}()
 
 		if !pk.Null() {
-			servers := dmsghttp.GetServers(ctx, dmsgDisc, dmsgServerType, logger)
+			servers := dmsghttp.GetServers(ctx, dmsgDisc, logger)
 
 			var keys cipher.PubKeys
 			keys = append(keys, pk)
 			dClient := direct.NewClient(direct.GetAllEntries(keys, servers), logger)
 			config := &dmsg.Config{
-				MinSessions:          0, // listen on all available servers
-				UpdateInterval:       dmsg.DefaultUpdateInterval,
-				ConnectedServersType: dmsgServerType,
+				MinSessions:    0, // listen on all available servers
+				UpdateInterval: dmsg.DefaultUpdateInterval,
 			}
 
 			dmsgDC, closeDmsgDC, err := direct.StartDmsg(ctx, logger, pk, sk, dClient, config)
@@ -205,7 +202,7 @@ var rootCmd = &cobra.Command{
 				}
 			}()
 
-			go dmsghttp.UpdateServers(ctx, dClient, dmsgDisc, dmsgDC, dmsgServerType, logger)
+			go dmsghttp.UpdateServers(ctx, dClient, dmsgDisc, dmsgDC, logger)
 
 			go func() {
 				if err := dmsghttp.ListenAndServe(ctx, sk, utAPI, dClient, dmsg.DefaultDmsgHTTPPort, dmsgDC, logger); err != nil {

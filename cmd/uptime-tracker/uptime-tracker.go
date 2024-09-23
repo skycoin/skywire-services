@@ -2,7 +2,7 @@
 package main
 
 import (
-	"github.com/skycoin/skywire-services/cmd/uptime-tracker/commands"
+	"github.com/skycoin/skywire-ut/cmd/uptime-tracker/commands"
 )
 
 func main() {
