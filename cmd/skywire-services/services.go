@@ -3,6 +3,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -19,6 +20,7 @@ import (
 	se "github.com/skycoin/skywire-services/cmd/sw-env/commands"
 	tpd "github.com/skycoin/skywire-services/cmd/transport-discovery/commands"
 	tps "github.com/skycoin/skywire-services/cmd/transport-setup/commands"
+	ut "github.com/skycoin/skywire-services/cmd/uptime-tracker/commands"
 )
 
 func init() {
@@ -31,6 +33,7 @@ func init() {
 		kg.RootCmd,
 		nv.RootCmd,
 		se.RootCmd,
+		ut.RootCmd,
 	)
 	tpd.RootCmd.Use = "tpd"
 	tps.RootCmd.Use = "tps"
@@ -40,6 +43,7 @@ func init() {
 	kg.RootCmd.Use = "kg"
 	nv.RootCmd.Use = "nv"
 	se.RootCmd.Use = "se"
+	ut.RootCmd.Use = "ut"
 
 	var helpflag bool
 	RootCmd.SetUsageTemplate(help)
@@ -59,7 +63,8 @@ var RootCmd = &cobra.Command{
 	Long: `
 	┌─┐┬┌─┬ ┬┬ ┬┬┬─┐┌─┐  ┌─┐┌─┐┬─┐┬  ┬┬┌─┐┌─┐┌─┐
 	└─┐├┴┐└┬┘││││├┬┘├┤───└─┐├┤ ├┬┘└┐┌┘││  ├┤ └─┐
-	└─┘┴ ┴ ┴ └┴┘┴┴└─└─┘  └─┘└─┘┴└─ └┘ ┴└─┘└─┘└─┘`,
+	└─┘┴ ┴ ┴ └┴┘┴┴└─└─┘  └─┘└─┘┴└─ └┘ ┴└─┘└─┘└─┘
+	Skywire services`,
 	SilenceErrors:         true,
 	SilenceUsage:          true,
 	DisableSuggestions:    true,
@@ -81,7 +86,7 @@ func main() {
 		NoBottomNewline: true,
 	})
 	if err := RootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 	}
 }
 

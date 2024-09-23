@@ -40,10 +40,10 @@ func init() {
 	RootCmd.Flags().StringVar(&tag, "tag", "address_resolver", "logging tag\033[0m")
 	RootCmd.Flags().StringVarP(&stunPath, "config", "c", "./config.json", "stun server list file location\033[0m")
 	RootCmd.Flags().StringVarP(&domain, "domain", "d", "skywire.skycoin.com", "the domain of the endpoints\033[0m")
-	RootCmd.Flags().StringVar(&dmsgDisc, "dmsg-disc", "http://dmsgd.skywire.skycoin.com", "url of dmsg-discovery\033[0m")
-	RootCmd.Flags().Var(&sk, "sk", "dmsg secret key\r")
-	RootCmd.Flags().Uint16Var(&dmsgPort, "dmsgPort", dmsg.DefaultDmsgHTTPPort, "dmsg port value\r")
-	RootCmd.Flags().StringVar(&dmsgServerType, "dmsg-server-type", "", "type of dmsg server on dmsghttp handler")
+	RootCmd.Flags().StringVarP(&dmsgDisc, "dmsg-disc", "D", dmsg.DiscAddr(false), "url of dmsg-discovery\033[0m")
+	RootCmd.Flags().Var(&sk, "sk", "dmsg secret key\033[0m\n\r")
+	RootCmd.Flags().Uint16Var(&dmsgPort, "dmsgPort", dmsg.DefaultDmsgHTTPPort, "dmsg port value\033[0m")
+	RootCmd.Flags().StringVar(&dmsgServerType, "dmsg-server-type", "", "type of dmsg server on dmsghttp handler\033[0m")
 }
 
 // RootCmd contains the root command

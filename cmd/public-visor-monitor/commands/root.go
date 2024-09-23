@@ -33,7 +33,7 @@ func init() {
 	RootCmd.Flags().DurationVarP(&sleepDeregistration, "sleep-deregistration", "s", 10, "Sleep time for derigstration process in minutes\033[0m")
 	RootCmd.Flags().StringVarP(&confPath, "config", "c", "public-visor-monitor.json", "config file location.\033[0m")
 	RootCmd.Flags().StringVar(&tag, "tag", "public_visor_monitor", "logging tag\033[0m")
-	RootCmd.Flags().StringVarP(&logLvl, "loglvl", "l", "info", "set log level one of: info, error, warn, debug, trace, panic")
+	RootCmd.Flags().StringVarP(&logLvl, "loglvl", "l", "info", "[info|error|warn|debug|trace|panic]\033[0m")
 }
 
 // RootCmd contains the root command
