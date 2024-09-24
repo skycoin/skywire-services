@@ -62,6 +62,7 @@ var RootCmd = &cobra.Command{
 	DisableFlagsInUseLine: true,
 	Version:               buildinfo.Version(),
 }
+
 // Execute executes root CLI command.
 func Execute() {
 	if err := RootCmd.Execute(); err != nil {
