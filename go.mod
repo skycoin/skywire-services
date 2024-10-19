@@ -23,7 +23,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/rs/cors v1.11.1
 	github.com/sirupsen/logrus v1.9.3
-	github.com/skycoin/dmsg v1.3.28
+	github.com/skycoin/dmsg v1.3.29-0.20241019182716-022283c93835
 	github.com/skycoin/skywire v1.3.28
 	github.com/skycoin/skywire-utilities v1.3.25
 	github.com/songgao/water v0.0.0-20200317203138-2b4b6d7c09d8
@@ -50,8 +50,10 @@ require (
 	github.com/ccding/go-stun/stun v0.0.0-20200514191101-4dc67bcdb029 // indirect
 	github.com/cespare/xxhash v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
+	github.com/chen3feng/safecast v0.0.0-20220908170618-81b2ecd47937 // indirect
 	github.com/cloudwego/base64x v0.1.4 // indirect
 	github.com/cloudwego/iasm v0.2.0 // indirect
+	github.com/coder/websocket v1.8.12 // indirect
 	github.com/creack/pty v1.1.23 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgraph-io/ristretto v0.1.0 // indirect
@@ -150,7 +152,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	howett.net/plist v1.0.1 // indirect
 	mvdan.cc/sh/v3 v3.9.0 // indirect
-	nhooyr.io/websocket v1.8.17 // indirect
 )
 
 // Uncomment it for tests with alternative branches and run `make dep`
