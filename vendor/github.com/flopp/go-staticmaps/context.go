@@ -13,6 +13,7 @@ import (
 	"image/draw"
 	"log"
 	"math"
+	"strings"
 	"sync"
 
 	"github.com/fogleman/gg"
@@ -28,6 +29,7 @@ type Context struct {
 
 	hasZoom bool
 	zoom    int
+	maxZoom int
 
 	hasCenter bool
 	center    s2.LatLng
@@ -54,6 +56,7 @@ func NewContext() *Context {
 	t.width = 512
 	t.height = 512
 	t.hasZoom = false
+	t.maxZoom = 30
 	t.hasCenter = false
 	t.hasBoundingBox = false
 	t.background = nil
@@ -95,6 +98,11 @@ func (m *Context) SetSize(width, height int) {
 func (m *Context) SetZoom(zoom int) {
 	m.zoom = zoom
 	m.hasZoom = true
+}
+
+// SetMaxZoom sets the upper zoom level limit when using dynamic zoom
+func (m *Context) SetMaxZoom(n int) {
+	m.maxZoom = n
 }
 
 // SetCenter sets the center coordinates
@@ -220,7 +228,8 @@ func (m *Context) ClearOverlays() {
 
 // OverrideAttribution sets a custom attribution string (or none if empty)
 //
-// Pay attention you might be violating the terms of usage for the
+// If the attribution string contains newline characters ("\n") it will printed across multiple lines.
+// Pay attention: you might be violating the terms of usage for the
 // selected map provider - only use the function if you are aware of this!
 func (m *Context) OverrideAttribution(attribution string) {
 	m.overrideAttribution = &attribution
@@ -292,7 +301,7 @@ func (m *Context) determineZoom(bounds s2.Rect, center s2.LatLng) int {
 	dy := math.Abs(maxY - minY)
 
 	zoom := 1
-	for zoom < 30 {
+	for zoom < m.maxZoom {
 		tiles := float64(uint(1) << uint(zoom))
 		if dx*tiles > w || dy*tiles > h {
 			return zoom - 1
@@ -300,7 +309,7 @@ func (m *Context) determineZoom(bounds s2.Rect, center s2.LatLng) int {
 		zoom = zoom + 1
 	}
 
-	return 15
+	return m.maxZoom
 }
 
 // determineCenter computes a point that is visually centered in Mercator projection
@@ -534,14 +543,27 @@ func (m *Context) Render() (image.Image, error) {
 	if attribution == "" {
 		return croppedImg, nil
 	}
-	_, textHeight := gc.MeasureString(attribution)
-	boxHeight := textHeight + 4.0
+	lines := strings.Split(attribution, "\n")
+	lineHeight := 0.0
+	for _, line := range lines {
+		_, h := gc.MeasureString(line)
+		if h > float64(lineHeight) {
+			lineHeight = h
+		}
+	}
+	margin := 2.0
+	spacing := 2.0
+	boxHeight := lineHeight*float64(len(lines)) + 2*margin + spacing*float64(len(lines)-1)
 	gc = gg.NewContextForRGBA(croppedImg)
 	gc.SetRGBA(0.0, 0.0, 0.0, 0.5)
 	gc.DrawRectangle(0.0, float64(m.height)-boxHeight, float64(m.width), boxHeight)
 	gc.Fill()
 	gc.SetRGBA(1.0, 1.0, 1.0, 0.75)
-	gc.DrawString(attribution, 4.0, float64(m.height)-4.0)
+	y := float64(m.height) - boxHeight
+	for _, line := range lines {
+		gc.DrawStringAnchored(line, margin, y, 0, 1)
+		y += spacing + lineHeight
+	}
 
 	return croppedImg, nil
 }
@@ -612,6 +634,10 @@ func (m *Context) RenderWithBounds() (image.Image, s2.Rect, error) {
 }
 
 func (m *Context) renderLayer(gc *gg.Context, zoom int, trans *Transformer, tileSize int, provider *TileProvider) error {
+	if provider.IsNone() {
+		return nil
+	}
+
 	var wg sync.WaitGroup
 	tiles := (1 << uint(zoom))
 	fetchedTiles := make(chan *Tile)

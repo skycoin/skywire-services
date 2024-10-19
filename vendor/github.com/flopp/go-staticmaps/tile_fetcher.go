@@ -13,7 +13,6 @@ import (
 	_ "image/jpeg" // to be able to decode jpegs
 	_ "image/png"  // to be able to decode pngs
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -59,7 +58,7 @@ func (t *TileFetcher) url(zoom, x, y int) string {
 	if len(t.tileProvider.Shards) > 0 {
 		shard = t.tileProvider.Shards[(x+y)%ss]
 	}
-	return t.tileProvider.getURL(shard, zoom, x, y)
+	return t.tileProvider.getURL(shard, zoom, x, y, t.tileProvider.APIKey)
 }
 
 func cacheFileName(cache TileCache, providerName string, zoom, x, y int) string {
@@ -131,7 +130,7 @@ func (t *TileFetcher) download(url string) ([]byte, error) {
 
 	defer resp.Body.Close()
 
-	contents, err := ioutil.ReadAll(resp.Body)
+	contents, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
