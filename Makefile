@@ -78,7 +78,7 @@ clean: ## Clean compiled binaries
 ## : ## _ [Test and lint]
 
 install-linters: ## Install linters
-	- VERSION=1.40.0 ./ci_scripts/install-golangci-lint.sh
+	- VERSION=1.61.0 ./ci_scripts/install-golangci-lint.sh
 	GOPRIVATE=github.com/skycoin/* go get -u github.com/FiloSottile/vendorcheck
 	# For some reason this install method is not recommended, see https://github.com/golangci/golangci-lint#install
 	# However, they suggest `curl ... | bash` which we should not do
@@ -89,8 +89,9 @@ install-shellcheck: ## install shellcheck to current directory
 	./ci_scripts/install-shellcheck.sh
 
 lint: ## Run linters. Use make install-linters first.
-	golangci-lint run -c .golangci.yml ./...
-	go vet -all -mod=vendor ./...
+	golangci-lint version
+	${OPTS}	golangci-lint run -c .golangci.yml ./...
+	${OPTS} go vet -all -mod=vendor ./...
 
 lint-windows-appveyor: ## Run linters. Use make install-linters first.
 	C:\Users\appveyor\go\bin\golangci-lint run -c .golangci.yml ./...
