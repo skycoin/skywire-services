@@ -69,6 +69,7 @@ if [[ "$image_tag" == "e2e" ]]; then
   DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/dmsg-discovery/Dockerfile \
     --build-arg build_opts="$go_buildopts" \
     --build-arg image_tag="$image_tag" \
+    $platform \
     --build-arg base_image="skycoin/dmsg-discovery:$dockerhub_image_tag" \
     -t "$registry"/dmsg-discovery:"$image_tag" .
 
@@ -77,6 +78,7 @@ if [[ "$image_tag" == "e2e" ]]; then
     --build-arg base_image="skycoin/dmsg-server:$dockerhub_image_tag" \
     --build-arg build_opts="$go_buildopts" \
     --build-arg image_tag="$image_tag" \
+    $platform \
     -t "$registry"/dmsg-server:"$image_tag" .
 
   echo "build service discovery image"
@@ -103,16 +105,19 @@ if [[ "$image_tag" == "integration" ]]; then
   echo "BUILDING SKYWIRE VISOR"
 
   DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/skywire-visor/DockerfileInt \
+    $platform \
     -t "$registry"/skywire-visor:"$image_tag" .
 
   echo ============ Base images ready ======================
 
   echo "build dmsg discovery image"
   DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/dmsg-discovery/DockerfileInt \
+    $platform \
     -t "$registry"/dmsg-discovery:"$image_tag" .
 
   echo "build dmsg server image"
   DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/dmsg-server/DockerfileInt \
+    $platform \
     -t "$registry"/dmsg-server:"$image_tag" .
 
   echo "build service discovery image"
@@ -120,6 +125,7 @@ if [[ "$image_tag" == "integration" ]]; then
     --build-arg base_image="$base_image" \
     --build-arg build_opts="$go_buildopts" \
     --build-arg image_tag="$image_tag" \
+    $platform \
     -t "$registry"/service-discovery:"$image_tag" .
 
   rm -rf ./tmp/*
