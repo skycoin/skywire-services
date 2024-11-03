@@ -205,14 +205,6 @@ DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/network-monitor/Dockerfi
   $platform \
   -t "$registry"/network-monitor:"$image_tag" .
 
-echo "building liveness checker image"
-DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/liveness-checker/Dockerfile \
-  --build-arg base_image="$base_image" \
-  --build-arg build_opts="$go_buildopts" \
-  --build-arg image_tag="$image_tag" \
-  $platform \
-  -t "$registry"/liveness-checker:"$image_tag" .
-
 echo "building config bootstrapper image"
 DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/config-bootstrapper/Dockerfile \
   --build-arg base_image="$base_image" \

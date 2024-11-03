@@ -23,7 +23,6 @@ declare -a images_arr=(
   "network-monitor"
   # "node-visualizer"
   "config-bootstrapper"
-  "liveness-checker"
   "vpn-monitor"
   "public-visor-monitor"
   "dmsg-monitor"
