@@ -174,7 +174,7 @@ check-help: ## Cursory check of the help menus
 ## : ## _ [E2E tests suite]
 
 e2e-build: set-forwarding ## E2E. Build dockers and containers for e2e-tests
-	./docker/docker_build.sh e2e ${BUILD_OPTS_DEPLOY}
+	./docker/docker_build.sh e2e ${BUILD_OPTS_DEPLOY} $(BUILD_ARCH)
 
 e2e-run: ## E2E. Start e2e environment
 	bash -c "DOCKER_TAG=e2e docker compose up -d"
@@ -231,7 +231,7 @@ reset-forwarding:
 ## : ## _ [Interactive integration tests]
 
 integration-env-build: set-forwarding #build
-	./docker/docker_build.sh integration ${BUILD_OPTS_DEPLOY}
+	./docker/docker_build.sh integration ${BUILD_OPTS_DEPLOY} $(BUILD_ARCH)
 	bash -c "DOCKER_TAG=integration docker compose up -d"
 
 integration-env-start: set-forwarding #start
