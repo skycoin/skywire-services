@@ -4,6 +4,7 @@ trap "exit" INT
 ## Variables
 image_tag="$1"
 go_buildopts="$2"
+build_arch="$3"
 git_branch="$(git rev-parse --abbrev-ref HEAD)"
 nv_dev_url="https://nv.skywire.dev/map"
 nv_prod_url="https://nv.skycoin.com/map"
@@ -23,6 +24,10 @@ fi
 
 if [[ "$go_buildopts" == "" ]]; then
   go_buildopts="-mod=vendor -ldflags\"-w -s\""
+fi
+
+if [[ "$build_arch" != "" ]]; then
+  platform="--platform=$build_arch"
 fi
 
 if [[ "$git_branch" != "master" ]] && [[ "$git_branch" != "develop" ]]; then
@@ -81,13 +86,6 @@ if [[ "$image_tag" == "e2e" ]]; then
     --build-arg image_tag="$image_tag" \
     $platform \
     -t "$registry"/service-discovery:"$image_tag" .
-  
-  echo "building uptime tracker image"
-  DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/uptime-tracker/Dockerfile \
-  --build-arg base_image="$base_image" \
-  --build-arg build_opts="$go_buildopts" \
-  --build-arg image_tag="$image_tag" \
-  -t "$registry"/uptime-tracker:"$image_tag" .
 
   rm -rf ./tmp/skycoin-service-discovery
 fi
@@ -97,11 +95,9 @@ if [[ "$image_tag" == "integration" ]]; then
   rm -rf ./tmp/skycoin-service-discovery
   rm -rf ./tmp/dmsg
   rm -rf ./tmp/skywire
-  rm -rf ./tmp/skywire-ut
   cp -r ../skycoin-service-discovery ./tmp
   cp -r ../dmsg ./tmp
   cp -r ../skywire ./tmp
-  cp -r ../skywire-ut ./tmp
 
   echo ====================================================
   echo "BUILDING SKYWIRE VISOR"
@@ -125,13 +121,6 @@ if [[ "$image_tag" == "integration" ]]; then
     --build-arg build_opts="$go_buildopts" \
     --build-arg image_tag="$image_tag" \
     -t "$registry"/service-discovery:"$image_tag" .
-  
-  echo "building uptime tracker image"
-  DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/uptime-tracker/Dockerfile \
-  --build-arg base_image="$base_image" \
-  --build-arg build_opts="$go_buildopts" \
-  --build-arg image_tag="$image_tag" \
-  -t "$registry"/uptime-tracker:"$image_tag" .
 
   rm -rf ./tmp/*
 fi
