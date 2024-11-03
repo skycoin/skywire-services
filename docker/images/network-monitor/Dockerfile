@@ -1,7 +1,7 @@
 ARG image_tag
 ARG base_image
 
-FROM ${base_image} as builder
+FROM ${base_image} AS builder
 
 ARG build_opts
 
@@ -11,16 +11,16 @@ WORKDIR /skywire-services
 RUN go build "${build_opts}" -o /release/network-monitor ./cmd/network-monitor && \
     go build "${build_opts}" -o /release/vpn-client ./cmd/vpn-lite-client
 
-FROM alpine as prod
+FROM alpine AS prod
 WORKDIR /release
 COPY --from=builder /release/vpn-client /apps/vpn-client
 COPY --from=builder /release/network-monitor /release/network-monitor
 ENTRYPOINT ["/release/network-monitor"]
 
-FROM prod as test
+FROM prod AS test
 
 # OS image
-FROM alpine as e2e
+FROM alpine AS e2e
 WORKDIR /release
 
 COPY ./docker/common/install-prequisites.sh /release/install-prequisites.sh
@@ -31,6 +31,6 @@ COPY --from=builder /release/vpn-client /release/vpn-client
 COPY --from=builder /release/network-monitor /release/network-monitor
 ENTRYPOINT ["/release/network-monitor"]
 
-FROM e2e as integration
+FROM e2e AS integration
 
 FROM ${image_tag}
