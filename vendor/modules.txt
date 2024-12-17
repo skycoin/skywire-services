@@ -95,7 +95,7 @@ github.com/coder/websocket/internal/xsync
 # github.com/creack/pty v1.1.23
 ## explicit; go 1.18
 github.com/creack/pty
-# github.com/davecgh/go-spew v1.1.1
+# github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 ## explicit
 github.com/davecgh/go-spew/spew
 # github.com/dgraph-io/badger/v3 v3.2103.2
@@ -150,7 +150,7 @@ github.com/docker/go-units
 # github.com/dustin/go-humanize v1.0.1
 ## explicit; go 1.16
 github.com/dustin/go-humanize
-# github.com/fatih/color v1.17.0
+# github.com/fatih/color v1.18.0
 ## explicit; go 1.17
 github.com/fatih/color
 # github.com/flopp/go-coordsparser v0.0.0-20240403152942-4891dc40d0a7
@@ -453,7 +453,7 @@ github.com/pires/go-proxyproto
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
-# github.com/pmezard/go-difflib v1.0.0
+# github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2
 ## explicit
 github.com/pmezard/go-difflib/difflib
 # github.com/quic-go/quic-go v0.48.0
@@ -480,8 +480,8 @@ github.com/rs/cors/internal
 ## explicit; go 1.13
 github.com/sirupsen/logrus
 github.com/sirupsen/logrus/hooks/syslog
-# github.com/skycoin/dmsg v1.3.29-0.20241019182716-022283c93835
-## explicit; go 1.22
+# github.com/skycoin/dmsg v1.3.29-0.20241217193208-d32ec623e670
+## explicit; go 1.23
 github.com/skycoin/dmsg/internal/servermetrics
 github.com/skycoin/dmsg/pkg/direct
 github.com/skycoin/dmsg/pkg/disc
@@ -496,16 +496,16 @@ github.com/skycoin/dmsg/pkg/noise
 # github.com/skycoin/noise v0.0.0-20180327030543-2492fe189ae6
 ## explicit
 github.com/skycoin/noise
-# github.com/skycoin/skycoin v0.28.0
-## explicit; go 1.14
+# github.com/skycoin/skycoin v0.28.1-0.20241105130348-39b49a2d0a7f
+## explicit; go 1.22.0
 github.com/skycoin/skycoin/src/cipher
 github.com/skycoin/skycoin/src/cipher/base58
 github.com/skycoin/skycoin/src/cipher/ripemd160
 github.com/skycoin/skycoin/src/cipher/secp256k1-go
 github.com/skycoin/skycoin/src/cipher/secp256k1-go/secp256k1-go2
 github.com/skycoin/skycoin/src/util/logging
-# github.com/skycoin/skywire v1.3.28
-## explicit; go 1.21
+# github.com/skycoin/skywire v1.3.29-rc1.0.20241217192205-cb65518c5522
+## explicit; go 1.23
 github.com/skycoin/skywire
 github.com/skycoin/skywire/cmd/setup-node/commands
 github.com/skycoin/skywire/internal/httpauth
@@ -526,6 +526,19 @@ github.com/skycoin/skywire/pkg/router/setupmetrics
 github.com/skycoin/skywire/pkg/routing
 github.com/skycoin/skywire/pkg/servicedisc
 github.com/skycoin/skywire/pkg/skyenv
+github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo
+github.com/skycoin/skywire/pkg/skywire-utilities/pkg/cipher
+github.com/skycoin/skywire/pkg/skywire-utilities/pkg/cmdutil
+github.com/skycoin/skywire/pkg/skywire-utilities/pkg/geo
+github.com/skycoin/skywire/pkg/skywire-utilities/pkg/httpauth
+github.com/skycoin/skywire/pkg/skywire-utilities/pkg/httputil
+github.com/skycoin/skywire/pkg/skywire-utilities/pkg/logging
+github.com/skycoin/skywire/pkg/skywire-utilities/pkg/metricsutil
+github.com/skycoin/skywire/pkg/skywire-utilities/pkg/netutil
+github.com/skycoin/skywire/pkg/skywire-utilities/pkg/networkmonitor
+github.com/skycoin/skywire/pkg/skywire-utilities/pkg/skyenv
+github.com/skycoin/skywire/pkg/skywire-utilities/pkg/storeconfig
+github.com/skycoin/skywire/pkg/skywire-utilities/pkg/tcpproxy
 github.com/skycoin/skywire/pkg/transport
 github.com/skycoin/skywire/pkg/transport/network
 github.com/skycoin/skywire/pkg/transport/network/addrresolver
@@ -550,21 +563,6 @@ github.com/skycoin/skywire/pkg/visor/usermanager
 github.com/skycoin/skywire/pkg/visor/visorconfig
 github.com/skycoin/skywire/pkg/visor/visorinit
 github.com/skycoin/skywire/static/icons
-# github.com/skycoin/skywire-utilities v1.3.25
-## explicit; go 1.21
-github.com/skycoin/skywire-utilities/pkg/buildinfo
-github.com/skycoin/skywire-utilities/pkg/cipher
-github.com/skycoin/skywire-utilities/pkg/cmdutil
-github.com/skycoin/skywire-utilities/pkg/geo
-github.com/skycoin/skywire-utilities/pkg/httpauth
-github.com/skycoin/skywire-utilities/pkg/httputil
-github.com/skycoin/skywire-utilities/pkg/logging
-github.com/skycoin/skywire-utilities/pkg/metricsutil
-github.com/skycoin/skywire-utilities/pkg/netutil
-github.com/skycoin/skywire-utilities/pkg/networkmonitor
-github.com/skycoin/skywire-utilities/pkg/skyenv
-github.com/skycoin/skywire-utilities/pkg/storeconfig
-github.com/skycoin/skywire-utilities/pkg/tcpproxy
 # github.com/skycoin/systray v1.10.0
 ## explicit; go 1.17
 github.com/skycoin/systray

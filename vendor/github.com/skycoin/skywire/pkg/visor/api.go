@@ -21,16 +21,16 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 
-	"github.com/skycoin/skywire-utilities/pkg/buildinfo"
-	"github.com/skycoin/skywire-utilities/pkg/cipher"
-	"github.com/skycoin/skywire-utilities/pkg/logging"
-	"github.com/skycoin/skywire-utilities/pkg/netutil"
 	"github.com/skycoin/skywire/pkg/app/appcommon"
 	"github.com/skycoin/skywire/pkg/app/appnet"
 	"github.com/skycoin/skywire/pkg/app/appserver"
 	"github.com/skycoin/skywire/pkg/routing"
 	"github.com/skycoin/skywire/pkg/servicedisc"
 	"github.com/skycoin/skywire/pkg/skyenv"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/cipher"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/logging"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/netutil"
 	"github.com/skycoin/skywire/pkg/transport"
 	"github.com/skycoin/skywire/pkg/transport/network"
 	"github.com/skycoin/skywire/pkg/visor/dmsgtracker"
@@ -1393,19 +1393,19 @@ func (v *Visor) TestVisor(conf PingConfig) ([]TestResult, error) {
 			result = append(result, TestResult{PK: conf.PK.String(), Max: fmt.Sprint(0), Min: fmt.Sprint(0), Mean: fmt.Sprint(0), Status: "Failed"})
 			continue
 		}
-		var max, min, mean, sumLatency time.Duration
-		min = time.Duration(10000000000)
+		var maxx, minn, mean, sumLatency time.Duration
+		minn = time.Duration(10000000000)
 		for _, latency := range latencies {
-			if latency > max {
-				max = latency
+			if latency > maxx {
+				maxx = latency
 			}
-			if latency < min {
-				min = latency
+			if latency < minn {
+				minn = latency
 			}
 			sumLatency += latency
 		}
 		mean = sumLatency / time.Duration(len(latencies))
-		result = append(result, TestResult{PK: conf.PK.String(), Max: fmt.Sprint(max), Min: fmt.Sprint(min), Mean: fmt.Sprint(mean), Status: "Success"})
+		result = append(result, TestResult{PK: conf.PK.String(), Max: fmt.Sprint(maxx), Min: fmt.Sprint(minn), Mean: fmt.Sprint(mean), Status: "Success"})
 		v.StopPing(conf.PK) //nolint
 	}
 	return result, nil

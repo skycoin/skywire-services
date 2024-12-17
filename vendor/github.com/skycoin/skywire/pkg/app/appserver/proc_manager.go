@@ -11,11 +11,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/skycoin/skywire-utilities/pkg/logging"
 	"github.com/skycoin/skywire/pkg/app/appcommon"
 	"github.com/skycoin/skywire/pkg/app/appdisc"
 	"github.com/skycoin/skywire/pkg/app/appevent"
 	"github.com/skycoin/skywire/pkg/routing"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/logging"
 )
 
 //go:generate mockery --name ProcManager --case underscore --inpackage
@@ -221,7 +221,7 @@ func (m *procManager) Start(conf appcommon.ProcConfig) (appcommon.ProcID, error)
 		return 0, err
 	}
 	delete(m.errors, conf.AppName)
-	return appcommon.ProcID(proc.cmd.Process.Pid), nil //nolint
+	return appcommon.ProcID(proc.cmd.Process.Pid), nil //nolint: gosec
 }
 
 // Register registers a proc for an external app.

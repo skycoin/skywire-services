@@ -16,8 +16,8 @@ import (
 	"github.com/bitfield/script"
 	"github.com/spf13/cobra"
 
-	"github.com/skycoin/skywire-utilities/pkg/buildinfo"
-	"github.com/skycoin/skywire-utilities/pkg/logging"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/logging"
 	"github.com/skycoin/skywire/pkg/visor/visorconfig"
 )
 
@@ -57,8 +57,10 @@ var (
 	isForceColor   bool
 )
 
+// TODO: fix gocyclo error.
+//
+//gocyclo:ignore
 func init() {
-
 	root = visorconfig.IsRoot()
 	RootCmd.Flags().SortFlags = false
 	//the default is not set to fix the aesthetic of the help command

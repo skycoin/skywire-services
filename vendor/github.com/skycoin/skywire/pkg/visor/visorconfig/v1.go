@@ -7,11 +7,11 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/skycoin/skywire-utilities/pkg/cipher"
 	"github.com/skycoin/skywire/pkg/app/appserver"
 	"github.com/skycoin/skywire/pkg/app/launcher"
 	"github.com/skycoin/skywire/pkg/dmsgc"
 	"github.com/skycoin/skywire/pkg/routing"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/cipher"
 	"github.com/skycoin/skywire/pkg/transport"
 	"github.com/skycoin/skywire/pkg/transport/network"
 )
@@ -288,15 +288,15 @@ func (v1 *V1) AddAppConfig(launch *launcher.AppLauncher, appName, binaryName str
 	}
 	var randomNumber int
 	for {
-		min := 10
-		max := 99
-		randomNumber = rand.Intn(max-min+1) + min                //nolint
-		if _, ok := busyPorts[routing.Port(randomNumber)]; !ok { //nolint
+		minn := 10
+		maxx := 99
+		randomNumber = rand.Intn(maxx-minn+1) + minn             //nolint: gosec
+		if _, ok := busyPorts[routing.Port(randomNumber)]; !ok { //nolint: gosec
 			break
 		}
 	}
 
-	conf.Apps = append(conf.Apps, appserver.AppConfig{Name: appName, Binary: binaryName, Port: routing.Port(randomNumber)}) //nolint
+	conf.Apps = append(conf.Apps, appserver.AppConfig{Name: appName, Binary: binaryName, Port: routing.Port(randomNumber)}) //nolint: gosec
 
 	launch.ResetConfig(launcher.AppLauncherConfig{
 		VisorPK:       v1.PK,

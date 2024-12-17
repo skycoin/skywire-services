@@ -1,8 +1,8 @@
 module github.com/skycoin/skywire-services
 
-go 1.22.0
+go 1.23
 
-toolchain go1.23.1
+toolchain go1.23.4
 
 require (
 	github.com/bitfield/script v0.23.0
@@ -23,9 +23,8 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/rs/cors v1.11.1
 	github.com/sirupsen/logrus v1.9.3
-	github.com/skycoin/dmsg v1.3.29-0.20241019182716-022283c93835
-	github.com/skycoin/skywire v1.3.28
-	github.com/skycoin/skywire-utilities v1.3.25
+	github.com/skycoin/dmsg v1.3.29-0.20241217193208-d32ec623e670
+	github.com/skycoin/skywire v1.3.29-rc1.0.20241217192205-cb65518c5522
 	github.com/songgao/water v0.0.0-20200317203138-2b4b6d7c09d8
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
@@ -55,14 +54,14 @@ require (
 	github.com/cloudwego/iasm v0.2.0 // indirect
 	github.com/coder/websocket v1.8.12 // indirect
 	github.com/creack/pty v1.1.23 // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dgraph-io/ristretto v0.1.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/fatih/color v1.17.0 // indirect
+	github.com/fatih/color v1.18.0 // indirect
 	github.com/flopp/go-coordsparser v0.0.0-20240403152942-4891dc40d0a7 // indirect
 	github.com/fogleman/gg v1.3.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.6 // indirect
@@ -115,10 +114,10 @@ require (
 	github.com/pelletier/go-toml/v2 v2.2.3 // indirect
 	github.com/pires/go-proxyproto v0.8.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/quic-go/quic-go v0.48.0 // indirect
 	github.com/skycoin/noise v0.0.0-20180327030543-2492fe189ae6 // indirect
-	github.com/skycoin/skycoin v0.28.0 // indirect
+	github.com/skycoin/skycoin v0.28.1-0.20241105130348-39b49a2d0a7f // indirect
 	github.com/skycoin/systray v1.10.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect

@@ -10,10 +10,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/skycoin/skywire-utilities/pkg/cipher"
-	"github.com/skycoin/skywire-utilities/pkg/geo"
-	"github.com/skycoin/skywire-utilities/pkg/httpauth"
-	"github.com/skycoin/skywire-utilities/pkg/storeconfig"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/cipher"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/geo"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/httpauth"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/storeconfig"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
