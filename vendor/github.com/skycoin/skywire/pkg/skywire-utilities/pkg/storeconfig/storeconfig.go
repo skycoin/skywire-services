@@ -1,7 +1,9 @@
 // Package storeconfig pkg/storeconfig/storeconfig.go
 package storeconfig
 
-import "os"
+import (
+	"os"
+)
 
 // Type is a config type.
 type Type int

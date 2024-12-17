@@ -2,7 +2,7 @@
 package lc
 
 import (
-	"github.com/skycoin/skywire-utilities/pkg/httputil"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/httputil"
 )
 
 // ServiceSummary summary of a visor connection

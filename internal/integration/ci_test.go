@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types/swarm"
-	"github.com/skycoin/skywire-utilities/pkg/logging"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/logging"
 	"github.com/skycoin/skywire/pkg/transport/network"
 	"github.com/stretchr/testify/require"
 )

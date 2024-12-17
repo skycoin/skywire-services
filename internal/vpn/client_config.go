@@ -1,7 +1,7 @@
 package vpn
 
 import (
-	"github.com/skycoin/skywire-utilities/pkg/cipher"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/cipher"
 )
 
 // ClientConfig is a configuration for VPN client.

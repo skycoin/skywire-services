@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/skycoin/skywire-utilities/pkg/cipher"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/cipher"
 )
 
 // RuleHeaderSize represents the base size of a rule.
@@ -65,7 +65,7 @@ func (r Rule) assertLen(l int) {
 // KeepAlive returns rule's keep-alive timeout.
 func (r Rule) KeepAlive() time.Duration {
 	r.assertLen(RuleHeaderSize)
-	return time.Duration(binary.BigEndian.Uint64(r[0:8])) //nolint
+	return time.Duration(binary.BigEndian.Uint64(r[0:8])) //nolint: gosec
 }
 
 // setKeepAlive sets rule's keep-alive timeout.
@@ -76,7 +76,7 @@ func (r Rule) setKeepAlive(keepAlive time.Duration) {
 		keepAlive = 0
 	}
 
-	binary.BigEndian.PutUint64(r[0:8], uint64(keepAlive))
+	binary.BigEndian.PutUint64(r[0:8], uint64(keepAlive)) //nolint: gosec
 }
 
 // Type returns type of a rule.

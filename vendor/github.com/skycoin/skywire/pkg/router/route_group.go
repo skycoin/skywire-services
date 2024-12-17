@@ -15,8 +15,8 @@ import (
 
 	"github.com/skycoin/dmsg/pkg/ioutil"
 
-	"github.com/skycoin/skywire-utilities/pkg/logging"
 	"github.com/skycoin/skywire/pkg/routing"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/logging"
 	"github.com/skycoin/skywire/pkg/transport"
 	"github.com/skycoin/skywire/pkg/util/deadline"
 )
@@ -449,7 +449,7 @@ func (rg *RouteGroup) sendPing() error {
 
 	throughput := rg.networkStats.RemoteThroughput()
 	timestamp := time.Now().UTC().UnixNano() / int64(time.Millisecond)
-	rg.networkStats.SetDownloadSpeed(uint32(throughput)) //nolint
+	rg.networkStats.SetDownloadSpeed(uint32(throughput)) //nolint: gosec
 
 	packet := routing.MakePingPacket(rule.NextRouteID(), timestamp, throughput)
 
@@ -697,7 +697,7 @@ func (rg *RouteGroup) handleErrorPacket(packet routing.Packet) error {
 		return nil
 	}
 
-	rg.SetError(fmt.Errorf("%v", string(packet.Payload())))
+	rg.SetError(errors.New((string(packet.Payload()))))
 	return nil
 }
 
@@ -723,9 +723,9 @@ func (rg *RouteGroup) handlePingPacket(packet routing.Packet) error {
 
 	rg.logger.WithField("func", "RouteGroup.handlePingPacket").Tracef("Throughput is around %d", throughput)
 
-	rg.networkStats.SetUploadSpeed(uint32(throughput)) //nolint
+	rg.networkStats.SetUploadSpeed(uint32(throughput)) //nolint: gosec
 
-	return rg.sendPong(int64(timestamp)) //nolint
+	return rg.sendPong(int64(timestamp)) //nolint: gosec
 }
 
 func (rg *RouteGroup) handlePongPacket(packet routing.Packet) error {
@@ -734,13 +734,13 @@ func (rg *RouteGroup) handlePongPacket(packet routing.Packet) error {
 	sentAtMs := binary.BigEndian.Uint64(payload)
 
 	ms := sentAtMs % 1000
-	sentAt := time.Unix(int64(sentAtMs/1000), int64(ms)*int64(time.Millisecond)).UTC() //nolint
+	sentAt := time.Unix(int64(sentAtMs/1000), int64(ms)*int64(time.Millisecond)).UTC() //nolint: gosec
 
 	latency := time.Now().UTC().Sub(sentAt).Milliseconds()
 
 	rg.logger.WithField("func", "RouteGroup.handlePongPacket").Tracef("Latency is around %d ms", latency)
 
-	rg.networkStats.SetLatency(uint32(latency)) //nolint
+	rg.networkStats.SetLatency(uint32(latency)) //nolint: gosec
 
 	return nil
 }

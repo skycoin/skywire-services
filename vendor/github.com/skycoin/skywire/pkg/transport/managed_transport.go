@@ -12,13 +12,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/skycoin/skywire-utilities/pkg/cipher"
-	"github.com/skycoin/skywire-utilities/pkg/httputil"
-	"github.com/skycoin/skywire-utilities/pkg/logging"
-	"github.com/skycoin/skywire-utilities/pkg/netutil"
 	"github.com/skycoin/skywire/pkg/app/appevent"
 	"github.com/skycoin/skywire/pkg/routing"
 	"github.com/skycoin/skywire/pkg/skyenv"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/cipher"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/httputil"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/logging"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/netutil"
 	"github.com/skycoin/skywire/pkg/transport/network"
 )
 
@@ -374,7 +374,7 @@ func (mt *ManagedTransport) WritePacket(ctx context.Context, packet routing.Pack
 		return err
 	}
 	if n > routing.PacketHeaderSize {
-		mt.logSent(uint64(n - routing.PacketHeaderSize))
+		mt.logSent(uint64(n - routing.PacketHeaderSize)) //nolint: gosec
 	}
 	return nil
 }
@@ -412,7 +412,7 @@ func (mt *ManagedTransport) readPacket() (packet routing.Packet, err error) {
 
 	packet = append(h, p...)
 	if n := len(packet); n > routing.PacketHeaderSize {
-		mt.logRecv(uint64(n - routing.PacketHeaderSize))
+		mt.logRecv(uint64(n - routing.PacketHeaderSize)) //nolint: gosec
 	}
 
 	log.WithField("type", packet.Type().String()).

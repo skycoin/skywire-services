@@ -15,11 +15,11 @@ import (
 	"github.com/skycoin/dmsg/pkg/dmsg"
 	"github.com/skycoin/dmsg/pkg/noise"
 
-	"github.com/skycoin/skywire-utilities/pkg/cipher"
-	"github.com/skycoin/skywire-utilities/pkg/logging"
 	"github.com/skycoin/skywire/pkg/routefinder/rfclient"
 	"github.com/skycoin/skywire/pkg/routing"
 	"github.com/skycoin/skywire/pkg/skyenv"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/cipher"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/logging"
 	"github.com/skycoin/skywire/pkg/transport"
 	"github.com/skycoin/skywire/pkg/transport/network"
 )
@@ -484,6 +484,9 @@ func (r *router) serveSetup() {
 	}
 }
 
+// TODO: fix gocyclo error.
+//
+//gocyclo:ignore
 func (r *router) saveRouteGroupRules(rules routing.EdgeRules, nsConf noise.Config) (*NoiseRouteGroup, error) {
 	r.logger.Debugf("Saving route group rules with desc: %s", &rules.Desc)
 
@@ -990,11 +993,11 @@ func (r *router) forwardPacket(ctx context.Context, packet routing.Packet, rule 
 	case routing.ClosePacket:
 		p = routing.MakeClosePacket(rule.NextRouteID(), routing.CloseCode(packet.Payload()[0]))
 	case routing.PingPacket:
-		timestamp := int64(binary.BigEndian.Uint64(packet[routing.PacketPayloadOffset:]))    //nolint
-		throughput := int64(binary.BigEndian.Uint64(packet[routing.PacketPayloadOffset+8:])) //nolint
+		timestamp := int64(binary.BigEndian.Uint64(packet[routing.PacketPayloadOffset:]))    //nolint: gosec
+		throughput := int64(binary.BigEndian.Uint64(packet[routing.PacketPayloadOffset+8:])) //nolint: gosec
 		p = routing.MakePingPacket(rule.NextRouteID(), timestamp, throughput)
 	case routing.PongPacket:
-		timestamp := int64(binary.BigEndian.Uint64(packet[routing.PacketPayloadOffset:])) //nolint
+		timestamp := int64(binary.BigEndian.Uint64(packet[routing.PacketPayloadOffset:])) //nolint: gosec
 		p = routing.MakePongPacket(rule.NextRouteID(), timestamp)
 	case routing.ErrorPacket:
 		var err error
@@ -1328,7 +1331,6 @@ func (r *router) removeRouteGroupOfRule(rule routing.Rule) {
 }
 
 func (r *router) checkIfTransportAvailable() (ok bool) {
-	//	r.tm.WalkTransports(func(tp *transport.ManagedTransport) bool {
 	r.tm.WalkTransports(func(_ *transport.ManagedTransport) bool {
 		ok = true
 		return ok

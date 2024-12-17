@@ -31,9 +31,6 @@ import (
 	"github.com/skycoin/dmsg/pkg/dmsgpty"
 
 	"github.com/skycoin/skywire"
-	"github.com/skycoin/skywire-utilities/pkg/cipher"
-	"github.com/skycoin/skywire-utilities/pkg/logging"
-	"github.com/skycoin/skywire-utilities/pkg/netutil"
 	"github.com/skycoin/skywire/internal/vpn"
 	"github.com/skycoin/skywire/pkg/app/appdisc"
 	"github.com/skycoin/skywire/pkg/app/appevent"
@@ -46,6 +43,9 @@ import (
 	"github.com/skycoin/skywire/pkg/routing"
 	"github.com/skycoin/skywire/pkg/servicedisc"
 	"github.com/skycoin/skywire/pkg/skyenv"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/cipher"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/logging"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/netutil"
 	"github.com/skycoin/skywire/pkg/transport"
 	"github.com/skycoin/skywire/pkg/transport/network"
 	"github.com/skycoin/skywire/pkg/transport/network/addrresolver"
@@ -887,6 +887,9 @@ func handlePingConn(log *logging.Logger, remoteConn net.Conn, v *Visor) {
 }
 
 // getRouteSetupHooks aka autotransport
+// TODO: fix gocyclo error.
+//
+//gocyclo:ignore
 func getRouteSetupHooks(ctx context.Context, v *Visor, log *logging.Logger) []router.RouteSetupHook {
 	retrier := netutil.NewRetrier(log, time.Second, time.Second*20, 3, 1.3)
 	return []router.RouteSetupHook{
@@ -1298,6 +1301,9 @@ func initEnsureVisorIsTransportable(ctx context.Context, v *Visor, log *logging.
 	return nil
 }
 
+// TODO: fix gocyclo error.
+//
+//gocyclo:ignore
 func initEnsureTPDConcurrency(ctx context.Context, v *Visor, log *logging.Logger) error { //nolint:all
 	const tickDuration = 5 * time.Minute
 	ticker := time.NewTicker(tickDuration)
@@ -1408,6 +1414,9 @@ func initPublicVisor(_ context.Context, v *Visor, log *logging.Logger) error { /
 	return nil
 }
 
+// TODO: fix gocyclo error.
+//
+//gocyclo:ignore
 func initDmsgpty(ctx context.Context, v *Visor, log *logging.Logger) error {
 	conf := v.conf.Dmsgpty
 

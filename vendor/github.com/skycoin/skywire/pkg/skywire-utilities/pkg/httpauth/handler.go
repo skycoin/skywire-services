@@ -10,9 +10,9 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/skycoin/skywire-utilities/pkg/cipher"
-	"github.com/skycoin/skywire-utilities/pkg/httputil"
-	"github.com/skycoin/skywire-utilities/pkg/logging"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/cipher"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/httputil"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/logging"
 )
 
 var (
@@ -96,7 +96,7 @@ func WithAuth(store NonceStore, original http.Handler, shouldVerifyAuth bool) ht
 		sw := statusWriter{ResponseWriter: w}
 		httputil.LogEntrySetField(r, LogAuthKey, auth.Key)
 		original.ServeHTTP(&sw, r.WithContext(context.WithValue(
-			r.Context(), ContextAuthKey, auth.Key)))
+			r.Context(), ContextAuthKey, auth.Key))) //nolint
 
 		if sw.status == http.StatusOK {
 			_, err := store.IncrementNonce(r.Context(), auth.Key)

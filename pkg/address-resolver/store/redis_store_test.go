@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/go-redis/redis"
-	"github.com/skycoin/skywire-utilities/pkg/logging"
-	"github.com/skycoin/skywire-utilities/pkg/storeconfig"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/logging"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/storeconfig"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )

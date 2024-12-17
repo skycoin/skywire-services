@@ -17,13 +17,13 @@ import (
 
 	ipc "github.com/james-barrow/golang-ipc"
 
-	"github.com/skycoin/skywire-utilities/pkg/cipher"
-	"github.com/skycoin/skywire-utilities/pkg/netutil"
 	"github.com/skycoin/skywire/pkg/app"
 	"github.com/skycoin/skywire/pkg/app/appnet"
 	"github.com/skycoin/skywire/pkg/app/appserver"
 	"github.com/skycoin/skywire/pkg/routing"
 	"github.com/skycoin/skywire/pkg/skyenv"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/cipher"
+	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/netutil"
 )
 
 const (
@@ -342,6 +342,9 @@ func (c *Client) setupTUN(tunIP, tunGateway net.IP) error {
 	return c.SetupTUN(c.tun.Name(), tunIP.String()+TUNNetmaskCIDR, tunGateway.String(), TUNMTU)
 }
 
+// TODO: fix gocyclo error.
+//
+//gocyclo:ignore
 func (c *Client) serveConn(conn net.Conn) error {
 	tunIP, tunGateway, err := c.shakeHands(conn)
 	if err != nil {
