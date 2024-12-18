@@ -23,8 +23,8 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/rs/cors v1.11.1
 	github.com/sirupsen/logrus v1.9.3
-	github.com/skycoin/dmsg v1.3.29-0.20241217193208-d32ec623e670
-	github.com/skycoin/skywire v1.3.29-rc1.0.20241217192205-cb65518c5522
+	github.com/skycoin/dmsg v1.3.29-0.20241218010226-56d92f2ef624
+	github.com/skycoin/skywire v1.3.29-rc1.0.20241217211947-72c9d0b82083
 	github.com/songgao/water v0.0.0-20200317203138-2b4b6d7c09d8
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
