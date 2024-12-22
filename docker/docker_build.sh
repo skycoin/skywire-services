@@ -176,26 +176,14 @@ DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/uptime-tracker/Dockerfil
   $platform \
   -t "$registry"/uptime-tracker:"$image_tag" .
 
-if [[ "$image_tag" == "test" ]]; then
-  echo "build node visualizer DEV image"
-  echo "REACT_APP_SKY_NODEVIZ_URL=${nv_dev_url}" > ./pkg/node-visualizer/web/.env
-elif [[ "$image_tag" == "prod" ]]; then
-  echo "build node visualizer PROD image"
-  echo "REACT_APP_SKY_NODEVIZ_URL=${nv_prod_url}" > ./pkg/node-visualizer/web/.env
-elif [[ "$image_tag" == "e2e" ]]; then
-  echo "build node visualizer E2E image"
-  echo "REACT_APP_SKY_NODEVIZ_URL=${nv_e2e_url}" > ./pkg/node-visualizer/web/.env
-elif [[ "$image_tag" == "integration" ]]; then
-  echo "build node visualizer INTEGRATION image"
-  echo "REACT_APP_SKY_NODEVIZ_URL=${nv_e2e_url}" > ./pkg/node-visualizer/web/.env
-fi
 
-# DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/node-visualizer/Dockerfile \
-#   --build-arg base_image="$base_image" \
-#   --build-arg build_opts="$go_buildopts" \
-#   --build-arg image_tag="$image_tag" \
-#   $platform \
-#   -t "$registry"/node-visualizer:"$image_tag" .
+echo "build node visualizer image"
+DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/node-visualizer/Dockerfile \
+  --build-arg base_image="$base_image" \
+  --build-arg build_opts="$go_buildopts" \
+  --build-arg image_tag="$image_tag" \
+  $platform \
+  -t "$registry"/node-visualizer:"$image_tag" .
 
 echo "building network monitor image"
 DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/network-monitor/Dockerfile \

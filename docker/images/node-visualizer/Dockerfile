@@ -1,17 +1,6 @@
 ARG image_tag
 ARG base_image
 
-FROM node:16-alpine AS react-builder
-
-
-COPY ./ /app
-WORKDIR /app
-RUN yarn --cwd ./pkg/node-visualizer/web install && \
-		yarn --cwd ./pkg/node-visualizer/web build && \
-		rm -rf ./pkg/node-visualizer/api/build/static && \
-		mv ./pkg/node-visualizer/web/build/* ./pkg/node-visualizer/api/build
-
-
 FROM ${base_image} as builder
 ARG build_opts
 
