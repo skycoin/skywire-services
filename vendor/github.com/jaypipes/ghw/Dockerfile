@@ -1,4 +1,4 @@
-FROM golang:1.21-buster as builder
+FROM golang:1.21-buster AS builder
 WORKDIR /go/src/github.com/jaypipes/ghw
 
 ENV GOPROXY=direct

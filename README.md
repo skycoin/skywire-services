@@ -63,7 +63,6 @@ Check the [docs](docs/Deployments.md) for more documentation on the deployments.
 
 - [Address Resolver](cmd/address-resolver/README.md)
 - [Config Bootstrapper](cmd/config-bootstrapper/README.md)
-- [Liveness Checker](cmd/liveness-checker/README.md)
 - [Network Monitor](cmd/network-monitor/README.md)
 - [Public Visor Monitor](cmd/public-visor-monitor/README.md)
 - [Route Finder](cmd/route-finder/README.md)

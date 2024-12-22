@@ -4,6 +4,7 @@ trap "exit" INT
 ## Variables
 image_tag="$1"
 go_buildopts="$2"
+build_arch="$3"
 git_branch="$(git rev-parse --abbrev-ref HEAD)"
 nv_dev_url="https://nv.skywire.dev/map"
 nv_prod_url="https://nv.skycoin.com/map"
@@ -15,7 +16,7 @@ platform="--platform=linux/amd64"
 registry="$REGISTRY"
 
 # shellcheck disable=SC2153
-base_image=golang:1.21-alpine
+base_image=golang:1.23-alpine
 
 if [[ "$#" != 2 ]]; then
   echo "docker_build.sh <IMAGE_TAG> <GO_BUILDOPTS>"
@@ -23,6 +24,10 @@ fi
 
 if [[ "$go_buildopts" == "" ]]; then
   go_buildopts="-mod=vendor -ldflags\"-w -s\""
+fi
+
+if [[ "$build_arch" != "" ]]; then
+  platform="--platform=$build_arch"
 fi
 
 if [[ "$git_branch" != "master" ]] && [[ "$git_branch" != "develop" ]]; then
@@ -65,6 +70,7 @@ if [[ "$image_tag" == "e2e" ]]; then
     --build-arg build_opts="$go_buildopts" \
     --build-arg image_tag="$image_tag" \
     --build-arg base_image="skycoin/dmsg-discovery:$dockerhub_image_tag" \
+    $platform \
     -t "$registry"/dmsg-discovery:"$image_tag" .
 
   echo "build dmsg server image"
@@ -72,6 +78,7 @@ if [[ "$image_tag" == "e2e" ]]; then
     --build-arg base_image="skycoin/dmsg-server:$dockerhub_image_tag" \
     --build-arg build_opts="$go_buildopts" \
     --build-arg image_tag="$image_tag" \
+    $platform \
     -t "$registry"/dmsg-server:"$image_tag" .
 
   echo "build service discovery image"
@@ -81,13 +88,6 @@ if [[ "$image_tag" == "e2e" ]]; then
     --build-arg image_tag="$image_tag" \
     $platform \
     -t "$registry"/service-discovery:"$image_tag" .
-  
-  echo "building uptime tracker image"
-  DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/uptime-tracker/Dockerfile \
-  --build-arg base_image="$base_image" \
-  --build-arg build_opts="$go_buildopts" \
-  --build-arg image_tag="$image_tag" \
-  -t "$registry"/uptime-tracker:"$image_tag" .
 
   rm -rf ./tmp/skycoin-service-discovery
 fi
@@ -97,26 +97,27 @@ if [[ "$image_tag" == "integration" ]]; then
   rm -rf ./tmp/skycoin-service-discovery
   rm -rf ./tmp/dmsg
   rm -rf ./tmp/skywire
-  rm -rf ./tmp/skywire-ut
   cp -r ../skycoin-service-discovery ./tmp
   cp -r ../dmsg ./tmp
   cp -r ../skywire ./tmp
-  cp -r ../skywire-ut ./tmp
 
   echo ====================================================
   echo "BUILDING SKYWIRE VISOR"
 
   DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/skywire-visor/DockerfileInt \
+    $platform \
     -t "$registry"/skywire-visor:"$image_tag" .
 
   echo ============ Base images ready ======================
 
   echo "build dmsg discovery image"
   DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/dmsg-discovery/DockerfileInt \
+    $platform \
     -t "$registry"/dmsg-discovery:"$image_tag" .
 
   echo "build dmsg server image"
   DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/dmsg-server/DockerfileInt \
+    $platform \
     -t "$registry"/dmsg-server:"$image_tag" .
 
   echo "build service discovery image"
@@ -124,14 +125,8 @@ if [[ "$image_tag" == "integration" ]]; then
     --build-arg base_image="$base_image" \
     --build-arg build_opts="$go_buildopts" \
     --build-arg image_tag="$image_tag" \
+    $platform \
     -t "$registry"/service-discovery:"$image_tag" .
-  
-  echo "building uptime tracker image"
-  DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/uptime-tracker/Dockerfile \
-  --build-arg base_image="$base_image" \
-  --build-arg build_opts="$go_buildopts" \
-  --build-arg image_tag="$image_tag" \
-  -t "$registry"/uptime-tracker:"$image_tag" .
 
   rm -rf ./tmp/*
 fi
@@ -176,7 +171,6 @@ DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/uptime-tracker/Dockerfil
   $platform \
   -t "$registry"/uptime-tracker:"$image_tag" .
 
-
 echo "build node visualizer image"
 DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/node-visualizer/Dockerfile \
   --build-arg base_image="$base_image" \
@@ -192,14 +186,6 @@ DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/network-monitor/Dockerfi
   --build-arg image_tag="$image_tag" \
   $platform \
   -t "$registry"/network-monitor:"$image_tag" .
-
-echo "building liveness checker image"
-DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/liveness-checker/Dockerfile \
-  --build-arg base_image="$base_image" \
-  --build-arg build_opts="$go_buildopts" \
-  --build-arg image_tag="$image_tag" \
-  $platform \
-  -t "$registry"/liveness-checker:"$image_tag" .
 
 echo "building config bootstrapper image"
 DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/config-bootstrapper/Dockerfile \
