@@ -1,9 +1,7 @@
-FROM golang:1.21-alpine AS builder
+FROM golang:1.23-alpine AS builder
 ARG CGO_ENABLED=0
 
 ENV CGO_ENABLED=${CGO_ENABLED} \
-	GOOS=linux  \
-	GOARCH=amd64 \
 	GO111MODULE=on
 
 COPY /tmp/dmsg /dmsg

@@ -45,7 +45,6 @@ export REGISTRY=${DOCKER_REGISTRY}
 ## : ## _ [Prepare code]
 
 dep: ## Sorts dependencies
-	@command -v yarn >/dev/null 2>&1 && yarn --cwd ./pkg/node-visualizer/web install || true
 #	GO111MODULE=on GOPRIVATE=github.com/skycoin/* go get -v github.com/skycoin/skywire@master
 #	GO111MODULE=on GOPRIVATE=github.com/skycoin/* go mod vendor -v
 
@@ -57,11 +56,6 @@ format: dep ## Formats the code. Must have goimports and goimports-reviser insta
 
 build: dep ## Build binaries
 	${OPTS} go build ${BUILD_OPTS} -o ./bin/skywire-services ./cmd/skywire-services
-
-	# yarn --cwd ./pkg/node-visualizer/web build
-	# rm -rf ./pkg/node-visualizer/api/build/static
-	# mv ./pkg/node-visualizer/web/build/* ./pkg/node-visualizer/api/build
-	# ${OPTS} go build ${BUILD_OPTS} -o ./bin/node-visualizer ./cmd/node-visualizer
 
 build-deploy: ## Build for deployment Docker images
 	${DOCKER_OPTS} go build ${BUILD_OPTS_DEPLOY} -mod=vendor -o ./release/skywire-services ./cmd/skywire-services
@@ -174,7 +168,7 @@ check-help: ## Cursory check of the help menus
 ## : ## _ [E2E tests suite]
 
 e2e-build: set-forwarding ## E2E. Build dockers and containers for e2e-tests
-	./docker/docker_build.sh e2e ${BUILD_OPTS_DEPLOY}
+	./docker/docker_build.sh e2e ${BUILD_OPTS_DEPLOY} $(BUILD_ARCH)
 
 e2e-run: ## E2E. Start e2e environment
 	bash -c "DOCKER_TAG=e2e docker compose up -d"
@@ -231,7 +225,7 @@ reset-forwarding:
 ## : ## _ [Interactive integration tests]
 
 integration-env-build: set-forwarding #build
-	./docker/docker_build.sh integration ${BUILD_OPTS_DEPLOY}
+	./docker/docker_build.sh integration ${BUILD_OPTS_DEPLOY} $(BUILD_ARCH)
 	bash -c "DOCKER_TAG=integration docker compose up -d"
 
 integration-env-start: set-forwarding #start

@@ -2,49 +2,53 @@
 package api
 
 import (
-	"context"
-	"embed"
-	"errors"
+	"encoding/json"
+	"fmt"
 	"io"
-	"io/fs"
 	"net/http"
-	"os"
-	"path/filepath"
-	"strings"
+	"sync"
 	"time"
 
-	"github.com/dgraph-io/badger/v3"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	json "github.com/json-iterator/go"
 	"github.com/rs/cors"
 	"github.com/sirupsen/logrus"
 	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo"
 	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/httputil"
 	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/logging"
-	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/metricsutil"
-	"github.com/skycoin/skywire/pkg/transport"
-
-	"github.com/skycoin/skywire-services/internal/tpdiscmetrics"
 )
-
-//go:embed build/*
-var frontendFS embed.FS
 
 // API register all the API endpoints.
 // It implements a net/http.Handler.
 type API struct {
 	http.Handler
-	metrics                     tpdiscmetrics.Metrics
-	reqsInFlightCountMiddleware *metricsutil.RequestsInFlightCountMiddleware
-	startedAt                   time.Time
-	cache                       *badger.DB
-	uptimeTrackerURL            string
-	tpdiscURL                   string
+	startedAt time.Time
 }
 
 func (a *API) log(r *http.Request) logrus.FieldLogger {
 	return httputil.GetLogger(r)
+}
+
+// BackgroundTask fetch node and edges each 30 seconds
+func (a *API) BackgroundTask(utURL, tpdURL string) {
+	// Fetch data initially
+	for {
+		if err := fetchEdges(tpdURL); err != nil {
+			fmt.Printf("Error fetching edges: %v\n", err)
+			return
+		}
+		time.Sleep(5 * time.Second)
+		if err := fetchNodes(utURL); err != nil {
+			fmt.Printf("Error fetching nodes: %v\n", err)
+			return
+		}
+		time.Sleep(30 * time.Second)
+	}
+}
+
+func (a *API) htmlHandler(w http.ResponseWriter, _ *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+	fmt.Fprint(w, htmlContent) //nolint: errcheck
 }
 
 // HealthCheckResponse is struct of /health endpoint
@@ -54,217 +58,253 @@ type HealthCheckResponse struct {
 }
 
 // New constructs a new API instance.
-func New(log logrus.FieldLogger, enableMetrics bool, m tpdiscmetrics.Metrics) *API {
+func New(log logrus.FieldLogger) *API {
 	if log == nil {
-		log = logging.MustGetLogger("tp_disc")
-	}
-
-	uptimeURL := os.Getenv("UT_URL")
-	if uptimeURL == "" {
-		uptimeURL = utURL
-	}
-
-	tpdiscURL := os.Getenv("TPD_URL")
-	if tpdiscURL == "" {
-		tpdiscURL = tpdURL
-	}
-
-	dbPath := filepath.Join(os.TempDir(), "db")
-	db, err := badger.Open(badger.DefaultOptions(dbPath))
-	if err != nil {
-		log.Fatalf("unable to create file db at %s: %v", dbPath, err)
+		log = logging.MustGetLogger("node_visulaizer")
 	}
 
 	api := &API{
-		metrics:                     m,
-		reqsInFlightCountMiddleware: metricsutil.NewRequestsInFlightCountMiddleware(),
-		cache:                       db,
-		startedAt:                   time.Now(),
-		uptimeTrackerURL:            uptimeURL,
-		tpdiscURL:                   tpdiscURL,
-	}
-	c, err := api.pollUptimeTransport()
-	if err != nil {
-		log.Fatalf("unable to fetch initial ut and tpd visor map: %v", err)
-	}
-	err = api.AddToCache(c)
-	if err != nil {
-		log.Fatalf("unable to add to cache: %v", err)
+		startedAt: time.Now(),
 	}
 
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	if enableMetrics {
-		r.Use(api.reqsInFlightCountMiddleware.Handle)
-		r.Use(metricsutil.RequestDurationMiddleware)
-	}
 	r.Use(httputil.SetLoggerMiddleware(log))
 	r.Use(cors.AllowAll().Handler)
 
-	// Create a route along /files that will serve contents from
-	// the ./build/ folder.
-	fsys, err := fs.Sub(frontendFS, "build")
-	filesDir := http.FS(fsys)
-	if err != nil {
-		log.Fatalf("error getting build dir: %v", err)
-	}
-	log.Infof("serving static directory in: %s", filesDir)
-	api.FileServer(r, "/", filesDir)
-
-	r.Get("/map", api.handleGetGraph)
+	r.Get("/health", api.health)
+	r.Get("/tpd-graph", graphHandler)
+	r.Get("/", api.htmlHandler)
 
 	api.Handler = r
 
 	return api
 }
 
-const (
-	// this should be internal endpoint to /visor-ips, the endpoint is not public.
-	// so use k8s / docker-compose host.
-	utURL  = `http://uptime-tracker/visor-ips`
-	tpdURL = `http://tpd.skywire.dev/all-transports`
-)
-
-type visorIPsResponse struct {
-	Count      int      `json:"count"`
-	PublicKeys []string `json:"public_keys"`
+// TransportData represents the data structure for a transport node.
+type TransportData struct {
+	TID   string   `json:"t_id"`
+	Edges []string `json:"edges"`
+	Type  string   `json:"type"`
+	Label string   `json:"label"`
 }
 
-// PollResult is the return value of uptime tracker and tpd API
-type PollResult struct {
-	Nodes map[string]visorIPsResponse `json:"nodes"`
-	Edges []*transport.Entry          `json:"edges"`
+// UTData represents the data structure for a uptime tracker data.
+type UTData struct {
+	Key string `json:"key"`
 }
 
-// pollUptimeTransport polls tpd and uptime transport for geolocation data
-func (a *API) pollUptimeTransport() (*PollResult, error) {
-	hc := http.Client{Timeout: 30 * time.Second}
+var graphData []TransportData
+var utData []UTData
+var mu sync.Mutex
 
-	utReq, err := http.NewRequest(http.MethodGet, a.uptimeTrackerURL, nil)
+// fetchEdges fetches data from an external API
+func fetchEdges(tpdURL string) error {
+	resp, err := http.Get(tpdURL) //nolint: gosec
 	if err != nil {
-		return nil, err
+		return err
 	}
-	tpReq, err := http.NewRequest(http.MethodGet, a.tpdiscURL, nil)
+	defer resp.Body.Close() //nolint: errcheck
+
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	utresp, err := hc.Do(utReq)
+
+	var data []TransportData
+	if err := json.Unmarshal(body, &data); err != nil {
+		return err
+	}
+
+	// Update global graph data
+	mu.Lock()
+	graphData = data
+	mu.Unlock()
+
+	return nil
+}
+
+// fetchNodes fetches data from uptime tracker
+func fetchNodes(utURL string) error {
+	resp, err := http.Get(utURL) //nolint: gosec
 	if err != nil {
-		return nil, err
+		return err
 	}
-	tpresp, err := hc.Do(tpReq)
+	defer resp.Body.Close() //nolint: errcheck
+
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	defer func() {
-		_ = utresp.Body.Close() //nolint:errcheck
-		_ = tpresp.Body.Close() //nolint:errcheck
-	}()
-	u, err := io.ReadAll(utresp.Body)
-	if err != nil {
-		return nil, err
+
+	var data []UTData
+	if err := json.Unmarshal(body, &data); err != nil {
+		return err
 	}
-	t, err := io.ReadAll(tpresp.Body)
-	if err != nil {
-		return nil, err
+
+	// Update global graph data
+	mu.Lock()
+	utData = data
+	mu.Unlock()
+
+	return nil
+}
+
+// createGraph creates a graph from the transport data
+func createGraph() ([]map[string]interface{}, error) {
+	mu.Lock()
+	defer mu.Unlock()
+
+	var nodes []map[string]interface{}
+	var edges []map[string]interface{}
+	nodeMap := make(map[string]int64)
+	nodeID := int64(0)
+
+	// Create nodes and edges from graph data and ut data
+	for _, item := range graphData {
+		edgeA := item.Edges[0]
+		edgeB := item.Edges[1]
+		_, exist := nodeMap[edgeA]
+		if !exist {
+			nodeMap[edgeA] = nodeID
+			nodeID++
+			nodes = append(nodes, map[string]interface{}{
+				"id":    edgeA,
+				"label": "",
+			})
+		}
+		_, exist = nodeMap[edgeB]
+		if !exist {
+			nodeMap[edgeB] = nodeID
+			nodeID++
+			nodes = append(nodes, map[string]interface{}{
+				"id":    edgeB,
+				"label": "",
+			})
+		}
+
+		edges = append(edges, map[string]interface{}{
+			"from": edgeA,
+			"to":   edgeB,
+		})
 	}
-	var utResp map[string]visorIPsResponse
-	var tpResp []*transport.Entry
-	if err = json.Unmarshal(u, &utResp); err != nil {
-		return nil, errors.New("error unmarshal uptime-tracker response")
+
+	for _, utItem := range utData {
+		_, exist := nodeMap[utItem.Key]
+		if !exist {
+			nodeMap[utItem.Key] = nodeID
+			nodeID++
+			nodes = append(nodes, map[string]interface{}{
+				"id":    utItem.Key,
+				"label": "",
+			})
+		}
 	}
-	if err = json.Unmarshal(t, &tpResp); err != nil {
-		return nil, errors.New("error unmarshal transport-discovery response")
-	}
-	return &PollResult{
-		Nodes: utResp,
-		Edges: tpResp,
+
+	// Return nodes and edges as a slice of maps
+	return []map[string]interface{}{
+		{"nodes": nodes},
+		{"edges": edges},
 	}, nil
 }
 
-func (a *API) handleGetGraph(w http.ResponseWriter, r *http.Request) {
-	res, err := a.GetCache()
+// graphHandler serves the graph data as JSON for frontend visualization
+func graphHandler(w http.ResponseWriter, r *http.Request) {
+	// Set CORS headers
+	w.Header().Set("Access-Control-Allow-Origin", "*") // Allow all origins (you can specify a specific domain)
+	w.Header().Set("Access-Control-Allow-Methods", "GET")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
+
+	// Handle OPTIONS request for preflight (CORS)
+	if r.Method == http.MethodOptions {
+		return
+	}
+
+	// Create the graph
+	graph, err := createGraph()
 	if err != nil {
-		a.renderError(w, r, err)
+		http.Error(w, fmt.Sprintf("Failed to create graph: %v", err), http.StatusInternalServerError)
 		return
 	}
+
+	// Serve the graph data as JSON
 	w.Header().Set("Content-Type", "application/json")
-	if err = json.NewEncoder(w).Encode(res); err != nil {
-		a.renderError(w, r, err)
-		return
+	if err := json.NewEncoder(w).Encode(graph); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to encode JSON: %v", err), http.StatusInternalServerError)
 	}
 }
 
-// RunBackgroundTasks runs cache update every sets time interval
-func (a *API) RunBackgroundTasks(ctx context.Context, logger logrus.FieldLogger) {
-	cacheTicker := time.NewTicker(time.Minute * 10)
-	defer cacheTicker.Stop()
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case <-cacheTicker.C:
-			p, err := a.pollUptimeTransport()
-			if err != nil {
-				logger.WithError(err).Warn("unable to poll uptime-tracker and tpd")
-			}
-			err = a.AddToCache(p)
-			if err != nil {
-				logger.WithError(err).Warn("unable to poll UT and TPD")
-			}
-		}
-	}
-}
-
-func (a *API) renderError(w http.ResponseWriter, r *http.Request, err error) {
-	var status int
-
-	if err == context.DeadlineExceeded {
-		status = http.StatusRequestTimeout
-	}
-
-	// we fallback to 500
-	if status == 0 {
-		status = http.StatusInternalServerError
-	}
-
-	if status != http.StatusNotFound {
-		a.log(r).Warnf("%d: %s", status, err)
-	}
-
-	w.WriteHeader(status)
-	w.Header().Set("Content-Type", "application/json")
-	if err = json.NewEncoder(w).Encode(&Error{Error: err.Error()}); err != nil {
-		a.log(r).WithError(err).Warn("Failed to encode error")
-	}
-}
-
-// FileServer conveniently sets up a http.FileServer handler to serve
-// static files from a http.FileSystem.
-func (a *API) FileServer(r chi.Router, path string, root http.FileSystem) {
-	if strings.ContainsAny(path, "{}*") {
-		return
-	}
-
-	if path != "/" && path[len(path)-1] != '/' {
-		r.Get(path, http.RedirectHandler(path+"/", http.StatusMovedPermanently).ServeHTTP)
-		path += "/"
-	}
-	path += "*"
-
-	r.Get(path, func(w http.ResponseWriter, r *http.Request) {
-		rctx := chi.RouteContext(r.Context())
-		pathPrefix := strings.TrimSuffix(rctx.RoutePattern(), "/*")
-		f := http.StripPrefix(pathPrefix, http.FileServer(root))
-		f.ServeHTTP(w, r)
+func (a *API) health(w http.ResponseWriter, r *http.Request) {
+	info := buildinfo.Get()
+	a.writeJSON(w, r, http.StatusOK, HealthCheckResponse{
+		BuildInfo: info,
+		StartedAt: a.startedAt,
 	})
+}
+
+// writeJSON writes a json object on a http.ResponseWriter with the given code
+func (a *API) writeJSON(w http.ResponseWriter, r *http.Request, code int, object interface{}) {
+	jsonObject, err := json.Marshal(object)
+	if err != nil {
+		a.log(r).WithError(err).Errorf("failed to encode json response")
+		w.WriteHeader(http.StatusInternalServerError)
+
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+
+	_, err = w.Write(jsonObject)
+	if err != nil {
+		a.log(r).WithError(err).Errorf("failed to write json response")
+	}
 }
 
 // Error is the object returned to the client when there's an error.
 type Error struct {
 	Error string `json:"error"`
 }
+
+const htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Node Visualizer</title>
+    <style>
+        #graph-container {
+            width: 100%;
+            height: 600px;
+            border: 1px solid lightgray;
+        }
+    </style>
+    <script type="text/javascript" src="https://unpkg.com/vis-network@9.0.0/dist/vis-network.min.js"></script>
+</head>
+<body>
+    Node Visualizer
+    <div id="graph-container"></div>
+    
+    <script type="text/javascript">
+        // Fetch the graph data from the Go server
+        fetch('/tpd-graph')
+            .then(response => response.json())
+            .then(data => {
+                // Extract nodes and edges
+                const nodes = new vis.DataSet(data[0].nodes);
+                const edges = new vis.DataSet(data[1].edges);
+
+                // Create a network visualization
+                const container = document.getElementById('graph-container');
+                const network = new vis.Network(container, { nodes: nodes, edges: edges }, {layout: { improvedLayout: false }});
+                
+            })
+            .catch(error => console.error('Error fetching graph data:', error));
+    </script>
+</body>
+</html>
+`

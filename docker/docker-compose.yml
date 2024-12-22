@@ -1,5 +1,3 @@
-version: "3.7"
-
 networks:
   srv:
     driver: "bridge"
@@ -348,27 +346,24 @@ services:
     stdin_open: true # docker run -i
     tty: true        # docker run -t
 
-  # node-visualizer:
-  #   image: "${REGISTRY}/node-visualizer:${DOCKER_TAG}"
-  #   hostname: node-visualizer
-  #   container_name: "node-visualizer"
-  #   networks:
-  #     srv:
-  #       ipv4_address: 175.0.0.16
-  #     intra:
-  #       ipv4_address: 174.0.0.16
-  #   ports:
-  #     - "9089:9089"
-  #   entrypoint: "/release/node-visualizer"
-  #   depends_on:
-  #     - transport-discovery
-  #     - uptime-tracker
-  #     - visor-a
-  #     - visor-b
-  #     - visor-c
-  #   environment:
-  #     - UT_URL=http://uptime-tracker:9096/visor-ips
-  #     - TPD_URL=http://transport-discovery:9091/all-transports
+  node-visualizer:
+    image: "${REGISTRY}/node-visualizer:${DOCKER_TAG}"
+    hostname: node-visualizer
+    container_name: "node-visualizer"
+    networks:
+      srv:
+        ipv4_address: 175.0.0.17
+      intra:
+        ipv4_address: 174.0.0.17
+    ports:
+      - "9089:9089"
+    entrypoint: "/release/node-visualizer --ut-url http://uptime-tracker:9096 --tpd-url  http://transport-discovery:9091"
+    depends_on:
+      - transport-discovery
+      - uptime-tracker
+      - visor-a
+      - visor-b
+      - visor-c
 
   # skywire visors, which by being on a different network are to be isolated from the first one
 
