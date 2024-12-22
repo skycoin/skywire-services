@@ -275,7 +275,7 @@ const htmlContent = `
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Skywire Network</title>
+    <title>Node Visualizer</title>
     <style>
         #graph-container {
             width: 100%;
@@ -286,7 +286,7 @@ const htmlContent = `
     <script type="text/javascript" src="https://unpkg.com/vis-network@9.0.0/dist/vis-network.min.js"></script>
 </head>
 <body>
-    Skywire Network (a.k.a. Node Visualizer)
+    Node Visualizer
     <div id="graph-container"></div>
     
     <script type="text/javascript">
