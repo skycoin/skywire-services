@@ -28,7 +28,7 @@ var (
 )
 
 func init() {
-	RootCmd.Flags().StringVarP(&addr, "addr", "a", ":9081", "address to bind to\033[0m")
+	RootCmd.Flags().StringVarP(&addr, "addr", "a", ":9089", "address to bind to\033[0m")
 	RootCmd.Flags().BoolVarP(&logEnabled, "log", "l", true, "enable request logging\033[0m")
 	RootCmd.Flags().StringVar(&tag, "tag", "node-visualizer", "logging tag\033[0m")
 	RootCmd.Flags().StringVar(&utURL, "ut-url", "https://ut.skywire.skycoin.com/uptimes?status=on", "url of uptime tracker endpoint\033[0m")
