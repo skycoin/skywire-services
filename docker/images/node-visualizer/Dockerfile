@@ -4,8 +4,7 @@ ARG base_image
 FROM ${base_image} AS builder
 ARG build_opts
 
-# COPY . /skywire-services
-COPY --from=react-builder ./app/ /skywire-services/
+COPY . /skywire-services
 WORKDIR /skywire-services
 
 RUN go build "${build_opts}" -o /release/node-visualizer ./cmd/node-visualizer
