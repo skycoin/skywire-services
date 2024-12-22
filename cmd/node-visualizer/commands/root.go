@@ -14,27 +14,25 @@ import (
 	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo"
 	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/cmdutil"
 	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/logging"
-	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/metricsutil"
 	"github.com/spf13/cobra"
 
-	"github.com/skycoin/skywire-services/internal/tpdiscmetrics"
 	"github.com/skycoin/skywire-services/pkg/node-visualizer/api"
 )
 
 var (
-	addr        string
-	metricsAddr string
-	logEnabled  bool
-	tag         string
-	testing     bool
+	addr       string
+	logEnabled bool
+	tag        string
+	utURL      string
+	tpdURL     string
 )
 
 func init() {
 	RootCmd.Flags().StringVarP(&addr, "addr", "a", ":9081", "address to bind to\033[0m")
-	RootCmd.Flags().StringVarP(&metricsAddr, "metrics", "m", "", "address to bind metrics API to\033[0m")
 	RootCmd.Flags().BoolVarP(&logEnabled, "log", "l", true, "enable request logging\033[0m")
 	RootCmd.Flags().StringVar(&tag, "tag", "node-visualizer", "logging tag\033[0m")
-	RootCmd.Flags().BoolVarP(&testing, "testing", "t", false, "enable testing to start without redis\033[0m")
+	RootCmd.Flags().StringVar(&utURL, "ut-url", "https://ut.skywire.skycoin.com/uptimes?status=on", "url of uptime tracker endpoint\033[0m")
+	RootCmd.Flags().StringVar(&tpdURL, "tpd-url", "https://tpd.skywire.skycoin.com/all-transports", "url of transport discovery endpoint\033[0m")
 }
 
 // RootCmd contains the root command
@@ -60,22 +58,14 @@ var RootCmd = &cobra.Command{
 		const loggerTag = "node_visualizer"
 		logger := logging.MustGetLogger(loggerTag)
 
-		metricsutil.ServeHTTPMetrics(logger, metricsAddr)
-
-		var m tpdiscmetrics.Metrics
-		if metricsAddr == "" {
-			m = tpdiscmetrics.NewEmpty()
-		} else {
-			m = tpdiscmetrics.NewVictoriaMetrics()
-		}
-
-		enableMetrics := metricsAddr != ""
-		nvAPI := api.New(logger, enableMetrics, m)
+		nvAPI := api.New(logger)
 
 		logger.Infof("Listening on %s", addr)
 		ctx, cancel := cmdutil.SignalContext(context.Background(), logger)
 		defer cancel()
-		go nvAPI.RunBackgroundTasks(ctx, logger)
+
+		go nvAPI.BackgroundTask(utURL, tpdURL)
+
 		go func() {
 			srv := &http.Server{
 				Addr:              addr,
