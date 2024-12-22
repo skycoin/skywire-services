@@ -21,7 +21,7 @@ declare -a images_arr=(
   "address-resolver"
   "uptime-tracker"
   "network-monitor"
-  # "node-visualizer"
+  "node-visualizer"
   "config-bootstrapper"
   "liveness-checker"
   "vpn-monitor"
