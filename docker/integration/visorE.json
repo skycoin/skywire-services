@@ -1,7 +1,7 @@
 {
 	"version": "v1.3.18",
-	"sk": "0e17cd505d81f998950e22864ae4692249124441bd9148b801f76f1595ac688f",
-	"pk": "031b80cd5773143a39d940dc0710b93dcccc262a85108018a7a95ab9af734f8055",
+	"sk": "6ab4d9664f87202ab114508a09c6f3c519079123751069a85aa0a143427e8376",
+	"pk": "039c91ea378e022215a3673da4da03a22dd9a4b0a42a6aaf3a34ef488fd1be9bef",
 	"dmsg": {
 		"discovery": "http://dmsg-discovery:9090",
 		"sessions_count": 1,
@@ -20,7 +20,7 @@
 	"transport": {
 		"discovery": "http://transport-discovery:9091",
 		"address_resolver": "http://address-resolver:9093",
-		"public_autoconnect": true,
+		"public_autoconnect": false,
 		"transport_setup_nodes": [
 			"0277dda8a284d43b4d5ee2a4152771e76131e9437c47be5d8e835aafe02c45a9ae"
 		],
@@ -45,57 +45,7 @@
 	},
 	"launcher": {
 		"service_discovery": "http://service-discovery:9098",
-		"apps": [
-			{
-				"name": "vpn-client",
-				"binary": "skywire",
-				"args": [
-					"app",
-					"vpn-client",
-					"--srv",
-					"024ec47420176680816e0406250e7156465e4531f5b26057c9f6297bb0303558c7",
-					"--killswitch=false"
-				],
-				"auto_start": false,
-				"port": 43
-			},
-			{
-				"name": "skychat",
-				"binary": "skywire",
-				"args": [
-					"app",
-					"skychat",
-					"--addr",
-					"*:8001"
-				],
-				"auto_start": true,
-				"port": 1
-			},
-			{
-				"name": "skysocks-client",
-				"binary": "skywire",
-				"args": [
-					"app",
-					"skysocks-client",
-					"--srv",
-					"024ec47420176680816e0406250e7156465e4531f5b26057c9f6297bb0303558c7",
-					"--addr",
-					":1080"
-				],
-				"auto_start": true,
-				"port": 13
-			},
-			{
-				"name": "vpn-server",
-				"binary": "skywire",
-				"args": [
-					"app",
-					"vpn-server"
-				],
-				"auto_start": false,
-				"port": 44
-			}
-		],
+		"apps": [],
 		"server_addr": ":5507",
 		"bin_path": "./release",
 		"display_node_ip": false
@@ -111,6 +61,6 @@
 	"stun_servers": null,
 	"shutdown_timeout": "30s",
 	"restart_check_delay": "1s",
-	"is_public": false,
+	"is_public": true,
 	"persistent_transports": null
 }
