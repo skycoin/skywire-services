@@ -89,8 +89,9 @@ func (api *API) getTransportByEdge(w http.ResponseWriter, r *http.Request) {
 }
 
 func (api *API) getAllTransports(w http.ResponseWriter, r *http.Request) {
-	selfTransportsParam := chi.URLParam(r, "selfTransports")
 	selfTransports := true
+	query := r.URL.Query()
+	selfTransportsParam := query.Get("selfTransports")
 	if selfTransportsParam == "hide" {
 		selfTransports = false
 	}
