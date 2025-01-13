@@ -357,7 +357,7 @@ services:
         ipv4_address: 174.0.0.17
     ports:
       - "9089:9089"
-    entrypoint: "/release/node-visualizer --ut-url http://uptime-tracker:9096/uptimes?status=on --tpd-url  http://transport-discovery:9091/all-transports"
+    entrypoint: "/release/node-visualizer --ut-url http://uptime-tracker:9096/uptimes?status=on --tpd-url  http://transport-discovery:9091/all-transports?selfTransports=hide"
     depends_on:
       - transport-discovery
       - uptime-tracker
