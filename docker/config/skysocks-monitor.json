@@ -5,7 +5,8 @@
 	"dmsg": {
 		"discovery": "http://dmsg-discovery:9090",
 		"sessions_count": 1,
-		"servers": []
+		"servers": [],
+		"servers_type": "all"
 	},
 	"transport": {
 		"discovery": "http://transport-discovery:9091",
