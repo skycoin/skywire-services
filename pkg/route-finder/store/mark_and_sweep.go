@@ -44,6 +44,7 @@ type Graph struct {
 	visited map[cipher.PubKey]*vertex
 	graph   map[cipher.PubKey]*vertex
 	dist    map[*vertex]int
+	hops    map[*vertex]int
 	prev    map[*vertex]*vertex
 }
 

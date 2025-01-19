@@ -98,6 +98,14 @@ if [[ "$image_tag" == "integration" ]]; then
   cp -r ../dmsg ./tmp
   cp -r ../skywire ./tmp
 
+  echo "build route finder image"
+  DOCKER_BUILDKIT="$bldkit" docker build -f docker/images/route-finder/Dockerfile \
+  --build-arg base_image="$base_image" \
+  --build-arg build_opts="$go_buildopts" \
+  --build-arg image_tag="$image_tag" \
+  $platform \
+  -t "$registry"/route-finder:"$image_tag" .
+  exit 0
   echo ====================================================
   echo "BUILDING SKYWIRE VISOR"
 

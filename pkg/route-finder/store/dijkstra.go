@@ -5,6 +5,7 @@ import (
 	"container/heap"
 	"context"
 	"errors"
+	"fmt"
 	"sort"
 
 	"github.com/skycoin/skywire/pkg/routing"
@@ -36,6 +37,15 @@ func (g *Graph) Shortest(ctx context.Context, source, destination cipher.PubKey,
 	if !ok {
 		return nil, ErrNoRoute
 	}
+	fmt.Println("---------------- test start ----------------")
+	path, _ := g.routes2(sourceVertex, destinationVertex, minLen, maxLen, number)
+	for o, l := range path {
+		fmt.Printf("========= path no. %d =========\n", o)
+		for _, s := range l {
+			fmt.Println(s.edge.Hex())
+		}
+	}
+	fmt.Println("---------------- test end ----------------")
 
 	previousNodes, err := g.dijkstra(ctx, sourceVertex, destinationVertex)
 	if err != nil {
@@ -162,4 +172,63 @@ func reverseRoute(r routing.Route) routing.Route {
 	}
 
 	return r
+}
+
+func (g *Graph) routes2(source, destination *vertex, minLen, maxLen, number int) ([][]*vertex, error) {
+	// BFS queue element: stores the current node and the path taken so far
+	type queueElement struct {
+		node *vertex
+		path []*vertex
+	}
+
+	// routes := make([]routing.Route, 0)
+
+	// Initialize BFS queue with the start node
+	queue := []queueElement{{source, []*vertex{source}}}
+	// Visited nodes to avoid cycles (for each path)
+	visited := make(map[*vertex]bool)
+	visited[source] = true
+	// Store valid paths
+	validPaths := [][]*vertex{}
+
+	for len(queue) > 0 && len(validPaths) < number {
+		// Dequeue the first element
+		current := queue[0]
+		queue = queue[1:]
+
+		// If the current path exceeds maxHops, skip this path
+		if len(current.path)-1 > maxLen {
+			continue
+		}
+
+		// If we reached the target and the path satisfies minHops, add it to validPaths
+		if current.node == destination && len(current.path)-1 >= minLen {
+			validPaths = append(validPaths, current.path)
+		}
+
+		// Explore all neighbors
+		for _, neighbor := range g.graph {
+			if current.node.edge.Hex() == neighbor.edge.Hex() {
+				continue
+			}
+			if !visited[neighbor] {
+				// Mark the neighbor as visited for this path
+				visited[neighbor] = true
+				// Create a new path by appending the neighbor
+				newPath := append([]*vertex{}, current.path...)
+				newPath = append(newPath, neighbor)
+				// Enqueue the neighbor and its path
+				queue = append(queue, queueElement{neighbor, newPath})
+				// Backtrack: unmark the neighbor as visited for other paths
+				visited[neighbor] = false
+			}
+		}
+	}
+
+	// If no paths are found within the constraints
+	if len(validPaths) == 0 {
+		return nil, fmt.Errorf("no paths found from %s to %s with at least %d hops and at most %d hops", source.edge.Hex(), destination.edge.Hex(), minLen, maxLen)
+	}
+
+	return validPaths, nil
 }

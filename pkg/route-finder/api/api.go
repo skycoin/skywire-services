@@ -21,7 +21,7 @@ import (
 	"github.com/skycoin/skywire-services/pkg/transport-discovery/store"
 )
 
-const maxNumberOfRoutes = 5
+const maxNumberOfRoutes = 3
 
 // API represents the api of the route-finder service.
 type API struct {
