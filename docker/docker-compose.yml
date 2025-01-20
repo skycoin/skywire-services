@@ -571,6 +571,78 @@ services:
       - visor-g
     restart: always
     entrypoint: /release/skywire visor -c /opt/skywire/skywire-visor.json
+  
+  visor-i:
+    privileged: true
+    image: "${REGISTRY}/skywire-visor:${DOCKER_TAG}"
+    container_name: "visor-i"
+    hostname: visor-i
+    cap_add:
+      - ALL
+    networks:
+      visors:
+        ipv4_address: 173.0.0.119
+      intra:
+        ipv4_address: 174.0.0.119
+    volumes:
+      - type: bind
+        source: ../docker/integration/visorI.json
+        target: /opt/skywire/skywire-visor.json
+        read_only: false
+    ports:
+      - "3443:3435"
+    depends_on:
+      - visor-h
+    restart: always
+    entrypoint: /release/skywire visor -c /opt/skywire/skywire-visor.json
+
+  visor-j:
+    privileged: true
+    image: "${REGISTRY}/skywire-visor:${DOCKER_TAG}"
+    container_name: "visor-j"
+    hostname: visor-j
+    cap_add:
+      - ALL
+    networks:
+      visors:
+        ipv4_address: 173.0.0.120
+      intra:
+        ipv4_address: 174.0.0.120
+    volumes:
+      - type: bind
+        source: ../docker/integration/visorJ.json
+        target: /opt/skywire/skywire-visor.json
+        read_only: false
+    ports:
+      - "3444:3435"
+    depends_on:
+      - visor-i
+    restart: always
+    entrypoint: /release/skywire visor -c /opt/skywire/skywire-visor.json
+
+  visor-k:
+    privileged: true
+    image: "${REGISTRY}/skywire-visor:${DOCKER_TAG}"
+    container_name: "visor-k"
+    hostname: visor-k
+    cap_add:
+      - ALL
+    networks:
+      visors:
+        ipv4_address: 173.0.0.121
+      intra:
+        ipv4_address: 174.0.0.121
+    volumes:
+      - type: bind
+        source: ../docker/integration/visorK.json
+        target: /opt/skywire/skywire-visor.json
+        read_only: false
+    ports:
+      - "3445:3435"
+    depends_on:
+      - visor-j
+    restart: always
+    entrypoint: /release/skywire visor -c /opt/skywire/skywire-visor.json
 
   network-monitor:
     image: "${REGISTRY}/network-monitor:${DOCKER_TAG}"
