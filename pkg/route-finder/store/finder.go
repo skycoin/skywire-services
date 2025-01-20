@@ -1,4 +1,4 @@
-// Package store pkg/route-finder/store/dijkstra.go
+// Package store pkg/route-finder/store/finder.go
 package store
 
 import (
