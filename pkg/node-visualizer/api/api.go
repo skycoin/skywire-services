@@ -309,7 +309,7 @@ const htmlContent = `
     
     <script type="text/javascript">
         // Fetch the graph data from the Go server
-        fetch('/tpd-graph?debug=true')
+        fetch('/tpd-graph')
             .then(response => response.json())
             .then(data => {
                 // Extract nodes and edges
