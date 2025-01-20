@@ -205,7 +205,6 @@ func (g *Graph) routes2(source, destination *vertex, minLen, maxLen, number int)
 		if current.node == destination && len(current.path)-1 >= minLen {
 			validPaths = append(validPaths, current.path)
 		}
-
 		// Explore all neighbors
 		for _, neighbor := range g.graph {
 			if current.node.edge.Hex() == neighbor.edge.Hex() {
@@ -216,9 +215,11 @@ func (g *Graph) routes2(source, destination *vertex, minLen, maxLen, number int)
 				visited[neighbor] = true
 				// Create a new path by appending the neighbor
 				newPath := append([]*vertex{}, current.path...)
-				newPath = append(newPath, neighbor)
-				// Enqueue the neighbor and its path
-				queue = append(queue, queueElement{neighbor, newPath})
+				if !contains(newPath, neighbor) {
+					newPath = append(newPath, neighbor)
+					// Enqueue the neighbor and its path
+					queue = append(queue, queueElement{neighbor, newPath})
+				}
 				// Backtrack: unmark the neighbor as visited for other paths
 				visited[neighbor] = false
 			}
@@ -231,4 +232,13 @@ func (g *Graph) routes2(source, destination *vertex, minLen, maxLen, number int)
 	}
 
 	return validPaths, nil
+}
+
+func contains(slice []*vertex, element *vertex) bool {
+	for _, item := range slice {
+		if item == element {
+			return true
+		}
+	}
+	return false
 }
