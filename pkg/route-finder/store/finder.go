@@ -112,7 +112,7 @@ func (g *Graph) appendRoute(ctx context.Context, routes []routing.Route, path []
 			route.Hops = append(route.Hops, hop)
 		}
 	}
-	if len(route.Hops) == len(path)-2 {
+	if len(route.Hops) == len(path)-1 {
 		routes = append(routes, route)
 	}
 	return routes
