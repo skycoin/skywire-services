@@ -53,12 +53,12 @@ func (g *Graph) routes(ctx context.Context, source, destination *vertex, minLen,
 			queue = queue[1:]
 
 			// If the current path exceeds maxHops, skip this path
-			if len(current.path)-2 > maxLen {
+			if len(current.path)-1 > maxLen {
 				continue
 			}
 
 			// If we reached the target and the path satisfies minHops, add it to validPaths
-			if current.node == destination && len(current.path)-2 >= minLen {
+			if current.node == destination && len(current.path)-1 >= minLen {
 				routes = g.appendRoute(ctx, routes, current.path)
 			}
 			// Explore all neighbors
