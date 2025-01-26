@@ -1,5 +1,8 @@
 # Route finder
 
+## Definitions of `hop` term
+In general graph theory, a **hop** refers to the traversal from one vertex to another via an edge. But here, we consider hop as visors between source and destination. For example, for A -> B -> C -> D -> E, number of hops from visor A to E is 3.
+
 ## API endpoints
 
 ### GET `/health`
