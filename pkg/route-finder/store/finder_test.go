@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestDijkstra(t *testing.T) {
+func TestFinder(t *testing.T) {
 	node1PK, node2PK, node3PK, node4PK, node5PK := generateNodesPK(t)
 
 	m := newMockStore()
@@ -23,20 +23,20 @@ func TestDijkstra(t *testing.T) {
 	g, err := NewGraph(context.TODO(), m, node1PK)
 	require.NoError(t, err)
 
-	routes, err := g.Shortest(context.TODO(), node1PK, node5PK, 0, 100, 5)
+	routes, err := g.GetRoute(context.TODO(), node1PK, node5PK, 0, 100, 5)
 	require.NoError(t, err)
 	require.Len(t, routes, 3)
 
-	routes, err = g.Shortest(context.TODO(), node1PK, node5PK, 0, 2, 5)
+	routes, err = g.GetRoute(context.TODO(), node1PK, node5PK, 0, 2, 5)
 	require.NoError(t, err)
 	require.Len(t, routes, 2)
 
-	routes, err = g.Shortest(context.TODO(), node1PK, node5PK, 0, 100, 1)
+	routes, err = g.GetRoute(context.TODO(), node1PK, node5PK, 0, 100, 1)
 	require.NoError(t, err)
 	require.Len(t, routes, 1)
 }
 
-func TestDijkstraRoute(t *testing.T) {
+func TestFinderRoute(t *testing.T) {
 	node1PK, node2PK, node3PK, node4PK, node5PK := generateNodesPK(t)
 
 	m := newMockStore()
@@ -49,7 +49,7 @@ func TestDijkstraRoute(t *testing.T) {
 	g, err := NewGraph(context.TODO(), m, node1PK)
 	require.NoError(t, err)
 
-	routes, err := g.Shortest(context.TODO(), node1PK, node5PK, 0, 100, 1)
+	routes, err := g.GetRoute(context.TODO(), node1PK, node5PK, 0, 100, 1)
 	require.NoError(t, err)
 	require.Len(t, routes, 1)
 	require.Equal(t, routes[0].Hops[0].From, node1PK)
@@ -76,7 +76,7 @@ func TestNoRoutesFromNoPathWithRootNodes(t *testing.T) {
 	c, f := context.WithTimeout(context.Background(), 2*time.Second)
 	defer f()
 
-	r, err := g.Shortest(c, node1PK, node3PK, 0, 100, 5)
+	r, err := g.GetRoute(c, node1PK, node3PK, 0, 100, 5)
 	require.NoError(t, err)
 	fmt.Println(r)
 }

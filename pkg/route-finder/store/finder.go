@@ -19,9 +19,9 @@ var (
 	ErrRouteNotFound = errors.New("route not found")
 )
 
-// Shortest returns routes from source to destination with hop counts within [minLen, maxLen],
+// GetRoute returns routes from source to destination with hop counts within [minLen, maxLen],
 // prioritized by shortest hop count first, with no duplicate vertices in the route.
-func (g *Graph) Shortest(ctx context.Context, source, destination cipher.PubKey, minLen, maxLen, number int) ([]routing.Route, error) {
+func (g *Graph) GetRoute(ctx context.Context, source, destination cipher.PubKey, minLen, maxLen, number int) ([]routing.Route, error) {
 	sourceVertex, ok := g.graph[source]
 	if !ok {
 		return nil, ErrNoRoute
