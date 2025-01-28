@@ -357,7 +357,7 @@ services:
         ipv4_address: 174.0.0.17
     ports:
       - "9089:9089"
-    entrypoint: "/release/node-visualizer --ut-url http://uptime-tracker:9096 --tpd-url  http://transport-discovery:9091"
+    entrypoint: "/release/node-visualizer --ut-url http://uptime-tracker:9096/uptimes?status=on --tpd-url  http://transport-discovery:9091/all-transports?selfTransports=hide"
     depends_on:
       - transport-discovery
       - uptime-tracker
@@ -451,7 +451,7 @@ services:
       - visor-a
     restart: always
     entrypoint: /release/skywire visor -c /opt/skywire/skywire-visor.json
-
+    
   network-monitor:
     image: "${REGISTRY}/network-monitor:${DOCKER_TAG}"
     hostname: network-monitor

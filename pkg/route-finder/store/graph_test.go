@@ -46,7 +46,7 @@ func (m *mockStore) GetTransportsByEdge(_ context.Context, edgePK cipher.PubKey)
 func (m *mockStore) GetNumberOfTransports(context.Context) (map[network.Type]int, error) {
 	return nil, nil
 }
-func (m *mockStore) GetAllTransports(context.Context) ([]*transport.Entry, error) {
+func (m *mockStore) GetAllTransports(context.Context, bool) ([]*transport.Entry, error) {
 	return nil, nil
 }
 func (m *mockStore) Close() {}

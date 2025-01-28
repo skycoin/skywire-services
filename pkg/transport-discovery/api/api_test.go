@@ -315,7 +315,7 @@ func TestGETAllTransports(t *testing.T) {
 	require.Len(t, resp, 2)
 
 	t.Run("Persistence", func(t *testing.T) {
-		found, err := mock.GetAllTransports(ctx)
+		found, err := mock.GetAllTransports(ctx, true)
 		require.NoError(t, err)
 		for i, f := range found {
 			if f.ID == resp[i].ID {

@@ -93,6 +93,6 @@
 	"stun_servers": null,
 	"shutdown_timeout": "30s",
 	"restart_check_delay": "1s",
-	"is_public": true,
+	"is_public": false,
 	"persistent_transports": null
 }

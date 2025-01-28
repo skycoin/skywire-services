@@ -8,8 +8,6 @@ RUN apk --no-cache add bash curl
 
 ARG CGO_ENABLED=0
 ENV CGO_ENABLED=${CGO_ENABLED} \
-    GOOS=linux  \
-    GOARCH=amd64 \
     GO111MODULE=on
 
 COPY /docker/common/install-prequisites.sh /install-prequisites.sh
