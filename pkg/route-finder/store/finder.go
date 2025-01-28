@@ -4,21 +4,24 @@ package store
 import (
 	"context"
 	"errors"
-	"fmt"
+	"sort"
 
 	"github.com/skycoin/skywire/pkg/routing"
 	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/cipher"
 )
 
-// package level errors
 var (
-	ErrNoRoute       = errors.New("no route to destination")
+	//ErrNoRoute no route to destination
+	ErrNoRoute = errors.New("no route to destination")
+	//ErrContextClosed context closed or timed out
 	ErrContextClosed = errors.New("context closed or timed out")
+	//ErrRouteNotFound route not found
+	ErrRouteNotFound = errors.New("route not found")
 )
 
-// GetRoute returns a set of max number routes from source to destination which length is between minLen and
-// maxLen
-func (g *Graph) GetRoute(ctx context.Context, source, destination cipher.PubKey, minLen, maxLen, number int) (routes []routing.Route, err error) {
+// GetRoute returns routes from source to destination with hop counts within [minLen, maxLen],
+// prioritized by shortest hop count first, with no duplicate vertices in the route.
+func (g *Graph) GetRoute(ctx context.Context, source, destination cipher.PubKey, minLen, maxLen, number int) ([]routing.Route, error) {
 	sourceVertex, ok := g.graph[source]
 	if !ok {
 		return nil, ErrNoRoute
@@ -28,99 +31,112 @@ func (g *Graph) GetRoute(ctx context.Context, source, destination cipher.PubKey,
 	if !ok {
 		return nil, ErrNoRoute
 	}
-	return g.routes(ctx, sourceVertex, destinationVertex, minLen, maxLen, number)
-}
 
-func (g *Graph) routes(ctx context.Context, source, destination *vertex, minLen, maxLen, number int) ([]routing.Route, error) {
-	type queueElement struct {
-		node *vertex
-		path []*vertex
+	paths, err := g.finder(ctx, sourceVertex, destinationVertex, minLen, maxLen)
+	if err != nil {
+		return nil, err
 	}
 
-	routes := make([]routing.Route, 0)
-	queue := []queueElement{{source, []*vertex{source}}}
+	routes := make([]routing.Route, 0, number)
+	for _, path := range paths {
+		if len(routes) == number {
+			break
+		}
 
-	visited := make(map[*vertex]bool)
-	visited[source] = true
+		var route routing.Route
+		for i := 0; i < len(path)-1; i++ {
+			from := path[i]
+			to := path[i+1]
+			conn, ok := from.connections[to.edge]
+			if !ok {
+				return nil, errors.New("connection not found between vertices")
+			}
+			route.Hops = append(route.Hops, routing.Hop{
+				From: from.edge,
+				To:   to.edge,
+				TpID: conn.ID,
+			})
+		}
+		routes = append(routes, route)
+	}
 
-	for len(queue) > 0 && len(routes) < number {
+	if len(routes) == 0 {
+		return nil, ErrRouteNotFound
+	}
+	return routes, nil
+}
+
+// finder performs BFS to find all paths from source to destination with hop counts between minLen and maxLen,
+// ensuring no duplicate vertices in each path.
+func (g *Graph) finder(ctx context.Context, source, destination *vertex, minLen, maxLen int) ([][]*vertex, error) {
+	type queueItem struct {
+		current *vertex
+		path    []*vertex
+		hops    int
+	}
+
+	validPaths := make([][]*vertex, 0)
+	queue := []queueItem{{
+		current: source,
+		path:    []*vertex{source},
+		hops:    0,
+	}}
+
+	for len(queue) > 0 {
 		select {
 		case <-ctx.Done():
 			return nil, ErrContextClosed
 		default:
-			// Dequeue the first element
-			current := queue[0]
+			item := queue[0]
 			queue = queue[1:]
 
-			// If the current path exceeds maxHops, skip this path
-			if len(current.path)-1 > maxLen {
-				continue
-			}
-
-			// If we reached the target and the path satisfies minHops, add it to validPaths
-			if current.node == destination && len(current.path)-1 >= minLen {
-				routes = g.appendRoute(ctx, routes, current.path)
-			}
-			// Explore all neighbors
-			for _, neighbor := range g.graph {
-				select {
-				case <-ctx.Done():
-					return nil, ErrContextClosed
-				default:
-					if current.node.edge.Hex() == neighbor.edge.Hex() {
-						continue
-					}
-					if !visited[neighbor] {
-						visited[neighbor] = true
-						newPath := append([]*vertex{}, current.path...)
-						if !containsVertex(newPath, neighbor) {
-							newPath = append(newPath, neighbor)
-							queue = append(queue, queueElement{neighbor, newPath})
-						}
-						visited[neighbor] = false
-					}
+			if item.current == destination {
+				if item.hops >= minLen && item.hops <= maxLen {
+					validPath := make([]*vertex, len(item.path))
+					copy(validPath, item.path)
+					validPaths = append(validPaths, validPath)
 				}
+				continue
+			}
+
+			if item.hops >= maxLen {
+				continue
+			}
+
+			for _, neighbor := range item.current.neighbors {
+				if containsVertex(item.path, neighbor) {
+					continue // Skip to avoid cycles
+				}
+
+				newPath := make([]*vertex, len(item.path)+1)
+				copy(newPath, item.path)
+				newPath[len(item.path)] = neighbor
+
+				queue = append(queue, queueItem{
+					current: neighbor,
+					path:    newPath,
+					hops:    item.hops + 1,
+				})
 			}
 		}
 	}
 
-	if len(routes) == 0 {
-		return nil, fmt.Errorf("no route found from %s to %s with at least %d hops and at most %d hops", source.edge.Hex(), destination.edge.Hex(), minLen, maxLen)
+	if len(validPaths) == 0 {
+		return nil, ErrRouteNotFound
 	}
 
-	return routes, nil
+	// Sort paths by hop count (ascending)
+	sort.Slice(validPaths, func(i, j int) bool {
+		return len(validPaths[i])-1 < len(validPaths[j])-1
+	})
+
+	return validPaths, nil
 }
 
-func (g *Graph) appendRoute(ctx context.Context, routes []routing.Route, path []*vertex) []routing.Route {
-	var route routing.Route
-	for i, v := range path {
-		select {
-		case <-ctx.Done():
-			return nil
-		default:
-			if i == len(path)-1 {
-				continue
-			}
-			if _, ok := v.connections[path[i+1].edge]; !ok {
-				continue
-			}
-			hop := routing.Hop{
-				From: v.edge,
-				To:   path[i+1].edge,
-				TpID: v.connections[path[i+1].edge].ID,
-			}
-			route.Hops = append(route.Hops, hop)
-		}
-	}
-	if len(route.Hops) == len(path)-1 {
-		routes = append(routes, route)
-	}
-	return routes
-}
-
-func containsVertex(slice []*vertex, element *vertex) bool {
-	for _, item := range slice {
-		if item == element {
+// containsVertex checks if a vertex exists in the path.
+func containsVertex(path []*vertex, v *vertex) bool {
+	for _, u := range path {
+		if u == v {
 			return true
 		}
 	}

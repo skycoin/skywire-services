@@ -32,7 +32,7 @@
 		],
 		"route_finder": "http://route-finder:9092",
 		"route_finder_timeout": "10s",
-		"min_hops": 0
+		"min_hops": 1
 	},
 	"uptime_tracker": {
 		"addr": "http://uptime-tracker:9096"
