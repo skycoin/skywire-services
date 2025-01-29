@@ -132,13 +132,9 @@ check-help: ## Cursory check of the help menus
 	@echo
 	go run cmd/config-bootstrapper/config.go --help
 	@echo
-	go run cmd/tpd-monitor/tpd-monitor.go --help
-	@echo
 	go run cmd/transport-discovery/transport-discovery.go --help
 	@echo
 	go run cmd/keys-gen/keys-gen.go --help
-	@echo
-	go run cmd/skysocks-monitor/skysocks-monitor.go --help
 	@echo
 	go run cmd/sw-env/sw-env.go --help
 	@echo
@@ -150,14 +146,10 @@ check-help: ## Cursory check of the help menus
 	@echo
 	go run cmd/transport-setup/transport-setup.go --help
 	@echo
-	go run cmd/public-visor-monitor/public-visor-monitor.go --help
-	@echo
 	go run cmd/node-visualizer/node-visualizer.go --help
 	@echo
 #	go run cmd/skysocks-lite-client/skysocks-lite-client.go --help
 #	@echo
-	go run cmd/vpn-monitor/vpn-monitor.go --help
-	@echo
 	go run cmd/address-resolver/address-resolver.go --help
 	@echo
 #	go run cmd/vpn-lite-client/vpn-lite-client.go --help

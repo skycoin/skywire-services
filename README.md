@@ -63,15 +63,13 @@ Check the [docs](docs/Deployments.md) for more documentation on the deployments.
 
 - [Address Resolver](cmd/address-resolver/README.md)
 - [Config Bootstrapper](cmd/config-bootstrapper/README.md)
-- [Network Monitor](cmd/network-monitor/README.md)
-- [Public Visor Monitor](cmd/public-visor-monitor/README.md)
 - [Route Finder](cmd/route-finder/README.md)
 - [Transport Discovery](cmd/transport-discovery/README.md)
-- [Vpn Monitor](cmd/vpn-monitor/README.md)
 - [Dmsg Discovery](https://github.com/skycoin/dmsg/blob/develop/cmd/dmsg-discovery/README.md)
 - [Dmsg Server](https://github.com/skycoin/dmsg/blob/develop/cmd/dmsg-server/README.md)
 - [Service Discovery](https://github.com/skycoin/skycoin-service-discovery/blob/master/README.md#http-api)
 - [Uptime Tracker](cmd/uptime-tracker/README.md)
+- [Network Monitor](cmd/network-monitor/README.md)
 
 ## Dependency Graph
 
