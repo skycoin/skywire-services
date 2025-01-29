@@ -8,18 +8,15 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo"
 	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/cipher"
 	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/cmdutil"
 	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/logging"
-	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/metricsutil"
 	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/storeconfig"
 	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/tcpproxy"
 	"github.com/spf13/cobra"
 
-	"github.com/skycoin/skywire-services/internal/nmmetrics"
 	"github.com/skycoin/skywire-services/pkg/network-monitor/api"
 	"github.com/skycoin/skywire-services/pkg/network-monitor/store"
 )
@@ -29,35 +26,31 @@ const (
 )
 
 var (
-	sleepDeregistration time.Duration
-	confPath            string
-	sdURL               string
-	arURL               string
-	utURL               string
-	addr                string
-	tag                 string
-	logLvl              string
-	metricsAddr         string
-	redisURL            string
-	testing             bool
-	redisPoolSize       int
-	batchSize           int
+	sdURL     string
+	arURL     string
+	utURL     string
+	tpdURL    string
+	dmsgdURL  string
+	pk        string
+	sk        string
+	addr      string
+	tag       string
+	logLvl    string
+	batchSize int
 )
 
 func init() {
 	RootCmd.Flags().StringVarP(&addr, "addr", "a", ":9080", "address to bind to.\033[0m")
-	RootCmd.Flags().DurationVar(&sleepDeregistration, "sleep-deregistration", 10, "Sleep time for derigstration process in minutes\033[0m")
 	RootCmd.Flags().IntVarP(&batchSize, "batchsize", "b", 30, "Batch size of deregistration\033[0m")
-	RootCmd.Flags().StringVarP(&confPath, "config", "c", "network-monitor.json", "config file location.\033[0m")
-	RootCmd.Flags().StringVarP(&sdURL, "sd-url", "n", "", "url to service discovery\033[0m")
-	RootCmd.Flags().StringVarP(&arURL, "ar-url", "v", "", "url to address resolver\033[0m")
-	RootCmd.Flags().StringVarP(&utURL, "ut-url", "u", "", "url to uptime tracker visor data.\033[0m")
+	RootCmd.Flags().StringVar(&sdURL, "sd-url", "http://sd.skycoin.com", "url to service discovery\033[0m")
+	RootCmd.Flags().StringVar(&arURL, "ar-url", "http://ar.skywire.skycoin.com", "url to address resolver\033[0m")
+	RootCmd.Flags().StringVar(&utURL, "ut-url", "http://ut.skywire.skycoin.com", "url to uptime tracker visor data.\033[0m")
+	RootCmd.Flags().StringVar(&tpdURL, "tpd-url", "http://tpd.skywire.skycoin.com", "url to transport discovery\033[0m")
+	RootCmd.Flags().StringVar(&dmsgdURL, "dmsgd-url", "http://dmsgd.skywire.skycoin.com", "url to dmsg discovery\033[0m")
+	RootCmd.Flags().StringVar(&pk, "pk", "", "pk of network monitor\033[0m")
+	RootCmd.Flags().StringVar(&sk, "sk", "", "sk of network monitor\033[0m")
 	RootCmd.Flags().StringVar(&tag, "tag", "network_monitor", "logging tag\033[0m")
 	RootCmd.Flags().StringVarP(&logLvl, "loglvl", "l", "info", "[info|error|warn|debug|trace|panic]\033[0m")
-	RootCmd.Flags().StringVarP(&metricsAddr, "metrics", "m", "", "address to bind metrics API to\033[0m")
-	RootCmd.Flags().StringVar(&redisURL, "redis", "redis://localhost:6379", "connections string for a redis store\033[0m")
-	RootCmd.Flags().BoolVarP(&testing, "testing", "t", false, "enable testing to start without redis\033[0m")
-	RootCmd.Flags().IntVar(&redisPoolSize, "redis-pool-size", 10, "redis connection pool size\033[0m")
 }
 
 // RootCmd contains the root command
@@ -80,19 +73,8 @@ var RootCmd = &cobra.Command{
 			log.Printf("Failed to output build info: %v", err)
 		}
 
-		if !strings.HasPrefix(redisURL, redisScheme) {
-			redisURL = redisScheme + redisURL
-		}
-
 		storeConfig := storeconfig.Config{
-			Type:     storeconfig.Redis,
-			URL:      redisURL,
-			Password: storeconfig.RedisPassword(),
-			PoolSize: redisPoolSize,
-		}
-
-		if testing {
-			storeConfig.Type = storeconfig.Memory
+			Type: storeconfig.Memory,
 		}
 
 		s, err := store.New(storeConfig)
@@ -107,51 +89,37 @@ var RootCmd = &cobra.Command{
 		}
 
 		logging.SetLevel(lvl)
-		conf := api.InitConfig(confPath, mLogger)
-
-		if sdURL == "" {
-			sdURL = conf.Launcher.ServiceDisc
-		}
-		if arURL == "" {
-			arURL = conf.Transport.AddressResolver
-		}
-		if utURL == "" {
-			utURL = conf.UptimeTracker.Addr + "/uptimes"
-		}
 
 		var srvURLs api.ServicesURLs
 		srvURLs.SD = sdURL
 		srvURLs.AR = arURL
 		srvURLs.UT = utURL
+		srvURLs.DMSGD = dmsgdURL
+		srvURLs.TPD = tpdURL
 
 		logger := mLogger.PackageLogger("network_monitor")
 
 		logger.WithField("addr", addr).Info("Serving discovery API...")
 
-		metricsutil.ServeHTTPMetrics(logger, metricsAddr)
+		pubKey := cipher.PubKey{}
+		pubKey.Set(pk)
+		secKey := cipher.SecKey{}
+		secKey.Set(sk)
 
-		var m nmmetrics.Metrics
-		if metricsAddr == "" {
-			m = nmmetrics.NewEmpty()
-		} else {
-			m = nmmetrics.NewVictoriaMetrics()
-		}
-		enableMetrics := metricsAddr != ""
-
-		nmSign, _ := cipher.SignPayload([]byte(conf.PK.Hex()), conf.SK) //nolint
+		nmSign, _ := cipher.SignPayload([]byte(pubKey.Hex()), secKey) //nolint
 
 		var nmConfig api.NetworkMonitorConfig
-		nmConfig.PK = conf.PK
-		nmConfig.SK = conf.SK
+		nmConfig.PK = pubKey
+		nmConfig.SK = secKey
 		nmConfig.Sign = nmSign
 		nmConfig.BatchSize = batchSize
 
-		nmAPI := api.New(s, logger, srvURLs, enableMetrics, m, nmConfig)
+		nmAPI := api.New(s, logger, srvURLs, nmConfig)
 
 		ctx, cancel := cmdutil.SignalContext(context.Background(), logger)
 		defer cancel()
 
-		go nmAPI.InitDeregistrationLoop(ctx, conf, sleepDeregistration)
+		go nmAPI.InitDeregistrationLoop(ctx)
 
 		go func() {
 			if err := tcpproxy.ListenAndServe(addr, nmAPI); err != nil {
@@ -161,9 +129,6 @@ var RootCmd = &cobra.Command{
 		}()
 
 		<-ctx.Done()
-		if err := nmAPI.Visor.Close(); err != nil {
-			logger.WithError(err).Error("Visor closed with error.")
-		}
 	},
 }
 
