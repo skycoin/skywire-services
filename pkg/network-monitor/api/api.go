@@ -23,6 +23,7 @@ import (
 	utilenv "github.com/skycoin/skywire/pkg/skywire-utilities/pkg/skyenv"
 	"github.com/skycoin/skywire/pkg/transport"
 
+	"github.com/skycoin/skywire-services/internal/nm"
 	"github.com/skycoin/skywire-services/pkg/network-monitor/store"
 )
 
@@ -50,8 +51,9 @@ type API struct {
 	batchSize      int
 	whitelistedPKs map[string]bool
 
-	deadEntries            DeadEntries
-	potentiallyDeadEntries PotentiallyDeadEntries
+	deadEntries            nm.DeadEntries
+	potentiallyDeadEntries nm.PotentiallyDeadEntries
+	status                 nm.Status
 }
 
 // NetworkMonitorConfig is struct for Keys and Sign value of NM
@@ -99,12 +101,13 @@ func New(s store.Store, logger *logging.Logger, srvURLs ServicesURLs, nmConfig N
 		nmSign:         nmConfig.Sign,
 		batchSize:      nmConfig.BatchSize,
 		whitelistedPKs: whitelistedPKs(),
-		potentiallyDeadEntries: PotentiallyDeadEntries{
+		potentiallyDeadEntries: nm.PotentiallyDeadEntries{
 			Tpd: make(map[string]bool),
 		},
-		deadEntries: DeadEntries{
+		deadEntries: nm.DeadEntries{
 			Tpd: []string{},
 		},
+		status: nm.Status{LastCleaning: &nm.LastCleaningSummary{}},
 	}
 	r := chi.NewRouter()
 
@@ -199,6 +202,7 @@ func (api *API) InitDeregistrationLoop(ctx context.Context) {
 			return
 		default:
 			api.deregister(ctx)
+			api.store.SetNetworkStatus(api.status)
 		}
 	}
 }
@@ -209,11 +213,14 @@ func (api *API) deregister(ctx context.Context) {
 	defer api.dMu.Unlock()
 	api.dMu.Lock()
 
+	api.status.LastUpdate = time.Now().UTC()
+	fmt.Println(api.status.LastUpdate)
 	// get uptime tracker in each itterate
-	api.getUptimeTracker(ctx)
+	api.getUptimeTracker(ctx) //nolint
+	api.status.OnlineVisors = len(api.utData)
 
-	api.tpdDeregistration(ctx)
-	time.Sleep(75 * time.Second)
+	api.tpdDeregistration(ctx) //nolint
+	time.Sleep(5 * time.Second)
 	// api.dmsgdDeregistration(ctx)
 	// time.Sleep(75 * time.Second)
 	// api.arDeregistration(ctx)
@@ -252,9 +259,9 @@ func (api *API) tpdDeregistration(ctx context.Context) error {
 		// check entries in tpd that are available in UT or not, based on both edges
 		for _, tp := range tpdData {
 			// check edge[0]
-			online1, ok1 := api.utData[tp.Edges[0].Hex()]
-			online2, ok2 := api.utData[tp.Edges[1].Hex()]
-			if !ok1 || !online1 || !ok2 || !online2 {
+			_, online1 := api.utData[tp.Edges[0].Hex()]
+			_, online2 := api.utData[tp.Edges[1].Hex()]
+			if !online1 || !online2 {
 				if _, ok := api.potentiallyDeadEntries.Tpd[tp.ID.String()]; ok {
 					api.deadEntries.Tpd = append(api.deadEntries.Tpd, tp.ID.String())
 					delete(api.potentiallyDeadEntries.Tpd, tp.ID.String())
@@ -265,13 +272,13 @@ func (api *API) tpdDeregistration(ctx context.Context) error {
 			}
 			delete(api.potentiallyDeadEntries.Tpd, tp.ID.String())
 		}
+
 		// deregister entries from tpd
 		if len(api.deadEntries.Tpd) > 0 {
 			api.tpdDeregister(api.deadEntries.Tpd)
 		}
-		fmt.Printf("potentially dead entries: %#v\n", api.potentiallyDeadEntries.Tpd)
-		fmt.Printf("dead entries: %#v\n", api.deadEntries.Tpd)
-		fmt.Printf("totaltransports: %d, potentiallydeadtransports: %d, deadtransports: %d, alivetransports: %d\n", len(tpdData), len(api.potentiallyDeadEntries.Tpd), len(api.deadEntries.Tpd), len(tpdData)-len(api.deadEntries.Tpd))
+		api.status.Transports = len(tpdData) - (len(api.deadEntries.Tpd) + len(api.potentiallyDeadEntries.Tpd))
+		api.status.LastCleaning.Tpd = len(api.deadEntries.Tpd)
 		return nil
 	}
 }
@@ -484,7 +491,7 @@ func (api *API) getUptimeTracker(ctx context.Context) error {
 		return context.DeadlineExceeded
 	default:
 		response := make(map[string]bool)
-		res, err := http.Get(api.utURL + "/uptimes") //nolint
+		res, err := http.Get(api.utURL + "/uptimes?status=on") //nolint
 		if err != nil {
 			return err
 		}
@@ -552,24 +559,4 @@ func whitelistedPKs() map[string]bool {
 	whitelistedPKs[utilenv.RouteSetupPKs] = true
 	whitelistedPKs[utilenv.TestRouteSetupPKs] = true
 	return whitelistedPKs
-}
-
-// PotentiallyDeadEntries list of potentially dead entries
-type PotentiallyDeadEntries struct {
-	Tpd         map[string]bool `json:"tpd"`
-	Dmsgd       map[string]bool `json:"dmsgd"`
-	Ar          map[string]bool `json:"ar"`
-	VPN         map[string]bool `json:"vpn"`
-	Skysocks    map[string]bool `json:"skysocks"`
-	PublicVisor map[string]bool `json:"public_visor"`
-}
-
-// DeadEntries list of dead entries
-type DeadEntries struct {
-	Tpd         []string `json:"tpd"`
-	Dmsgd       []string `json:"dmsgd"`
-	Ar          []string `json:"ar"`
-	VPN         []string `json:"vpn"`
-	Skysocks    []string `json:"skysocks"`
-	PublicVisor []string `json:"public_visor"`
 }

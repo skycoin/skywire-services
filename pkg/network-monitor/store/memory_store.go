@@ -26,6 +26,13 @@ func (s *memStore) GetNetworkStatus() (nm.Status, error) {
 	return s.networkStatus, nil
 }
 
+func (s *memStore) SetNetworkStatus(status nm.Status) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.networkStatus = status
+	return nil
+}
+
 func (s *memStore) Close() {
 
 }

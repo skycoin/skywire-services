@@ -8,11 +8,6 @@ import (
 	"github.com/skycoin/skywire-services/internal/nm"
 )
 
-var (
-	// ErrVisorSumNotFound indicates that requested visor summary is not registered.
-	ErrVisorSumNotFound = errors.New("Visor summary not found")
-)
-
 // Store stores Transport metadata and generated nonce values.
 type Store interface {
 	TransportStore
@@ -21,6 +16,7 @@ type Store interface {
 // TransportStore stores Transport metadata.
 type TransportStore interface {
 	GetNetworkStatus() (nm.Status, error)
+	SetNetworkStatus(nm.Status) error
 }
 
 // New constructs a new Store of requested type.
