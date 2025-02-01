@@ -251,7 +251,7 @@ func (api *API) deregister(ctx context.Context) error {
 	if err := api.sdDeregistration(ctx); err != nil {
 		api.logger.WithError(err).Warn("sd deregistration interrupted.")
 	}
-	api.logger.Info("deregistration routine completed.")
+	api.logger.Info("deregistration routine done.")
 	return nil
 }
 
@@ -310,7 +310,7 @@ func (api *API) tpdDeregistration(ctx context.Context) error {
 		logInfo["candidate"] = len(api.potentiallyDeadEntries.Tpd)
 		logInfo["dead"] = len(api.deadEntries.Tpd)
 		api.logger.WithFields(logInfo).Info("tpd deregistration info:")
-		api.logger.Info("tpd deregistration routine completed.")
+		api.logger.Info("tpd deregistration routine done.")
 		return nil
 	}
 }
@@ -376,7 +376,7 @@ func (api *API) dmsgdDeregistration(ctx context.Context) error {
 		logInfo["candidate"] = len(api.potentiallyDeadEntries.Dmsgd)
 		logInfo["dead"] = len(api.deadEntries.Dmsgd)
 		api.logger.WithFields(logInfo).Info("dmsgd deregistration info:")
-		api.logger.Info("dmsgd deregistration routine completed.")
+		api.logger.Info("dmsgd deregistration routine done.")
 		return nil
 	}
 }
@@ -447,7 +447,7 @@ func (api *API) arDeregistration(ctx context.Context) error {
 		sudphInfo["dead"] = len(api.deadEntries.Ar.SUDPH)
 		api.logger.WithFields(stpcrInfo).Info("ar deregistration info on stcpr:")
 		api.logger.WithFields(sudphInfo).Info("ar deregistration info on sudph:")
-		api.logger.Info("ar deregistration routine completed.")
+		api.logger.Info("ar deregistration routine done.")
 		return nil
 	}
 }
@@ -629,7 +629,7 @@ func (api *API) sdDeregistration(ctx context.Context) error {
 		logInfo["dead"] = len(api.deadEntries.Skysocks)
 		api.logger.WithFields(logInfo).Info("skysocks deregistration info:")
 
-		api.logger.Info("sd deregistration routine completed.")
+		api.logger.Info("sd deregistration routine done.")
 		return nil
 	}
 }
