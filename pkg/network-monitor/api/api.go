@@ -102,18 +102,22 @@ func New(s store.Store, logger *logging.Logger, srvURLs ServicesURLs, nmConfig N
 		batchSize:      nmConfig.BatchSize,
 		whitelistedPKs: whitelistedPKs(),
 		potentiallyDeadEntries: nm.PotentiallyDeadEntries{
-			Tpd:   make(map[string]bool),
-			Dmsgd: make(map[string]bool),
-			Ar:    nm.ArData{STCPR: make(map[string]bool), SUDPH: make(map[string]bool)},
-			VPN:   make(map[string]bool),
+			Tpd:         make(map[string]bool),
+			Dmsgd:       make(map[string]bool),
+			Ar:          nm.ArData{STCPR: make(map[string]bool), SUDPH: make(map[string]bool)},
+			VPN:         make(map[string]bool),
+			PublicVisor: make(map[string]bool),
+			Skysocks:    make(map[string]bool),
 		},
 		deadEntries: nm.DeadEntries{
-			Tpd:   []string{},
-			Dmsgd: []string{},
-			Ar:    nm.ArData{STCPR: make(map[string]bool), SUDPH: make(map[string]bool)},
-			VPN:   []string{},
+			Tpd:         []string{},
+			Dmsgd:       []string{},
+			Ar:          nm.ArData{STCPR: make(map[string]bool), SUDPH: make(map[string]bool)},
+			VPN:         []string{},
+			PublicVisor: []string{},
+			Skysocks:    []string{},
 		},
-		status: nm.Status{LastUpdate: time.Now().UTC(), LastCleaning: &nm.LastCleaningSummary{}},
+		status: nm.Status{LastCleaning: &nm.LastCleaningSummary{}},
 	}
 	r := chi.NewRouter()
 
@@ -208,7 +212,8 @@ func (api *API) InitDeregistrationLoop(ctx context.Context) {
 			return
 		default:
 			api.deregister(ctx)
-			api.store.SetNetworkStatus(api.status) //nolint
+			api.store.SetNetworkStatus(api.status)
+			time.Sleep(75 * time.Second) //nolint
 		}
 	}
 }
@@ -228,20 +233,21 @@ func (api *API) deregister(ctx context.Context) {
 	}
 	api.status.OnlineVisors = len(api.utData)
 
-	// if err := api.tpdDeregistration(ctx); err != nil {
-	// 	api.logger.WithError(err).Warn("TPD deregistration interrupted.")
-	// }
-	// time.Sleep(75 * time.Second)
-	// if err := api.dmsgdDeregistration(ctx); err != nil {
-	// 	api.logger.WithError(err).Warn("DMSGD deregistration interrupted.")
-	// }
-	// time.Sleep(75 * time.Second)
-	// if err := api.arDeregistration(ctx); err != nil {
-	// 	api.logger.WithError(err).Warn("AR deregistration interrupted.")
-	// }
-	// time.Sleep(75 * time.Second)
-	// api.sdDeregistration(ctx)
-	// time.Sleep(75 * time.Second)
+	if err := api.tpdDeregistration(ctx); err != nil {
+		api.logger.WithError(err).Warn("TPD deregistration interrupted.")
+	}
+	time.Sleep(75 * time.Second)
+	if err := api.dmsgdDeregistration(ctx); err != nil {
+		api.logger.WithError(err).Warn("DMSGD deregistration interrupted.")
+	}
+	time.Sleep(75 * time.Second)
+	if err := api.arDeregistration(ctx); err != nil {
+		api.logger.WithError(err).Warn("AR deregistration interrupted.")
+	}
+	time.Sleep(75 * time.Second)
+	if err := api.sdDeregistration(ctx); err != nil {
+		api.logger.WithError(err).Warn("SD deregistration interrupted.")
+	}
 	api.logger.Info("Deregistration routine completed.")
 }
 
@@ -296,9 +302,9 @@ func (api *API) tpdDeregistration(ctx context.Context) error {
 		api.status.Transports = len(tpdData) - (len(api.deadEntries.Tpd) + len(api.potentiallyDeadEntries.Tpd))
 		api.status.LastCleaning.Tpd = len(api.deadEntries.Tpd)
 		logInfo := make(logrus.Fields)
-		logInfo["a.Online Transports"] = api.status.Transports
-		logInfo["b.Potentially Dead Entries"] = len(api.potentiallyDeadEntries.Tpd)
-		logInfo["c.Dead Entries"] = len(api.deadEntries.Tpd)
+		logInfo["Alive"] = api.status.Transports
+		logInfo["Candidate"] = len(api.potentiallyDeadEntries.Tpd)
+		logInfo["Dead"] = len(api.deadEntries.Tpd)
 		api.logger.WithFields(logInfo).Info("TPD deregistration info:")
 		api.logger.Info("TPD deregistration routine completed.")
 		return nil
@@ -362,9 +368,9 @@ func (api *API) dmsgdDeregistration(ctx context.Context) error {
 		}
 		api.status.LastCleaning.Dmsgd = len(api.deadEntries.Dmsgd)
 		logInfo := make(logrus.Fields)
-		logInfo["a.Online Entries"] = len(dmsgdData) - (len(api.potentiallyDeadEntries.Dmsgd) + len(api.deadEntries.Dmsgd))
-		logInfo["b.Potentially Dead Entries"] = len(api.potentiallyDeadEntries.Dmsgd)
-		logInfo["c.Dead Entries"] = len(api.deadEntries.Dmsgd)
+		logInfo["Alive"] = len(dmsgdData) - (len(api.potentiallyDeadEntries.Dmsgd) + len(api.deadEntries.Dmsgd))
+		logInfo["Candidate"] = len(api.potentiallyDeadEntries.Dmsgd)
+		logInfo["Dead"] = len(api.deadEntries.Dmsgd)
 		api.logger.WithFields(logInfo).Info("DMSGD deregistration info:")
 		api.logger.Info("DMSGD deregistration routine completed.")
 		return nil
@@ -429,12 +435,12 @@ func (api *API) arDeregistration(ctx context.Context) error {
 		// store summary and print some logs
 		api.status.LastCleaning.Ar = len(api.deadEntries.Ar.STCPR) + len(api.deadEntries.Ar.SUDPH)
 		stpcrInfo, sudphInfo := make(logrus.Fields), make(logrus.Fields)
-		stpcrInfo["a.Online Entries"] = len(arData.Stcpr) - (len(api.potentiallyDeadEntries.Ar.STCPR) + len(api.deadEntries.Ar.STCPR))
-		stpcrInfo["b.Potentially Dead Entries"] = len(api.potentiallyDeadEntries.Ar.STCPR)
-		stpcrInfo["c.Dead Entries"] = len(api.deadEntries.Ar.STCPR)
-		sudphInfo["a.Online Entries"] = len(arData.Sudph) - (len(api.potentiallyDeadEntries.Ar.SUDPH) + len(api.deadEntries.Ar.SUDPH))
-		sudphInfo["b.Potentially Dead Entries"] = len(api.potentiallyDeadEntries.Ar.SUDPH)
-		sudphInfo["c.Dead Entries"] = len(api.deadEntries.Ar.SUDPH)
+		stpcrInfo["Alive"] = len(arData.Stcpr) - (len(api.potentiallyDeadEntries.Ar.STCPR) + len(api.deadEntries.Ar.STCPR))
+		stpcrInfo["Candidate"] = len(api.potentiallyDeadEntries.Ar.STCPR)
+		stpcrInfo["Dead"] = len(api.deadEntries.Ar.STCPR)
+		sudphInfo["Alive"] = len(arData.Sudph) - (len(api.potentiallyDeadEntries.Ar.SUDPH) + len(api.deadEntries.Ar.SUDPH))
+		sudphInfo["Candidate"] = len(api.potentiallyDeadEntries.Ar.SUDPH)
+		sudphInfo["Dead"] = len(api.deadEntries.Ar.SUDPH)
 		api.logger.WithFields(stpcrInfo).Info("AR deregistration info on STPCR:")
 		api.logger.WithFields(sudphInfo).Info("AR deregistration info on SUDPH:")
 		api.logger.Info("AR deregistration routine completed.")
@@ -468,7 +474,171 @@ func (api *API) arDeregister(entries nm.ArData) {
 	}
 }
 
-//
+// sdDeregistration is a routine to deregister dead entries in service discovery (vpn, skysocks, public-visors)
+func (api *API) sdDeregistration(ctx context.Context) error {
+	api.logger.Info("SD deregistration routine start.")
+	select {
+	case <-ctx.Done():
+		return context.DeadlineExceeded
+	default:
+		// VPN Deregistration
+		api.deadEntries.VPN = []string{}
+		var sdData []struct {
+			Address string `json:"address"`
+		}
+		// get dmsgd entries
+		res, err := http.Get(api.sdURL + "/api/services?type=vpn") //nolint
+		if err != nil {
+			api.logger.WithError(err).Errorf("unable to fetch data from dmsgd")
+			return err
+		}
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			api.logger.WithError(err).Errorf("unable to read data from dmsgd")
+			return err
+		}
+		err = json.Unmarshal(body, &sdData)
+		if err != nil {
+			api.logger.WithError(err).Errorf("unable to unmarshal data from tpd")
+			return err
+		}
+		// check entries in VPN that are available in UT or not
+		for _, entry := range sdData {
+			entryKey := strings.Split(entry.Address, ":")[0]
+			_, online := api.utData[entryKey]
+			if !online {
+				if _, ok := api.potentiallyDeadEntries.VPN[entryKey]; ok {
+					api.deadEntries.VPN = append(api.deadEntries.VPN, entryKey)
+					delete(api.potentiallyDeadEntries.VPN, entryKey)
+					continue
+				}
+				api.potentiallyDeadEntries.VPN[entryKey] = true
+				continue
+			}
+			delete(api.potentiallyDeadEntries.VPN, entryKey)
+		}
+
+		// deregister entries from VPN
+		if len(api.deadEntries.VPN) > 0 {
+			api.sdDeregister(api.deadEntries.VPN, "vpn")
+		}
+		api.status.LastCleaning.VPN = len(api.deadEntries.VPN)
+		logInfo := make(logrus.Fields)
+		logInfo["Alive"] = len(sdData) - (len(api.potentiallyDeadEntries.VPN) + len(api.deadEntries.VPN))
+		logInfo["Candidate"] = len(api.potentiallyDeadEntries.VPN)
+		logInfo["Dead"] = len(api.deadEntries.VPN)
+		api.logger.WithFields(logInfo).Info("VPN deregistration info:")
+
+		// Public Visor Deregistration
+		api.deadEntries.PublicVisor = []string{}
+		var publicVisorData []struct {
+			Address string `json:"address"`
+		}
+		// get dmsgd entries
+		res, err = http.Get(api.sdURL + "/api/services?type=visor") //nolint
+		if err != nil {
+			api.logger.WithError(err).Errorf("unable to fetch data from dmsgd")
+			return err
+		}
+		body, err = io.ReadAll(res.Body)
+		if err != nil {
+			api.logger.WithError(err).Errorf("unable to read data from dmsgd")
+			return err
+		}
+		err = json.Unmarshal(body, &publicVisorData)
+		if err != nil {
+			api.logger.WithError(err).Errorf("unable to unmarshal data from tpd")
+			return err
+		}
+		// check entries in PublicVisor that are available in UT or not
+		for _, entry := range publicVisorData {
+			entryKey := strings.Split(entry.Address, ":")[0]
+			_, online := api.utData[entryKey]
+			if !online {
+				if _, ok := api.potentiallyDeadEntries.PublicVisor[entryKey]; ok {
+					api.deadEntries.PublicVisor = append(api.deadEntries.PublicVisor, entryKey)
+					delete(api.potentiallyDeadEntries.PublicVisor, entryKey)
+					continue
+				}
+				api.potentiallyDeadEntries.PublicVisor[entryKey] = true
+				continue
+			}
+			delete(api.potentiallyDeadEntries.PublicVisor, entryKey)
+		}
+
+		// deregister entries from PublicVisor
+		if len(api.deadEntries.PublicVisor) > 0 {
+			api.sdDeregister(api.deadEntries.PublicVisor, "visor")
+		}
+		api.status.LastCleaning.PublicVisor = len(api.deadEntries.PublicVisor)
+		logInfo = make(logrus.Fields)
+		logInfo["Alive"] = len(publicVisorData) - (len(api.potentiallyDeadEntries.PublicVisor) + len(api.deadEntries.PublicVisor))
+		logInfo["Candidate"] = len(api.potentiallyDeadEntries.PublicVisor)
+		logInfo["Dead"] = len(api.deadEntries.PublicVisor)
+		api.logger.WithFields(logInfo).Info("Public Visor deregistration info:")
+
+		// Skysocks Deregistration
+		api.deadEntries.Skysocks = []string{}
+		var skysocksData []struct {
+			Address string `json:"address"`
+		}
+		// get dmsgd entries
+		res, err = http.Get(api.sdURL + "/api/services?type=skysocks") //nolint
+		if err != nil {
+			api.logger.WithError(err).Errorf("unable to fetch data from dmsgd")
+			return err
+		}
+		body, err = io.ReadAll(res.Body)
+		if err != nil {
+			api.logger.WithError(err).Errorf("unable to read data from dmsgd")
+			return err
+		}
+		err = json.Unmarshal(body, &skysocksData)
+		if err != nil {
+			api.logger.WithError(err).Errorf("unable to unmarshal data from tpd")
+			return err
+		}
+		// check entries in Skysocks that are available in UT or not
+		for _, entry := range skysocksData {
+			entryKey := strings.Split(entry.Address, ":")[0]
+			_, online := api.utData[entryKey]
+			if !online {
+				if _, ok := api.potentiallyDeadEntries.Skysocks[entryKey]; ok {
+					api.deadEntries.Skysocks = append(api.deadEntries.Skysocks, entryKey)
+					delete(api.potentiallyDeadEntries.Skysocks, entryKey)
+					continue
+				}
+				api.potentiallyDeadEntries.Skysocks[entryKey] = true
+				continue
+			}
+			delete(api.potentiallyDeadEntries.Skysocks, entryKey)
+		}
+
+		// deregister entries from Skysocks
+		if len(api.deadEntries.Skysocks) > 0 {
+			api.sdDeregister(api.deadEntries.Skysocks, "skysocks")
+		}
+		api.status.LastCleaning.Skysocks = len(api.deadEntries.Skysocks)
+		logInfo = make(logrus.Fields)
+		logInfo["Alive"] = len(skysocksData) - (len(api.potentiallyDeadEntries.Skysocks) + len(api.deadEntries.Skysocks))
+		logInfo["Candidate"] = len(api.potentiallyDeadEntries.Skysocks)
+		logInfo["Dead"] = len(api.deadEntries.Skysocks)
+		api.logger.WithFields(logInfo).Info("Skysocks deregistration info:")
+
+		api.logger.Info("SD deregistration routine completed.")
+		return nil
+	}
+}
+
+func (api *API) sdDeregister(entries []string, sType string) {
+	if len(entries) > 0 {
+		err := api.deregisterRequest(entries, fmt.Sprintf("%s/services/deregister/%s", api.sdURL, sType), fmt.Sprintf("service discovery [%s]", sType))
+		if err != nil {
+			api.logger.Warn(err)
+		}
+		api.logger.Infof("Deregister request send to SD for %s entries", sType)
+	}
+}
 
 // deregisterRequest is dereigstration handler for all services
 func (api *API) deregisterRequest(keys []string, rawReqURL, service string) error {
@@ -553,6 +723,9 @@ func (api *API) getUptimeTracker(ctx context.Context) error {
 
 		for _, visor := range data {
 			response[visor.Key] = visor.Online
+		}
+		if len(response) == 0 {
+			return fmt.Errorf("empty ut data fetched")
 		}
 		api.utData = response
 		return nil
