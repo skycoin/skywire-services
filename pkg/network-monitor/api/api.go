@@ -104,12 +104,12 @@ func New(s store.Store, logger *logging.Logger, srvURLs ServicesURLs, nmConfig N
 		potentiallyDeadEntries: nm.PotentiallyDeadEntries{
 			Tpd:   make(map[string]bool),
 			Dmsgd: make(map[string]bool),
-			Ar:    make(map[string]bool),
+			Ar:    nm.ArData{STCPR: make(map[string]bool), SUDPH: make(map[string]bool)},
 		},
 		deadEntries: nm.DeadEntries{
 			Tpd:   []string{},
 			Dmsgd: []string{},
-			Ar:    []string{},
+			Ar:    nm.ArData{STCPR: make(map[string]bool), SUDPH: make(map[string]bool)},
 		},
 		status: nm.Status{LastCleaning: &nm.LastCleaningSummary{}},
 	}
@@ -219,9 +219,13 @@ func (api *API) deregister(ctx context.Context) {
 
 	api.status.LastUpdate = time.Now().UTC()
 	// get uptime tracker in each itterate
-	api.getUptimeTracker(ctx) //nolint
+	err := api.getUptimeTracker(ctx)
+	if err != nil {
+		api.logger.WithError(err).Warn("Unable to fetch UT data")
+		api.logger.Info("Deregistration routine uncompleted.")
+		return
+	}
 	api.status.OnlineVisors = len(api.utData)
-
 	// api.tpdDeregistration(ctx) //nolint
 	// time.Sleep(75 * time.Second)
 	// api.dmsgdDeregistration(ctx) //nolint
@@ -230,7 +234,6 @@ func (api *API) deregister(ctx context.Context) {
 	time.Sleep(75 * time.Second)
 	// api.sdDeregistration(ctx)
 	// time.Sleep(75 * time.Second)
-
 	api.logger.Info("Deregistration routine completed.")
 }
 
@@ -356,37 +359,56 @@ func (api *API) arDeregistration(ctx context.Context) error {
 	case <-ctx.Done():
 		return context.DeadlineExceeded
 	default:
-		api.deadEntries.Ar = []string{}
+		api.deadEntries.Ar = nm.ArData{SUDPH: map[string]bool{}, STCPR: map[string]bool{}}
 		arData, err := getVisors(api.arURL)
 		if err != nil {
 			api.logger.WithError(err).Errorf("unable to fetch data from ar")
 			return err
 		}
-		// check entries in ar that are available in UT or not
-		for _, entry := range arData {
+		// check stcpr entries in ar that are available in UT or not
+		for _, entry := range arData.Stcpr {
 			_, online := api.utData[entry]
 			if !online {
-				if _, ok := api.potentiallyDeadEntries.Ar[entry]; ok {
-					api.deadEntries.Ar = append(api.deadEntries.Ar, entry)
-					delete(api.potentiallyDeadEntries.Ar, entry)
+				if _, ok := api.potentiallyDeadEntries.Ar.STCPR[entry]; ok {
+					api.deadEntries.Ar.STCPR[entry] = true
+					delete(api.potentiallyDeadEntries.Ar.STCPR, entry)
 					continue
 				}
-				api.potentiallyDeadEntries.Ar[entry] = true
+				api.potentiallyDeadEntries.Ar.STCPR[entry] = true
 				continue
 			}
-			delete(api.potentiallyDeadEntries.Ar, entry)
+			delete(api.potentiallyDeadEntries.Ar.STCPR, entry)
+		}
+
+		// check sudph entries in ar that are available in UT or not
+		for _, entry := range arData.Sudph {
+			_, online := api.utData[entry]
+			if !online {
+				if _, ok := api.potentiallyDeadEntries.Ar.SUDPH[entry]; ok {
+					api.deadEntries.Ar.SUDPH[entry] = true
+					delete(api.potentiallyDeadEntries.Ar.SUDPH, entry)
+					continue
+				}
+				api.potentiallyDeadEntries.Ar.SUDPH[entry] = true
+				continue
+			}
+			delete(api.potentiallyDeadEntries.Ar.SUDPH, entry)
 		}
 
 		// deregister entries from ar
-		// if len(api.deadEntries.Ar) > 0 {
-		// 	api.arDeregister(api.deadEntries.Ar)
-		// }
-		api.status.LastCleaning.Ar = len(api.deadEntries.Ar)
-		logInfo := make(logrus.Fields)
-		logInfo["a.Online AR Entries"] = len(arData) - (len(api.potentiallyDeadEntries.Ar) + len(api.deadEntries.Ar))
-		logInfo["b.Potentially Dead Entries"] = len(api.potentiallyDeadEntries.Ar)
-		logInfo["c.Dead Entries"] = len(api.deadEntries.Ar)
-		api.logger.WithFields(logInfo).Info("AR deregistration info:")
+		api.arDeregister(api.deadEntries.Ar)
+
+		// store summary and print some logs
+		api.status.LastCleaning.Ar = len(api.deadEntries.Ar.STCPR) + len(api.deadEntries.Ar.SUDPH)
+		stpcrInfo, sudphInfo := make(logrus.Fields), make(logrus.Fields)
+		stpcrInfo["a.Online Entries"] = len(arData.Stcpr) - (len(api.potentiallyDeadEntries.Ar.STCPR) + len(api.deadEntries.Ar.STCPR))
+		stpcrInfo["b.Potentially Dead Entries"] = len(api.potentiallyDeadEntries.Ar.STCPR)
+		stpcrInfo["c.Dead Entries"] = len(api.deadEntries.Ar.STCPR)
+		sudphInfo["a.Online Entries"] = len(arData.Sudph) - (len(api.potentiallyDeadEntries.Ar.SUDPH) + len(api.deadEntries.Ar.SUDPH))
+		sudphInfo["b.Potentially Dead Entries"] = len(api.potentiallyDeadEntries.Ar.SUDPH)
+		sudphInfo["c.Dead Entries"] = len(api.deadEntries.Ar.SUDPH)
+		api.logger.WithFields(stpcrInfo).Info("AR deregistration info on STPCR:")
+		api.logger.WithFields(sudphInfo).Info("AR deregistration info on SUDPH:")
 		api.logger.Info("AR deregistration routine completed.")
 		return nil
 	}
@@ -408,6 +430,32 @@ func (api *API) dmsgdDeregister(keys []string) {
 		return
 	}
 	api.logger.Info("Deregister request send to Dmsgd")
+}
+
+func (api *API) arDeregister(entries nm.ArData) {
+	var deadSTCPR []string
+	for entry := range entries.STCPR {
+		deadSTCPR = append(deadSTCPR, entry)
+	}
+	if len(deadSTCPR) > 0 {
+		err := api.deregisterRequest(deadSTCPR, fmt.Sprintf("%s/deregister/stcpr", api.arURL), "address resolver [STCPR]")
+		if err != nil {
+			api.logger.Warn(err)
+		}
+		api.logger.Info("Deregister request send to AR for STCPR entries")
+	}
+
+	var deadSUDPH []string
+	for entry := range entries.SUDPH {
+		deadSUDPH = append(deadSUDPH, entry)
+	}
+	if len(deadSUDPH) > 0 {
+		err := api.deregisterRequest(deadSUDPH, fmt.Sprintf("%s/deregister/sudph", api.arURL), "address resolver [SUDPH]")
+		if err != nil {
+			api.logger.Warn(err)
+		}
+		api.logger.Info("Deregister request send to AR for SUDPH entries")
+	}
 }
 
 // deregisterRequest is dereigstration handler for all services
@@ -451,9 +499,8 @@ type visorTransports struct {
 	Stcpr []string `json:"stcpr"`
 }
 
-func getVisors(arURL string) ([]string, error) {
-	var arEntries []string
-	var data visorTransports
+func getVisors(arURL string) (visorTransports, error) {
+	var arEntries visorTransports
 	res, err := http.Get(arURL + "/transports") //nolint
 	if err != nil {
 		return arEntries, err
@@ -464,24 +511,9 @@ func getVisors(arURL string) ([]string, error) {
 	if err != nil {
 		return arEntries, err
 	}
-	err = json.Unmarshal(body, &data)
+	err = json.Unmarshal(body, &arEntries)
 	if err != nil {
 		return arEntries, err
-	}
-	// Create a map to track unique elements
-	seen := make(map[string]bool)
-	// Iterate over the stcpr and sudph data
-	for _, entry := range data.Stcpr {
-		if !seen[entry] {
-			seen[entry] = true
-			arEntries = append(arEntries, entry)
-		}
-	}
-	for _, entry := range data.Sudph {
-		if !seen[entry] {
-			seen[entry] = true
-			arEntries = append(arEntries, entry)
-		}
 	}
 	return arEntries, err
 }

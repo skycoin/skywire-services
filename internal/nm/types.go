@@ -29,7 +29,7 @@ type LastCleaningSummary struct {
 type PotentiallyDeadEntries struct {
 	Tpd         map[string]bool `json:"tpd"`
 	Dmsgd       map[string]bool `json:"dmsgd"`
-	Ar          map[string]bool `json:"ar"`
+	Ar          ArData          `json:"ar"`
 	VPN         map[string]bool `json:"vpn"`
 	Skysocks    map[string]bool `json:"skysocks"`
 	PublicVisor map[string]bool `json:"public_visor"`
@@ -39,8 +39,13 @@ type PotentiallyDeadEntries struct {
 type DeadEntries struct {
 	Tpd         []string `json:"tpd"`
 	Dmsgd       []string `json:"dmsgd"`
-	Ar          []string `json:"ar"`
+	Ar          ArData   `json:"ar"`
 	VPN         []string `json:"vpn"`
 	Skysocks    []string `json:"skysocks"`
 	PublicVisor []string `json:"public_visor"`
+}
+
+type ArData struct {
+	SUDPH map[string]bool `json:"sudph"`
+	STCPR map[string]bool `json:"stpcr"`
 }
