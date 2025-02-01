@@ -21,10 +21,6 @@ import (
 	"github.com/skycoin/skywire-services/pkg/network-monitor/store"
 )
 
-const (
-	redisScheme = "redis://"
-)
-
 var (
 	sdURL     string
 	arURL     string
@@ -41,7 +37,6 @@ var (
 
 func init() {
 	RootCmd.Flags().StringVarP(&addr, "addr", "a", ":9080", "address to bind to.\033[0m")
-	RootCmd.Flags().IntVarP(&batchSize, "batchsize", "b", 30, "Batch size of deregistration\033[0m")
 	RootCmd.Flags().StringVar(&sdURL, "sd-url", "http://sd.skycoin.com", "url to service discovery\033[0m")
 	RootCmd.Flags().StringVar(&arURL, "ar-url", "http://ar.skywire.skycoin.com", "url to address resolver\033[0m")
 	RootCmd.Flags().StringVar(&utURL, "ut-url", "http://ut.skywire.skycoin.com", "url to uptime tracker visor data.\033[0m")
@@ -70,7 +65,7 @@ var RootCmd = &cobra.Command{
 	Version:               buildinfo.Version(),
 	Run: func(_ *cobra.Command, _ []string) {
 		if _, err := buildinfo.Get().WriteTo(os.Stdout); err != nil {
-			log.Printf("Failed to output build info: %v", err)
+			log.Printf("failed to output build info: %v", err)
 		}
 
 		storeConfig := storeconfig.Config{
@@ -79,13 +74,13 @@ var RootCmd = &cobra.Command{
 
 		s, err := store.New(storeConfig)
 		if err != nil {
-			log.Fatal("Failed to initialize redis store: ", err)
+			log.Fatal("failed to initialize redis store: ", err)
 		}
 
 		mLogger := logging.NewMasterLogger()
 		lvl, err := logging.LevelFromString(logLvl)
 		if err != nil {
-			mLogger.Fatal("Invalid loglvl detected")
+			mLogger.Fatal("invalid loglvl detected")
 		}
 
 		logging.SetLevel(lvl)
@@ -99,12 +94,12 @@ var RootCmd = &cobra.Command{
 
 		logger := mLogger.PackageLogger("network_monitor")
 
-		logger.WithField("addr", addr).Info("Serving discovery API...")
+		logger.WithField("addr", addr).Info("serving discovery api...")
 
 		pubKey := cipher.PubKey{}
-		pubKey.Set(pk)
+		pubKey.Set(pk) //nolint
 		secKey := cipher.SecKey{}
-		secKey.Set(sk)
+		secKey.Set(sk) //nolint
 
 		nmSign, _ := cipher.SignPayload([]byte(pubKey.Hex()), secKey) //nolint
 
@@ -135,6 +130,6 @@ var RootCmd = &cobra.Command{
 // Execute executes root CLI command.
 func Execute() {
 	if err := RootCmd.Execute(); err != nil {
-		log.Fatal("Failed to execute command: ", err)
+		log.Fatal("failed to execute command: ", err)
 	}
 }
