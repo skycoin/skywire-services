@@ -105,13 +105,15 @@ func New(s store.Store, logger *logging.Logger, srvURLs ServicesURLs, nmConfig N
 			Tpd:   make(map[string]bool),
 			Dmsgd: make(map[string]bool),
 			Ar:    nm.ArData{STCPR: make(map[string]bool), SUDPH: make(map[string]bool)},
+			VPN:   make(map[string]bool),
 		},
 		deadEntries: nm.DeadEntries{
 			Tpd:   []string{},
 			Dmsgd: []string{},
 			Ar:    nm.ArData{STCPR: make(map[string]bool), SUDPH: make(map[string]bool)},
+			VPN:   []string{},
 		},
-		status: nm.Status{LastCleaning: &nm.LastCleaningSummary{}},
+		status: nm.Status{LastUpdate: time.Now().UTC(), LastCleaning: &nm.LastCleaningSummary{}},
 	}
 	r := chi.NewRouter()
 
@@ -219,24 +221,31 @@ func (api *API) deregister(ctx context.Context) {
 
 	api.status.LastUpdate = time.Now().UTC()
 	// get uptime tracker in each itterate
-	err := api.getUptimeTracker(ctx)
-	if err != nil {
+	if err := api.getUptimeTracker(ctx); err != nil {
 		api.logger.WithError(err).Warn("Unable to fetch UT data")
-		api.logger.Info("Deregistration routine uncompleted.")
+		api.logger.Info("Deregistration routine interrupted.")
 		return
 	}
 	api.status.OnlineVisors = len(api.utData)
-	// api.tpdDeregistration(ctx) //nolint
+
+	// if err := api.tpdDeregistration(ctx); err != nil {
+	// 	api.logger.WithError(err).Warn("TPD deregistration interrupted.")
+	// }
 	// time.Sleep(75 * time.Second)
-	// api.dmsgdDeregistration(ctx) //nolint
+	// if err := api.dmsgdDeregistration(ctx); err != nil {
+	// 	api.logger.WithError(err).Warn("DMSGD deregistration interrupted.")
+	// }
 	// time.Sleep(75 * time.Second)
-	api.arDeregistration(ctx) //nolint
-	time.Sleep(75 * time.Second)
+	// if err := api.arDeregistration(ctx); err != nil {
+	// 	api.logger.WithError(err).Warn("AR deregistration interrupted.")
+	// }
+	// time.Sleep(75 * time.Second)
 	// api.sdDeregistration(ctx)
 	// time.Sleep(75 * time.Second)
 	api.logger.Info("Deregistration routine completed.")
 }
 
+// dmsgdDeregistration is a routine to deregister dead entries in transport discovery
 func (api *API) tpdDeregistration(ctx context.Context) error {
 	api.logger.Info("TPD deregistration routine start.")
 	select {
@@ -296,6 +305,16 @@ func (api *API) tpdDeregistration(ctx context.Context) error {
 	}
 }
 
+func (api *API) tpdDeregister(keys []string) {
+	err := api.deregisterRequest(keys, fmt.Sprintf("%s/deregister", api.tpdURL), "transport-discovery")
+	if err != nil {
+		api.logger.Warn(err)
+		return
+	}
+	api.logger.Info("Deregister request send to Tpd")
+}
+
+// dmsgdDeregistration is a routine to deregister dead entries in dmsg discovery
 func (api *API) dmsgdDeregistration(ctx context.Context) error {
 	api.logger.Info("DMSGD deregistration routine start.")
 	select {
@@ -352,7 +371,16 @@ func (api *API) dmsgdDeregistration(ctx context.Context) error {
 	}
 }
 
-// arDeregistration is a routine to deregister dead entries in address resolver transports
+func (api *API) dmsgdDeregister(keys []string) {
+	err := api.deregisterRequest(keys, fmt.Sprintf("%s/deregister", api.dmsgdURL), "dmsg-discovery")
+	if err != nil {
+		api.logger.Warn(err)
+		return
+	}
+	api.logger.Info("Deregister request send to Dmsgd")
+}
+
+// arDeregistration is a routine to deregister dead entries in address resolver
 func (api *API) arDeregistration(ctx context.Context) error {
 	api.logger.Info("AR deregistration routine start.")
 	select {
@@ -414,24 +442,6 @@ func (api *API) arDeregistration(ctx context.Context) error {
 	}
 }
 
-func (api *API) tpdDeregister(keys []string) {
-	err := api.deregisterRequest(keys, fmt.Sprintf("%s/deregister", api.tpdURL), "transport-discovery")
-	if err != nil {
-		api.logger.Warn(err)
-		return
-	}
-	api.logger.Info("Deregister request send to Tpd")
-}
-
-func (api *API) dmsgdDeregister(keys []string) {
-	err := api.deregisterRequest(keys, fmt.Sprintf("%s/deregister", api.dmsgdURL), "dmsg-discovery")
-	if err != nil {
-		api.logger.Warn(err)
-		return
-	}
-	api.logger.Info("Deregister request send to Dmsgd")
-}
-
 func (api *API) arDeregister(entries nm.ArData) {
 	var deadSTCPR []string
 	for entry := range entries.STCPR {
@@ -457,6 +467,8 @@ func (api *API) arDeregister(entries nm.ArData) {
 		api.logger.Info("Deregister request send to AR for SUDPH entries")
 	}
 }
+
+//
 
 // deregisterRequest is dereigstration handler for all services
 func (api *API) deregisterRequest(keys []string, rawReqURL, service string) error {
