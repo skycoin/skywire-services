@@ -214,7 +214,6 @@ func (api *API) deregister(ctx context.Context) {
 	api.dMu.Lock()
 
 	api.status.LastUpdate = time.Now().UTC()
-	fmt.Println(api.status.LastUpdate)
 	// get uptime tracker in each itterate
 	api.getUptimeTracker(ctx) //nolint
 	api.status.OnlineVisors = len(api.utData)
@@ -232,6 +231,7 @@ func (api *API) deregister(ctx context.Context) {
 }
 
 func (api *API) tpdDeregistration(ctx context.Context) error {
+	api.logger.Info("TPD deregistration routine start.")
 	select {
 	case <-ctx.Done():
 		return context.DeadlineExceeded
@@ -279,6 +279,12 @@ func (api *API) tpdDeregistration(ctx context.Context) error {
 		}
 		api.status.Transports = len(tpdData) - (len(api.deadEntries.Tpd) + len(api.potentiallyDeadEntries.Tpd))
 		api.status.LastCleaning.Tpd = len(api.deadEntries.Tpd)
+		logInfo := make(logrus.Fields)
+		logInfo["a.Online Transports"] = api.status.Transports
+		logInfo["b.Potentially Dead Entries"] = api.potentiallyDeadEntries.Tpd
+		logInfo["c.Dead Entries"] = api.deadEntries.Tpd
+		api.logger.WithFields(logInfo).Debug("TPD deregistration info:")
+		api.logger.Info("TPD deregistration routine completed.")
 		return nil
 	}
 }
