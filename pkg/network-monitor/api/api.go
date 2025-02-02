@@ -51,17 +51,20 @@ type API struct {
 	batchSize      int
 	whitelistedPKs map[string]bool
 
-	deadEntries            nm.DeadEntries
-	potentiallyDeadEntries nm.PotentiallyDeadEntries
+	cleaningDelay          time.Duration
+	liveEntries            map[string]int
+	deadEntries            map[string][]string
+	potentiallyDeadEntries map[string]map[string]bool
 	status                 nm.Status
 }
 
 // NetworkMonitorConfig is struct for Keys and Sign value of NM
 type NetworkMonitorConfig struct {
-	PK        cipher.PubKey
-	SK        cipher.SecKey
-	Sign      cipher.Sig
-	BatchSize int
+	CleaningDelay int
+	PK            cipher.PubKey
+	SK            cipher.SecKey
+	Sign          cipher.Sig
+	BatchSize     int
 }
 
 // ServicesURLs is struct for organize URL of services
@@ -84,40 +87,32 @@ type Error struct {
 	Error string `json:"error"`
 }
 
+var services = [4]string{"tpd", "dmsgd", "ar", "sd"}
+var sdSubServices = [3]string{"vpn", "visor", "skysocks"}
+var arSubServices = [2]string{"sudph", "stcpr"}
+
 // New returns a new *chi.Mux object, which can be started as a server
 func New(s store.Store, logger *logging.Logger, srvURLs ServicesURLs, nmConfig NetworkMonitorConfig) *API {
 
 	api := &API{
-		sdURL:          srvURLs.SD,
-		arURL:          srvURLs.AR,
-		utURL:          srvURLs.UT,
-		tpdURL:         srvURLs.TPD,
-		dmsgdURL:       srvURLs.DMSGD,
-		logger:         *logger,
-		store:          s,
-		startedAt:      time.Now(),
-		nmPk:           nmConfig.PK,
-		nmSk:           nmConfig.SK,
-		nmSign:         nmConfig.Sign,
-		batchSize:      nmConfig.BatchSize,
-		whitelistedPKs: whitelistedPKs(),
-		potentiallyDeadEntries: nm.PotentiallyDeadEntries{
-			Tpd:         make(map[string]bool),
-			Dmsgd:       make(map[string]bool),
-			Ar:          nm.ArData{STCPR: make(map[string]bool), SUDPH: make(map[string]bool)},
-			VPN:         make(map[string]bool),
-			PublicVisor: make(map[string]bool),
-			Skysocks:    make(map[string]bool),
-		},
-		deadEntries: nm.DeadEntries{
-			Tpd:         []string{},
-			Dmsgd:       []string{},
-			Ar:          nm.ArData{STCPR: make(map[string]bool), SUDPH: make(map[string]bool)},
-			VPN:         []string{},
-			PublicVisor: []string{},
-			Skysocks:    []string{},
-		},
-		status: nm.Status{LastCleaning: &nm.LastCleaningSummary{}},
+		sdURL:                  srvURLs.SD,
+		arURL:                  srvURLs.AR,
+		utURL:                  srvURLs.UT,
+		tpdURL:                 srvURLs.TPD,
+		dmsgdURL:               srvURLs.DMSGD,
+		logger:                 *logger,
+		store:                  s,
+		startedAt:              time.Now(),
+		nmPk:                   nmConfig.PK,
+		nmSk:                   nmConfig.SK,
+		nmSign:                 nmConfig.Sign,
+		batchSize:              nmConfig.BatchSize,
+		whitelistedPKs:         whitelistedPKs(),
+		potentiallyDeadEntries: make(map[string]map[string]bool),
+		deadEntries:            make(map[string][]string),
+		liveEntries:            make(map[string]int),
+		status:                 nm.Status{LastCleaning: &nm.LastCleaningSummary{}},
+		cleaningDelay:          time.Duration(nmConfig.CleaningDelay) * time.Second,
 	}
 	r := chi.NewRouter()
 
@@ -204,27 +199,64 @@ func (api *API) log(r *http.Request) logrus.FieldLogger {
 	return httputil.GetLogger(r)
 }
 
-// InitDeregistrationLoop is function which runs periodic background tasks of API.
-func (api *API) InitDeregistrationLoop(ctx context.Context) {
+// InitCleaningLoop is function which runs periodic background tasks of API.
+func (api *API) InitCleaningLoop(ctx context.Context) {
+	api.initCleaning()
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		default:
-			if err := api.deregister(ctx); err != nil {
-				api.logger.WithError(err).Warn("deregister routine interrupted")
+			if err := api.cleaning(ctx); err != nil {
+				api.logger.WithError(err).Warn("cleaning routine interrupted")
 			}
-			if err := api.store.SetNetworkStatus(api.status); err != nil {
+			if err := api.storeNetworkStatus(); err != nil {
 				api.logger.WithError(err).Warn("unable to update network status")
 			}
-			time.Sleep(75 * time.Second) //nolint
+			time.Sleep(api.cleaningDelay)
 		}
 	}
 }
 
-// deregister use as routine to deregister old/dead entries in the network
-func (api *API) deregister(ctx context.Context) error {
-	api.logger.Info("deregistration routine start.")
+func (api *API) storeNetworkStatus() error {
+	// alive info
+	api.status.Transports = api.liveEntries["tpd"]
+	api.status.VPN = api.liveEntries["vpn"]
+	api.status.PublicVisor = api.liveEntries["visor"]
+	api.status.Skysocks = api.liveEntries["skysocks"]
+
+	// last cleaning info
+	api.status.LastCleaning.Dmsgd = len(api.deadEntries["dmsgd"])
+	api.status.LastCleaning.Tpd = len(api.deadEntries["tpd"])
+	api.status.LastCleaning.Ar.SUDPH = len(api.deadEntries["sudph"])
+	api.status.LastCleaning.Ar.STCPR = len(api.deadEntries["stcpr"])
+	api.status.LastCleaning.VPN = len(api.deadEntries["vpn"])
+	api.status.LastCleaning.PublicVisor = len(api.deadEntries["visor"])
+	api.status.LastCleaning.Skysocks = len(api.deadEntries["skysocks"])
+	for _, service := range api.deadEntries {
+		api.status.LastCleaning.AllDeadEntriesCleaned += len(service)
+	}
+
+	return api.store.SetNetworkStatus(api.status)
+}
+
+func (api *API) initCleaning() {
+	for _, service := range services {
+		if service != "ar" && service != "sd" {
+			api.potentiallyDeadEntries[service] = make(map[string]bool)
+		}
+	}
+	for _, subService := range sdSubServices {
+		api.potentiallyDeadEntries[subService] = make(map[string]bool)
+	}
+	for _, subService := range arSubServices {
+		api.potentiallyDeadEntries[subService] = make(map[string]bool)
+	}
+}
+
+// cleaning use as routine to cleaning old/dead entries in the network
+func (api *API) cleaning(ctx context.Context) error {
+	api.logger.Info("cleaning routine start.")
 	defer api.dMu.Unlock()
 	api.dMu.Lock()
 
@@ -234,37 +266,221 @@ func (api *API) deregister(ctx context.Context) error {
 		api.logger.WithError(err).Warn("unable to fetch UT data")
 		return err
 	}
-	api.status.OnlineVisors = len(api.utData)
-
-	if err := api.tpdDeregistration(ctx); err != nil {
-		api.logger.WithError(err).Warn("tpd deregistration interrupted.")
+	// cleaning services
+	for _, service := range services {
+		api.clean(ctx, service)
+		time.Sleep(api.cleaningDelay)
 	}
-	time.Sleep(75 * time.Second)
-	if err := api.dmsgdDeregistration(ctx); err != nil {
-		api.logger.WithError(err).Warn("dmsgd deregistration interrupted.")
-	}
-	time.Sleep(75 * time.Second)
-	if err := api.arDeregistration(ctx); err != nil {
-		api.logger.WithError(err).Warn("ar deregistration interrupted.")
-	}
-	time.Sleep(75 * time.Second)
-	if err := api.sdDeregistration(ctx); err != nil {
-		api.logger.WithError(err).Warn("sd deregistration interrupted.")
-	}
-	api.logger.Info("deregistration routine done.")
+	api.logger.Info("cleaning routine done.")
 	return nil
 }
 
-// dmsgdDeregistration is a routine to deregister dead entries in transport discovery
-func (api *API) tpdDeregistration(ctx context.Context) error {
-	api.logger.Info("tpd deregistration routine start.")
+func (api *API) clean(ctx context.Context, service string) {
+	api.logger.Infof("%s cleaning process start.", service)
+	switch service {
+	case "tpd":
+		api.deadEntries[service] = []string{}
+		if err := api.tpdCleaning(ctx); err != nil {
+			api.logger.WithError(err).Warnf("%s cleaning interrupted.", service)
+		}
+	case "dmsgd":
+		api.deadEntries[service] = []string{}
+		if err := api.cleaningService(ctx, service, ""); err != nil {
+			api.logger.WithError(err).Warnf("%s cleaning interrupted.", service)
+		}
+	case "ar":
+		for _, sub := range arSubServices {
+			api.deadEntries[sub] = []string{}
+			if err := api.cleaningService(ctx, service, sub); err != nil {
+				api.logger.WithError(err).Warnf("%s cleaning interrupted.", service)
+			}
+		}
+	case "sd":
+		for _, sub := range sdSubServices {
+			api.deadEntries[sub] = []string{}
+			if err := api.cleaningService(ctx, service, sub); err != nil {
+				api.logger.WithError(err).Warnf("%s cleaning interrupted.", service)
+			}
+		}
+	}
+	api.logger.Infof("%s cleaning process done.", service)
+}
+
+func (api *API) cleaningService(ctx context.Context, service, sType string) error {
+	var data []string
+	var err error
+	var target string
+	switch service {
+	case "dmsgd":
+		data, err = api.fetchDmsgdData(ctx)
+		target = service
+	case "ar":
+		data, err = api.fetchArData(ctx, sType)
+		target = sType
+	default:
+		data, err = api.fetchSdData(ctx, sType)
+		target = sType
+	}
+	if err != nil {
+		api.logger.WithError(err).Warnf("unable to fetch data from %s", service)
+		return err
+	}
+
+	if err := api.checkingEntries(ctx, data, service, sType); err != nil {
+		api.logger.WithError(err).Errorf("unable to checking data from %s", service)
+		return err
+	}
+	if len(api.deadEntries[target]) > 0 {
+		if err := api.deregister(api.deadEntries[target], service, sType); err != nil {
+			api.logger.WithError(err).Errorf("unable to deregister dead entries from %s", service)
+		}
+	}
+	// logs
+	if err := api.cleaningInfo(ctx, service, sType); err != nil {
+		api.logger.WithError(err).Warn("unable to show cleaning info")
+	}
+	return err
+
+}
+
+func (api *API) fetchSdData(ctx context.Context, sType string) ([]string, error) {
+	var data []string
+	select {
+	case <-ctx.Done():
+		return data, context.DeadlineExceeded
+	default:
+		var sdData []struct {
+			Address string `json:"address"`
+		}
+		res, err := http.Get(fmt.Sprintf("%s/api/services?type=%s", api.sdURL, sType)) //nolint
+		if err != nil {
+			api.logger.WithError(err).Errorf("unable to fetch data from sd")
+			return data, err
+		}
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			api.logger.WithError(err).Errorf("unable to read data from sd")
+			return data, err
+		}
+		err = json.Unmarshal(body, &sdData)
+		if err != nil {
+			api.logger.WithError(err).Errorf("unable to unmarshal data from sd")
+			return data, err
+		}
+		// check entries in vpn that are available in ut or not
+		for _, entry := range sdData {
+			data = append(data, strings.Split(entry.Address, ":")[0])
+		}
+		return data, nil
+	}
+}
+func (api *API) fetchArData(ctx context.Context, sType string) ([]string, error) {
+	var data []string
+	select {
+	case <-ctx.Done():
+		return data, context.DeadlineExceeded
+	default:
+		// Fetch Data from AR
+		var arEntries visorTransports
+		res, err := http.Get(api.arURL + "/transports") //nolint
+		if err != nil {
+			return data, err
+		}
+
+		body, err := io.ReadAll(res.Body)
+
+		if err != nil {
+			return data, err
+		}
+		err = json.Unmarshal(body, &arEntries)
+		if err != nil {
+			return data, err
+		}
+		data = arEntries.Stcpr
+		if sType == "sudph" {
+			data = arEntries.Sudph
+		}
+		return data, nil
+	}
+}
+func (api *API) fetchDmsgdData(ctx context.Context) ([]string, error) {
+	var data []string
+	select {
+	case <-ctx.Done():
+		return data, context.DeadlineExceeded
+	default:
+		// get dmsgd entries
+		res, err := http.Get(api.dmsgdURL + "/dmsg-discovery/visorEntries") //nolint
+		if err != nil {
+			api.logger.WithError(err).Errorf("unable to fetch data from dmsgd")
+			return data, err
+		}
+
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			api.logger.WithError(err).Errorf("unable to read data from dmsgd")
+			return data, err
+		}
+		err = json.Unmarshal(body, &data)
+		if err != nil {
+			api.logger.WithError(err).Errorf("unable to unmarshal data from dmsgd")
+			return data, err
+		}
+		return data, nil
+	}
+}
+
+func (api *API) checkingEntries(ctx context.Context, data []string, service, sType string) error {
+	target := service
+	if sType != "" {
+		target = sType
+	}
 	select {
 	case <-ctx.Done():
 		return context.DeadlineExceeded
 	default:
-		api.deadEntries.Tpd = []string{}
-		var tpdData []*transport.Entry
+		for _, entry := range data {
+			_, online := api.utData[entry]
+			if !online {
+				if _, ok := api.potentiallyDeadEntries[target][entry]; ok {
+					api.deadEntries[target] = append(api.deadEntries[target], entry)
+					delete(api.potentiallyDeadEntries[target], entry)
+					continue
+				}
+				api.potentiallyDeadEntries[target][entry] = true
+				continue
+			}
+			delete(api.potentiallyDeadEntries[target], entry)
+		}
+		api.liveEntries[target] = len(data) - (len(api.potentiallyDeadEntries[service]) + len(api.deadEntries[service]))
+		return nil
+	}
+}
 
+func (api *API) cleaningInfo(ctx context.Context, service, sType string) error {
+	if sType != "" {
+		service = sType
+	}
+	select {
+	case <-ctx.Done():
+		return context.DeadlineExceeded
+	default:
+		logInfo := make(logrus.Fields)
+		logInfo["alive"] = api.liveEntries[service]
+		logInfo["candidate"] = len(api.potentiallyDeadEntries[service])
+		logInfo["dead"] = len(api.deadEntries[service])
+		api.logger.WithFields(logInfo).Infof("%s cleaning info:", service)
+		return nil
+	}
+}
+
+// tpdCleaning is a routine to clean dead entries in transport discovery
+func (api *API) tpdCleaning(ctx context.Context) error {
+	select {
+	case <-ctx.Done():
+		return context.DeadlineExceeded
+	default:
+		var tpdData []*transport.Entry
 		// get tpd entries
 		res, err := http.Get(api.tpdURL + "/all-transports") //nolint
 		if err != nil {
@@ -288,372 +504,63 @@ func (api *API) tpdDeregistration(ctx context.Context) error {
 			_, online1 := api.utData[tp.Edges[0].Hex()]
 			_, online2 := api.utData[tp.Edges[1].Hex()]
 			if !online1 || !online2 {
-				if _, ok := api.potentiallyDeadEntries.Tpd[tp.ID.String()]; ok {
-					api.deadEntries.Tpd = append(api.deadEntries.Tpd, tp.ID.String())
-					delete(api.potentiallyDeadEntries.Tpd, tp.ID.String())
+				if _, ok := api.potentiallyDeadEntries["tpd"][tp.ID.String()]; ok {
+					api.deadEntries["tpd"] = append(api.deadEntries["tpd"], tp.ID.String())
+					delete(api.potentiallyDeadEntries["tpd"], tp.ID.String())
 					continue
 				}
-				api.potentiallyDeadEntries.Tpd[tp.ID.String()] = true
+				api.potentiallyDeadEntries["tpd"][tp.ID.String()] = true
 				continue
 			}
-			delete(api.potentiallyDeadEntries.Tpd, tp.ID.String())
+			delete(api.potentiallyDeadEntries["tpd"], tp.ID.String())
 		}
 
 		// deregister entries from tpd
-		if len(api.deadEntries.Tpd) > 0 {
-			api.tpdDeregister(api.deadEntries.Tpd)
+		if len(api.deadEntries["tpd"]) > 0 {
+			if err := api.deregister(api.deadEntries["tpd"], "tpd", ""); err != nil {
+				api.logger.WithError(err).Errorf("unable to deregister dead entries from %s", "tpd")
+			}
 		}
-		api.status.Transports = len(tpdData) - (len(api.deadEntries.Tpd) + len(api.potentiallyDeadEntries.Tpd))
-		api.status.LastCleaning.Tpd = len(api.deadEntries.Tpd)
+
+		api.liveEntries["tpd"] = len(tpdData) - (len(api.deadEntries["tpd"]) + len(api.potentiallyDeadEntries["tpd"]))
 		logInfo := make(logrus.Fields)
-		logInfo["alive"] = api.status.Transports
-		logInfo["candidate"] = len(api.potentiallyDeadEntries.Tpd)
-		logInfo["dead"] = len(api.deadEntries.Tpd)
+		logInfo["alive"] = api.liveEntries["tpd"]
+		logInfo["candidate"] = len(api.potentiallyDeadEntries["tpd"])
+		logInfo["dead"] = len(api.deadEntries["tpd"])
 		api.logger.WithFields(logInfo).Info("tpd deregistration info:")
-		api.logger.Info("tpd deregistration routine done.")
 		return nil
 	}
 }
 
-func (api *API) tpdDeregister(keys []string) {
-	err := api.deregisterRequest(keys, fmt.Sprintf("%s/deregister", api.tpdURL), "transport-discovery")
+func (api *API) deregister(entries []string, service, sType string) error {
+	var err error
+	switch service {
+	case "tpd":
+		err = api.deregisterRequest(entries, fmt.Sprintf("%s/deregister", api.tpdURL), service)
+	case "dmsgd":
+		err = api.deregisterRequest(entries, fmt.Sprintf("%s/deregister", api.dmsgdURL), service)
+	case "ar":
+		err = api.deregisterRequest(entries, fmt.Sprintf("%s/deregister/%s", api.arURL, sType), fmt.Sprintf("%s [%s]", service, sType))
+	case "sd":
+		err = api.deregisterRequest(entries, fmt.Sprintf("%s/api/services/deregister/%s", api.sdURL, sType), fmt.Sprintf("%s [%s]", service, sType))
+	}
 	if err != nil {
-		api.logger.Warn(err)
-		return
+		return err
 	}
-	api.logger.Info("Deregister request send to Tpd")
-}
-
-// dmsgdDeregistration is a routine to deregister dead entries in dmsg discovery
-func (api *API) dmsgdDeregistration(ctx context.Context) error {
-	api.logger.Info("dmsgd deregistration routine start.")
-	select {
-	case <-ctx.Done():
-		return context.DeadlineExceeded
-	default:
-		api.deadEntries.Dmsgd = []string{}
-		var dmsgdData []string
-
-		// get dmsgd entries
-		res, err := http.Get(api.dmsgdURL + "/dmsg-discovery/visorEntries") //nolint
-		if err != nil {
-			api.logger.WithError(err).Errorf("unable to fetch data from dmsgd")
-			return err
-		}
-
-		body, err := io.ReadAll(res.Body)
-		if err != nil {
-			api.logger.WithError(err).Errorf("unable to read data from dmsgd")
-			return err
-		}
-		err = json.Unmarshal(body, &dmsgdData)
-		if err != nil {
-			api.logger.WithError(err).Errorf("unable to unmarshal data from dmsgd")
-			return err
-		}
-		// check entries in dmsgd that are available in UT or not
-		for _, entry := range dmsgdData {
-			_, online := api.utData[entry]
-			if !online {
-				if _, ok := api.potentiallyDeadEntries.Dmsgd[entry]; ok {
-					api.deadEntries.Dmsgd = append(api.deadEntries.Dmsgd, entry)
-					delete(api.potentiallyDeadEntries.Dmsgd, entry)
-					continue
-				}
-				api.potentiallyDeadEntries.Dmsgd[entry] = true
-				continue
-			}
-			delete(api.potentiallyDeadEntries.Dmsgd, entry)
-		}
-
-		// deregister entries from dmsgd
-		if len(api.deadEntries.Dmsgd) > 0 {
-			api.dmsgdDeregister(api.deadEntries.Dmsgd)
-		}
-		api.status.LastCleaning.Dmsgd = len(api.deadEntries.Dmsgd)
-		logInfo := make(logrus.Fields)
-		logInfo["alive"] = len(dmsgdData) - (len(api.potentiallyDeadEntries.Dmsgd) + len(api.deadEntries.Dmsgd))
-		logInfo["candidate"] = len(api.potentiallyDeadEntries.Dmsgd)
-		logInfo["dead"] = len(api.deadEntries.Dmsgd)
-		api.logger.WithFields(logInfo).Info("dmsgd deregistration info:")
-		api.logger.Info("dmsgd deregistration routine done.")
-		return nil
-	}
-}
-
-func (api *API) dmsgdDeregister(keys []string) {
-	err := api.deregisterRequest(keys, fmt.Sprintf("%s/deregister", api.dmsgdURL), "dmsg-discovery")
-	if err != nil {
-		api.logger.Warn(err)
-		return
-	}
-	api.logger.Info("Deregister request send to Dmsgd")
-}
-
-// arDeregistration is a routine to deregister dead entries in address resolver
-func (api *API) arDeregistration(ctx context.Context) error {
-	api.logger.Info("ar deregistration routine start.")
-	select {
-	case <-ctx.Done():
-		return context.DeadlineExceeded
-	default:
-		api.deadEntries.Ar = nm.ArData{SUDPH: map[string]bool{}, STCPR: map[string]bool{}}
-		arData, err := getVisors(api.arURL)
-		if err != nil {
-			api.logger.WithError(err).Errorf("unable to fetch data from ar")
-			return err
-		}
-		// check stcpr entries in ar that are available in UT or not
-		for _, entry := range arData.Stcpr {
-			_, online := api.utData[entry]
-			if !online {
-				if _, ok := api.potentiallyDeadEntries.Ar.STCPR[entry]; ok {
-					api.deadEntries.Ar.STCPR[entry] = true
-					delete(api.potentiallyDeadEntries.Ar.STCPR, entry)
-					continue
-				}
-				api.potentiallyDeadEntries.Ar.STCPR[entry] = true
-				continue
-			}
-			delete(api.potentiallyDeadEntries.Ar.STCPR, entry)
-		}
-
-		// check sudph entries in ar that are available in UT or not
-		for _, entry := range arData.Sudph {
-			_, online := api.utData[entry]
-			if !online {
-				if _, ok := api.potentiallyDeadEntries.Ar.SUDPH[entry]; ok {
-					api.deadEntries.Ar.SUDPH[entry] = true
-					delete(api.potentiallyDeadEntries.Ar.SUDPH, entry)
-					continue
-				}
-				api.potentiallyDeadEntries.Ar.SUDPH[entry] = true
-				continue
-			}
-			delete(api.potentiallyDeadEntries.Ar.SUDPH, entry)
-		}
-
-		// deregister entries from ar
-		api.arDeregister(api.deadEntries.Ar)
-
-		// store summary and print some logs
-		api.status.LastCleaning.Ar = len(api.deadEntries.Ar.STCPR) + len(api.deadEntries.Ar.SUDPH)
-		stpcrInfo, sudphInfo := make(logrus.Fields), make(logrus.Fields)
-		stpcrInfo["alive"] = len(arData.Stcpr) - (len(api.potentiallyDeadEntries.Ar.STCPR) + len(api.deadEntries.Ar.STCPR))
-		stpcrInfo["candidate"] = len(api.potentiallyDeadEntries.Ar.STCPR)
-		stpcrInfo["dead"] = len(api.deadEntries.Ar.STCPR)
-		sudphInfo["alive"] = len(arData.Sudph) - (len(api.potentiallyDeadEntries.Ar.SUDPH) + len(api.deadEntries.Ar.SUDPH))
-		sudphInfo["candidate"] = len(api.potentiallyDeadEntries.Ar.SUDPH)
-		sudphInfo["dead"] = len(api.deadEntries.Ar.SUDPH)
-		api.logger.WithFields(stpcrInfo).Info("ar deregistration info on stcpr:")
-		api.logger.WithFields(sudphInfo).Info("ar deregistration info on sudph:")
-		api.logger.Info("ar deregistration routine done.")
-		return nil
-	}
-}
-
-func (api *API) arDeregister(entries nm.ArData) {
-	var deadSTCPR []string
-	for entry := range entries.STCPR {
-		deadSTCPR = append(deadSTCPR, entry)
-	}
-	if len(deadSTCPR) > 0 {
-		err := api.deregisterRequest(deadSTCPR, fmt.Sprintf("%s/deregister/stcpr", api.arURL), "address resolver [stcpr]")
-		if err != nil {
-			api.logger.Warn(err)
-		}
-		api.logger.Info("deregister request send to ar for stcpr entries")
-	}
-
-	var deadSUDPH []string
-	for entry := range entries.SUDPH {
-		deadSUDPH = append(deadSUDPH, entry)
-	}
-	if len(deadSUDPH) > 0 {
-		err := api.deregisterRequest(deadSUDPH, fmt.Sprintf("%s/deregister/sudph", api.arURL), "address resolver [sudph]")
-		if err != nil {
-			api.logger.Warn(err)
-		}
-		api.logger.Info("Deregister request send to ar for sudph entries")
-	}
-}
-
-// sdDeregistration is a routine to deregister dead entries in service discovery (vpn, skysocks, public-visors)
-func (api *API) sdDeregistration(ctx context.Context) error {
-	api.logger.Info("sd deregistration routine start.")
-	select {
-	case <-ctx.Done():
-		return context.DeadlineExceeded
-	default:
-		// vpn deregistration
-		api.deadEntries.VPN = []string{}
-		var sdData []struct {
-			Address string `json:"address"`
-		}
-		// get vpn entries from sd
-		res, err := http.Get(api.sdURL + "/api/services?type=vpn") //nolint
-		if err != nil {
-			api.logger.WithError(err).Errorf("unable to fetch data from sd")
-			return err
-		}
-		body, err := io.ReadAll(res.Body)
-		if err != nil {
-			api.logger.WithError(err).Errorf("unable to read data from sd")
-			return err
-		}
-		err = json.Unmarshal(body, &sdData)
-		if err != nil {
-			api.logger.WithError(err).Errorf("unable to unmarshal data from sd")
-			return err
-		}
-		// check entries in vpn that are available in ut or not
-		for _, entry := range sdData {
-			entryKey := strings.Split(entry.Address, ":")[0]
-			_, online := api.utData[entryKey]
-			if !online {
-				if _, ok := api.potentiallyDeadEntries.VPN[entryKey]; ok {
-					api.deadEntries.VPN = append(api.deadEntries.VPN, entryKey)
-					delete(api.potentiallyDeadEntries.VPN, entryKey)
-					continue
-				}
-				api.potentiallyDeadEntries.VPN[entryKey] = true
-				continue
-			}
-			delete(api.potentiallyDeadEntries.VPN, entryKey)
-		}
-
-		// deregister entries from vpn
-		if len(api.deadEntries.VPN) > 0 {
-			api.sdDeregister(api.deadEntries.VPN, "vpn")
-		}
-		api.status.LastCleaning.VPN = len(api.deadEntries.VPN)
-		logInfo := make(logrus.Fields)
-		logInfo["alive"] = len(sdData) - (len(api.potentiallyDeadEntries.VPN) + len(api.deadEntries.VPN))
-		logInfo["candidate"] = len(api.potentiallyDeadEntries.VPN)
-		logInfo["dead"] = len(api.deadEntries.VPN)
-		api.logger.WithFields(logInfo).Info("vpn deregistration info:")
-
-		// public visor deregistration
-		api.deadEntries.PublicVisor = []string{}
-		var publicVisorData []struct {
-			Address string `json:"address"`
-		}
-		// get public visor entries from sd
-		res, err = http.Get(api.sdURL + "/api/services?type=visor") //nolint
-		if err != nil {
-			api.logger.WithError(err).Errorf("unable to fetch data from sd")
-			return err
-		}
-		body, err = io.ReadAll(res.Body)
-		if err != nil {
-			api.logger.WithError(err).Errorf("unable to read data from sd")
-			return err
-		}
-		err = json.Unmarshal(body, &publicVisorData)
-		if err != nil {
-			api.logger.WithError(err).Errorf("unable to unmarshal data from sd")
-			return err
-		}
-		// check entries in PublicVisor that are available in UT or not
-		for _, entry := range publicVisorData {
-			entryKey := strings.Split(entry.Address, ":")[0]
-			_, online := api.utData[entryKey]
-			if !online {
-				if _, ok := api.potentiallyDeadEntries.PublicVisor[entryKey]; ok {
-					api.deadEntries.PublicVisor = append(api.deadEntries.PublicVisor, entryKey)
-					delete(api.potentiallyDeadEntries.PublicVisor, entryKey)
-					continue
-				}
-				api.potentiallyDeadEntries.PublicVisor[entryKey] = true
-				continue
-			}
-			delete(api.potentiallyDeadEntries.PublicVisor, entryKey)
-		}
-
-		// deregister public visor entries from sd
-		if len(api.deadEntries.PublicVisor) > 0 {
-			api.sdDeregister(api.deadEntries.PublicVisor, "visor")
-		}
-		api.status.LastCleaning.PublicVisor = len(api.deadEntries.PublicVisor)
-		logInfo = make(logrus.Fields)
-		logInfo["alive"] = len(publicVisorData) - (len(api.potentiallyDeadEntries.PublicVisor) + len(api.deadEntries.PublicVisor))
-		logInfo["candidate"] = len(api.potentiallyDeadEntries.PublicVisor)
-		logInfo["dead"] = len(api.deadEntries.PublicVisor)
-		api.logger.WithFields(logInfo).Info("public visor deregistration info:")
-
-		// skysocks deregistration
-		api.deadEntries.Skysocks = []string{}
-		var skysocksData []struct {
-			Address string `json:"address"`
-		}
-		// get skysocks entries from sd
-		res, err = http.Get(api.sdURL + "/api/services?type=skysocks") //nolint
-		if err != nil {
-			api.logger.WithError(err).Errorf("unable to fetch data from sd")
-			return err
-		}
-		body, err = io.ReadAll(res.Body)
-		if err != nil {
-			api.logger.WithError(err).Errorf("unable to read data from sd")
-			return err
-		}
-		err = json.Unmarshal(body, &skysocksData)
-		if err != nil {
-			api.logger.WithError(err).Errorf("unable to unmarshal data from sd")
-			return err
-		}
-		// check entries in skysocks that are available in ut or not
-		for _, entry := range skysocksData {
-			entryKey := strings.Split(entry.Address, ":")[0]
-			_, online := api.utData[entryKey]
-			if !online {
-				if _, ok := api.potentiallyDeadEntries.Skysocks[entryKey]; ok {
-					api.deadEntries.Skysocks = append(api.deadEntries.Skysocks, entryKey)
-					delete(api.potentiallyDeadEntries.Skysocks, entryKey)
-					continue
-				}
-				api.potentiallyDeadEntries.Skysocks[entryKey] = true
-				continue
-			}
-			delete(api.potentiallyDeadEntries.Skysocks, entryKey)
-		}
-
-		// deregister skysocks entries from sd
-		if len(api.deadEntries.Skysocks) > 0 {
-			api.sdDeregister(api.deadEntries.Skysocks, "skysocks")
-		}
-		api.status.LastCleaning.Skysocks = len(api.deadEntries.Skysocks)
-		logInfo = make(logrus.Fields)
-		logInfo["alive"] = len(skysocksData) - (len(api.potentiallyDeadEntries.Skysocks) + len(api.deadEntries.Skysocks))
-		logInfo["candidate"] = len(api.potentiallyDeadEntries.Skysocks)
-		logInfo["dead"] = len(api.deadEntries.Skysocks)
-		api.logger.WithFields(logInfo).Info("skysocks deregistration info:")
-
-		api.logger.Info("sd deregistration routine done.")
-		return nil
-	}
-}
-
-func (api *API) sdDeregister(entries []string, sType string) {
-	if len(entries) > 0 {
-		err := api.deregisterRequest(entries, fmt.Sprintf("%s/services/deregister/%s", api.sdURL, sType), fmt.Sprintf("service discovery [%s]", sType))
-		if err != nil {
-			api.logger.Warn(err)
-		}
-		api.logger.Infof("deregister request send to sd for %s entries", sType)
-	}
+	api.logger.Infof("deregister request send to sd for %s entries", sType)
+	return nil
 }
 
 // deregisterRequest is dereigstration handler for all services
 func (api *API) deregisterRequest(keys []string, rawReqURL, service string) error {
 	reqURL, err := url.Parse(rawReqURL)
 	if err != nil {
-		return fmt.Errorf("Error on parsing deregistration URL : %v", err)
+		return fmt.Errorf("error on parsing deregistration URL : %v", err)
 	}
 
 	jsonData, err := json.Marshal(keys)
 	if err != nil {
-		return fmt.Errorf("Error on parsing deregistration keys : %v", err)
+		return fmt.Errorf("error on marshaling deregistration keys : %v", err)
 	}
 	body := bytes.NewReader(jsonData)
 
@@ -669,12 +576,12 @@ func (api *API) deregisterRequest(keys []string, rawReqURL, service string) erro
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("Error on send deregistration request : %s", err)
+		return fmt.Errorf("error on send deregistration request : %s", err)
 	}
 	defer res.Body.Close() //nolint
 
 	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("Error deregister keys from %s : %s", service, err)
+		return fmt.Errorf("error on deregister keys from %s : %s", service, err)
 	}
 
 	return nil
@@ -683,25 +590,6 @@ func (api *API) deregisterRequest(keys []string, rawReqURL, service string) erro
 type visorTransports struct {
 	Sudph []string `json:"sudph"`
 	Stcpr []string `json:"stcpr"`
-}
-
-func getVisors(arURL string) (visorTransports, error) {
-	var arEntries visorTransports
-	res, err := http.Get(arURL + "/transports") //nolint
-	if err != nil {
-		return arEntries, err
-	}
-
-	body, err := io.ReadAll(res.Body)
-
-	if err != nil {
-		return arEntries, err
-	}
-	err = json.Unmarshal(body, &arEntries)
-	if err != nil {
-		return arEntries, err
-	}
-	return arEntries, err
 }
 
 func (api *API) getUptimeTracker(ctx context.Context) error {
@@ -731,6 +619,7 @@ func (api *API) getUptimeTracker(ctx context.Context) error {
 		if len(response) == 0 {
 			return fmt.Errorf("empty ut data fetched")
 		}
+		api.status.OnlineVisors = len(response)
 		api.utData = response
 		return nil
 	}

@@ -22,17 +22,18 @@ import (
 )
 
 var (
-	sdURL     string
-	arURL     string
-	utURL     string
-	tpdURL    string
-	dmsgdURL  string
-	pk        string
-	sk        string
-	addr      string
-	tag       string
-	logLvl    string
-	batchSize int
+	sdURL         string
+	arURL         string
+	utURL         string
+	tpdURL        string
+	dmsgdURL      string
+	cleaningDelay int
+	pk            string
+	sk            string
+	addr          string
+	tag           string
+	logLvl        string
+	batchSize     int
 )
 
 func init() {
@@ -42,6 +43,7 @@ func init() {
 	RootCmd.Flags().StringVar(&utURL, "ut-url", "http://ut.skywire.skycoin.com", "url to uptime tracker visor data.\033[0m")
 	RootCmd.Flags().StringVar(&tpdURL, "tpd-url", "http://tpd.skywire.skycoin.com", "url to transport discovery\033[0m")
 	RootCmd.Flags().StringVar(&dmsgdURL, "dmsgd-url", "http://dmsgd.skywire.skycoin.com", "url to dmsg discovery\033[0m")
+	RootCmd.Flags().IntVarP(&cleaningDelay, "cleaning-delay", "d", 75, "time for delay between each service cleaning routine")
 	RootCmd.Flags().StringVar(&pk, "pk", "", "pk of network monitor\033[0m")
 	RootCmd.Flags().StringVar(&sk, "sk", "", "sk of network monitor\033[0m")
 	RootCmd.Flags().StringVar(&tag, "tag", "network_monitor", "logging tag\033[0m")
@@ -104,6 +106,7 @@ var RootCmd = &cobra.Command{
 		nmSign, _ := cipher.SignPayload([]byte(pubKey.Hex()), secKey) //nolint
 
 		var nmConfig api.NetworkMonitorConfig
+		nmConfig.CleaningDelay = cleaningDelay
 		nmConfig.PK = pubKey
 		nmConfig.SK = secKey
 		nmConfig.Sign = nmSign
@@ -114,7 +117,7 @@ var RootCmd = &cobra.Command{
 		ctx, cancel := cmdutil.SignalContext(context.Background(), logger)
 		defer cancel()
 
-		go nmAPI.InitDeregistrationLoop(ctx)
+		go nmAPI.InitCleaningLoop(ctx)
 
 		go func() {
 			if err := tcpproxy.ListenAndServe(addr, nmAPI); err != nil {
