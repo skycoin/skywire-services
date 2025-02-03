@@ -16,19 +16,13 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/sirupsen/logrus"
-	"github.com/skycoin/skywire/pkg/app/appserver"
 	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/buildinfo"
 	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/cipher"
 	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/httputil"
 	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/logging"
-	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/metricsutil"
-	utilenv "github.com/skycoin/skywire/pkg/skywire-utilities/pkg/skyenv"
-	"github.com/skycoin/skywire/pkg/transport/network"
-	"github.com/skycoin/skywire/pkg/visor"
-	"github.com/skycoin/skywire/pkg/visor/visorconfig"
+	"github.com/skycoin/skywire/pkg/transport"
 
 	"github.com/skycoin/skywire-services/internal/nm"
-	"github.com/skycoin/skywire-services/internal/nmmetrics"
 	"github.com/skycoin/skywire-services/pkg/network-monitor/store"
 )
 
@@ -37,47 +31,42 @@ import (
 type API struct {
 	http.Handler
 
-	Visor          *visor.Visor
-	VisorSummaries map[cipher.PubKey]nm.VisorSummary
-
-	visorDetails map[cipher.PubKey]visorDetails
-	sdURL        string
-	arURL        string
-	utURL        string
+	servicesURLs ServicesURLs
 	logger       logging.Logger
 	store        store.Store
-	mu           sync.RWMutex
-	dMu          sync.RWMutex
-	startedAt    time.Time
+	httpClient   *http.Client
+	config       NetworkMonitorConfig
 
-	reqsInFlightCountMiddleware *metricsutil.RequestsInFlightCountMiddleware
-	metrics                     nmmetrics.Metrics
-	nmPk                        cipher.PubKey
-	nmSk                        cipher.SecKey
-	nmSign                      cipher.Sig
-	batchSize                   int
-	whitelistedPKs              map[string]bool
+	mu            sync.RWMutex
+	startedAt     time.Time
+	utData        map[string]bool
+	liveEntries   map[string]int
+	deadEntries   map[string][]string
+	pendingDeaths map[string]map[string]bool
 }
 
-type visorDetails struct {
-	IsOnline bool
-	IsStcpr  bool
-}
-
-// NetworkMonitorConfig is struct for Keys and Sign value of NM
+// NetworkMonitorConfig contains configuration for network monitoring.
 type NetworkMonitorConfig struct {
-	PK        cipher.PubKey
-	SK        cipher.SecKey
-	Sign      cipher.Sig
-	BatchSize int
+	CleaningDelay int
+	PublicKey     cipher.PubKey
+	SecretKey     cipher.SecKey
+	Signature     cipher.Sig
 }
 
 // ServicesURLs is struct for organize URL of services
 type ServicesURLs struct {
-	SD string
-	AR string
-	UT string
+	TPD   string
+	DMSGD string
+	SD    string
+	AR    string
+	UT    string
 }
+
+const (
+	cleanInterval   = 30 * time.Second
+	httpTimeout     = 10 * time.Second
+	shutdownTimeout = 5 * time.Second
+)
 
 // HealthCheckResponse is struct of /health endpoint
 type HealthCheckResponse struct {
@@ -90,37 +79,34 @@ type Error struct {
 	Error string `json:"error"`
 }
 
+var mainServices = [4]string{"tpd", "dmsgd", "ar", "sd"}
+var sdSubServices = [3]string{"vpn", "visor", "skysocks"}
+var arSubServices = [2]string{"sudph", "stcpr"}
+
 // New returns a new *chi.Mux object, which can be started as a server
-func New(s store.Store, logger *logging.Logger, srvURLs ServicesURLs, enableMetrics bool, m nmmetrics.Metrics, nmConfig NetworkMonitorConfig) *API {
+func New(s store.Store, logger *logging.Logger, urls ServicesURLs, config NetworkMonitorConfig) *API {
 
 	api := &API{
-		VisorSummaries:              make(map[cipher.PubKey]nm.VisorSummary),
-		visorDetails:                make(map[cipher.PubKey]visorDetails),
-		sdURL:                       srvURLs.SD,
-		arURL:                       srvURLs.AR,
-		utURL:                       srvURLs.UT,
-		logger:                      *logger,
-		store:                       s,
-		startedAt:                   time.Now(),
-		reqsInFlightCountMiddleware: metricsutil.NewRequestsInFlightCountMiddleware(),
-		metrics:                     m,
-		nmPk:                        nmConfig.PK,
-		nmSk:                        nmConfig.SK,
-		nmSign:                      nmConfig.Sign,
-		batchSize:                   nmConfig.BatchSize,
-		whitelistedPKs:              whitelistedPKs(),
+		servicesURLs: urls,
+		logger:       *logger,
+		store:        s,
+		httpClient: &http.Client{
+			Timeout: httpTimeout,
+		},
+		startedAt:     time.Now(),
+		config:        config,
+		pendingDeaths: make(map[string]map[string]bool),
+		deadEntries:   make(map[string][]string),
+		liveEntries:   make(map[string]int),
 	}
 	r := chi.NewRouter()
-
-	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
-	if enableMetrics {
-		r.Use(api.reqsInFlightCountMiddleware.Handle)
-		r.Use(metricsutil.RequestDurationMiddleware)
-	}
-	r.Use(httputil.SetLoggerMiddleware(logger))
+	r.Use(
+		middleware.RequestID,
+		middleware.RealIP,
+		middleware.Logger,
+		middleware.Recoverer,
+		httputil.SetLoggerMiddleware(logger),
+	)
 	r.Get("/status", api.getStatus)
 	r.Get("/health", api.health)
 	api.Handler = r
@@ -129,9 +115,9 @@ func New(s store.Store, logger *logging.Logger, srvURLs ServicesURLs, enableMetr
 }
 
 func (api *API) getStatus(w http.ResponseWriter, r *http.Request) {
-	data, err := api.store.GetAllSummaries()
+	data, err := api.store.GetNetworkStatus()
 	if err != nil {
-		api.logger.WithError(err).Warnf("Error Getting all summaries")
+		api.logger.WithError(err).Warnf("error getting network status")
 	}
 	if err := json.NewEncoder(w).Encode(data); err != nil {
 		api.writeError(w, r, err)
@@ -199,211 +185,367 @@ func (api *API) log(r *http.Request) logrus.FieldLogger {
 	return httputil.GetLogger(r)
 }
 
-// InitDeregistrationLoop is function which runs periodic background tasks of API.
-func (api *API) InitDeregistrationLoop(ctx context.Context, conf *visorconfig.V1, sleepDeregistration time.Duration) {
-	// Start a visor
-	api.startVisor(ctx, conf)
-
+// InitCleaningLoop is function which runs periodic background tasks of API.
+func (api *API) InitCleaningLoop(ctx context.Context) {
+	api.initCleaning()
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		default:
-			api.deregister(ctx)
-			time.Sleep(sleepDeregistration * time.Minute)
+			if err := api.cleanNetwork(ctx); err != nil {
+				api.logger.WithError(err).Warn("Cleaning cycle failed")
+			}
+			if err := api.updateNetworkStatus(); err != nil {
+				api.logger.WithError(err).Warn("Failed to update network status")
+			}
+			time.Sleep(30 * time.Second)
 		}
 	}
 }
 
-// deregister use as routine to deregister old/dead entries in the network
-func (api *API) deregister(ctx context.Context) {
-	api.logger.Info("Deregistration routine start.")
-	defer api.dMu.Unlock()
-	api.dMu.Lock()
-
-	// reload keys
-	api.getVisorKeys()
-
-	// get uptimes data to check online/offline of visor based on uptime tracker
-	uptimes, err := getUptimeTracker(api.utURL)
-	if err != nil {
-		api.logger.Warnf("Error occur during get uptime tracker status list due to %s", err)
-		return
+func (api *API) updateNetworkStatus() error {
+	var status = nm.Status{LastUpdate: time.Now().UTC(), LastCleaning: &nm.LastCleaningSummary{}}
+	// alive info
+	status.Transports = api.liveEntries["tpd"]
+	status.VPN = api.liveEntries["vpn"]
+	status.PublicVisor = api.liveEntries["visor"]
+	status.Skysocks = api.liveEntries["skysocks"]
+	// last cleaning info
+	status.LastCleaning.Dmsgd = len(api.deadEntries["dmsgd"])
+	status.LastCleaning.Tpd = len(api.deadEntries["tpd"])
+	status.LastCleaning.Ar.SUDPH = len(api.deadEntries["sudph"])
+	status.LastCleaning.Ar.STCPR = len(api.deadEntries["stcpr"])
+	status.LastCleaning.VPN = len(api.deadEntries["vpn"])
+	status.LastCleaning.PublicVisor = len(api.deadEntries["visor"])
+	status.LastCleaning.Skysocks = len(api.deadEntries["skysocks"])
+	for _, service := range api.deadEntries {
+		status.LastCleaning.AllDeadEntriesCleaned += len(service)
 	}
-
-	api.arDeregistration(ctx, uptimes)
-
-	api.logger.Info("Deregistration routine completed.")
-
-	// reload keys
-	api.getVisorKeys()
+	status.OnlineVisors = len(api.utData)
+	return api.store.SetNetworkStatus(status)
 }
 
-// arDeregistration is a routine to deregister dead entries in address resolver transports
-func (api *API) arDeregistration(ctx context.Context, uptimes map[string]bool) {
-	api.logger.Info("AR Deregistration started.")
-	allSudphCount, allStcprCount := 0, 0
-	arKeys := make(map[cipher.PubKey]visorDetails)
-	for key, details := range api.visorDetails {
-		arKeys[key] = details
-
-		if details.IsStcpr {
-			allStcprCount++
-		}
-		if details.IsOnline {
-			allSudphCount++
+func (api *API) initCleaning() {
+	for _, service := range mainServices {
+		if service != "ar" && service != "sd" {
+			api.pendingDeaths[service] = make(map[string]bool)
 		}
 	}
-	if len(arKeys) == 0 {
-		api.logger.Warn("No visor keys found")
-		return
+	for _, subService := range sdSubServices {
+		api.pendingDeaths[subService] = make(map[string]bool)
 	}
-
-	checkRes := arCheckerResult{
-		deadStcpr: &[]string{},
-		deadSudph: &[]string{},
+	for _, subService := range arSubServices {
+		api.pendingDeaths[subService] = make(map[string]bool)
 	}
-
-	checkConf := arChekerConfig{
-		ctx:     ctx,
-		wg:      new(sync.WaitGroup),
-		uptimes: uptimes,
-	}
-
-	tmpBatchSize := 0
-	for key, details := range arKeys {
-		if _, ok := api.whitelistedPKs[key.Hex()]; ok {
-			continue
-		}
-		tmpBatchSize++
-		checkConf.wg.Add(1)
-		checkConf.key = key
-		checkConf.details = details
-		go api.arChecker(checkConf, &checkRes)
-		if tmpBatchSize == api.batchSize {
-			time.Sleep(time.Minute)
-			tmpBatchSize = 0
-		}
-	}
-	checkConf.wg.Wait()
-
-	stcprCounter := int64(allStcprCount - len(*checkRes.deadStcpr))
-	sudphCounter := int64(allSudphCount - len(*checkRes.deadSudph))
-
-	api.logger.WithField("sudph", sudphCounter).WithField("stcpr", stcprCounter).Info("Transports online.")
-	api.metrics.SetTpCount(stcprCounter, sudphCounter)
-
-	if len(*checkRes.deadStcpr) > 0 {
-		api.arDeregister(*checkRes.deadStcpr, "stcpr")
-	}
-	api.logger.WithField("Number of dead Stcpr", len(*checkRes.deadStcpr)).WithField("PKs", checkRes.deadStcpr).Info("STCPR deregistration complete.")
-
-	if len(*checkRes.deadSudph) > 0 {
-		api.arDeregister(*checkRes.deadSudph, "sudph")
-	}
-	api.logger.WithField("Number of dead Sudph", len(*checkRes.deadSudph)).WithField("PKs", checkRes.deadSudph).Info("SUDPH deregistration complete.")
-
-	api.logger.Info("AR Deregistration completed.")
 }
 
-func (api *API) arChecker(cfg arChekerConfig, res *arCheckerResult) {
-	defer cfg.wg.Done()
-	visorSum, err := api.store.GetVisorByPk(cfg.key.String())
-	if err != nil {
-		api.logger.WithError(err).Debugf("Failed to fetch visor summary of PK %s in AR deregister procces.", cfg.key.Hex())
-		if err != store.ErrVisorSumNotFound {
-			return
-		}
-	}
-
-	stcprC := make(chan bool)
-	sudphC := make(chan bool)
-	if cfg.details.IsStcpr {
-		go api.testTransport(cfg.key, network.STCPR, stcprC)
-	}
-	if cfg.details.IsOnline {
-		go api.testTransport(cfg.key, network.SUDPH, sudphC)
-	}
-
-	if cfg.details.IsStcpr {
-		visorSum.Stcpr = <-stcprC
-	}
-	if cfg.details.IsOnline {
-		visorSum.Sudph = <-sudphC
-	}
-	visorSum.Timestamp = time.Now().Unix()
+// cleaning use as routine to cleaning old/dead entries in the network
+func (api *API) cleanNetwork(ctx context.Context) error {
+	api.logger.Info("Cleanup started.")
+	defer api.mu.Unlock()
 	api.mu.Lock()
-	err = api.store.AddVisorSummary(cfg.ctx, cfg.key, visorSum)
-	if err != nil {
-		api.logger.WithError(err).Warnf("Failed to save Visor summary of %v", cfg.key)
-	}
 
-	if cfg.details.IsStcpr && !visorSum.Stcpr {
-		*res.deadStcpr = append(*res.deadStcpr, cfg.key.Hex())
+	// fetch uptime tracker in each itterate
+	if err := api.fetchUTData(ctx); err != nil {
+		api.logger.WithError(err).Warn("unable to fetch UT data")
+		return err
 	}
-
-	if cfg.details.IsOnline && !visorSum.Sudph {
-		*res.deadSudph = append(*res.deadSudph, cfg.key.Hex())
+	// cleaning main services
+	for _, service := range mainServices {
+		api.clean(ctx, service)
+		time.Sleep(time.Second * time.Duration(api.config.CleaningDelay))
 	}
-
-	api.mu.Unlock()
+	api.logger.Info("Cleanup process terminated.")
+	return nil
 }
 
-func (api *API) testTransport(key cipher.PubKey, transport network.Type, ch chan bool) {
-	var isUp bool
-	retrier := 3
-	for retrier > 0 {
-		tp, err := api.Visor.AddTransport(key, string(transport), time.Second*3)
+func (api *API) clean(ctx context.Context, service string) {
+	api.logger.Infof("Service %s cleanup process start.", service)
+	switch service {
+	case "tpd":
+		api.deadEntries[service] = []string{}
+		if err := api.tpdCleaning(ctx); err != nil {
+			api.logger.WithError(err).Warnf("%s cleaning interrupted.", service)
+		}
+	case "dmsgd":
+		api.deadEntries[service] = []string{}
+		if err := api.cleaningService(ctx, service, ""); err != nil {
+			api.logger.WithError(err).Warnf("%s cleaning interrupted.", service)
+		}
+	case "ar":
+		for _, sub := range arSubServices {
+			api.deadEntries[sub] = []string{}
+			if err := api.cleaningService(ctx, service, sub); err != nil {
+				api.logger.WithError(err).Warnf("%s cleaning interrupted.", service)
+			}
+		}
+	case "sd":
+		for _, sub := range sdSubServices {
+			api.deadEntries[sub] = []string{}
+			if err := api.cleaningService(ctx, service, sub); err != nil {
+				api.logger.WithError(err).Warnf("%s cleaning interrupted.", service)
+			}
+		}
+	}
+	api.logger.Infof("Service %s cleanup process done.", service)
+}
+
+func (api *API) cleaningService(ctx context.Context, service, sType string) error {
+	var data []string
+	var err error
+	var target string
+	switch service {
+	case "dmsgd":
+		data, err = api.fetchDmsgdData(ctx)
+		target = service
+	case "ar":
+		data, err = api.fetchArData(ctx, sType)
+		target = sType
+	default:
+		data, err = api.fetchSdData(ctx, sType)
+		target = sType
+	}
+	if err != nil {
+		api.logger.WithError(err).Warnf("unable to fetch data from %s", service)
+		return err
+	}
+
+	if err := api.checkingEntries(ctx, data, service, sType); err != nil {
+		api.logger.WithError(err).Errorf("unable to checking data from %s", service)
+		return err
+	}
+	if len(api.deadEntries[target]) > 0 {
+		if err := api.deregister(api.deadEntries[target], service, sType); err != nil {
+			api.logger.WithError(err).Errorf("unable to deregister dead entries from %s", service)
+		}
+	}
+	// logs
+	if err := api.cleaningInfo(ctx, service, sType); err != nil {
+		api.logger.WithError(err).Warn("unable to show cleaning info")
+	}
+	return err
+
+}
+
+func (api *API) fetchSdData(ctx context.Context, sType string) ([]string, error) {
+	var data []string
+	select {
+	case <-ctx.Done():
+		return data, context.DeadlineExceeded
+	default:
+		var sdData []struct {
+			Address string `json:"address"`
+		}
+		res, err := http.Get(fmt.Sprintf("%s/api/services?type=%s", api.servicesURLs.SD, sType)) //nolint
 		if err != nil {
-			api.logger.WithField("Retry", 4-retrier).WithError(err).Warnf("Failed to establish %v transport to %v", transport, key)
-			retrier--
-			continue
+			api.logger.WithError(err).Errorf("unable to fetch data from sd")
+			return data, err
+		}
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			api.logger.WithError(err).Errorf("unable to read data from sd")
+			return data, err
+		}
+		err = json.Unmarshal(body, &sdData)
+		if err != nil {
+			api.logger.WithError(err).Errorf("unable to unmarshal data from sd")
+			return data, err
+		}
+		// check entries in vpn that are available in ut or not
+		for _, entry := range sdData {
+			data = append(data, strings.Split(entry.Address, ":")[0])
+		}
+		return data, nil
+	}
+}
+func (api *API) fetchArData(ctx context.Context, sType string) ([]string, error) {
+	var data []string
+	select {
+	case <-ctx.Done():
+		return data, context.DeadlineExceeded
+	default:
+		// Fetch Data from AR
+		var arEntries visorTransports
+		res, err := http.Get(api.servicesURLs.AR + "/transports") //nolint
+		if err != nil {
+			return data, err
 		}
 
-		api.logger.Infof("Established %v transport to %v", transport, key)
-		isUp = true
-		err = api.Visor.RemoveTransport(tp.ID)
+		body, err := io.ReadAll(res.Body)
+
 		if err != nil {
-			api.logger.Warnf("Error removing %v transport of %v: %v", transport, key, err)
+			return data, err
 		}
-		retrier = 0
+		err = json.Unmarshal(body, &arEntries)
+		if err != nil {
+			return data, err
+		}
+		data = arEntries.Stcpr
+		if sType == "sudph" {
+			data = arEntries.Sudph
+		}
+		return data, nil
 	}
+}
+func (api *API) fetchDmsgdData(ctx context.Context) ([]string, error) {
+	var data []string
+	select {
+	case <-ctx.Done():
+		return data, context.DeadlineExceeded
+	default:
+		// get dmsgd entries
+		res, err := http.Get(api.servicesURLs.DMSGD + "/dmsg-discovery/visorEntries") //nolint
+		if err != nil {
+			api.logger.WithError(err).Errorf("unable to fetch data from dmsgd")
+			return data, err
+		}
 
-	ch <- isUp
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			api.logger.WithError(err).Errorf("unable to read data from dmsgd")
+			return data, err
+		}
+		err = json.Unmarshal(body, &data)
+		if err != nil {
+			api.logger.WithError(err).Errorf("unable to unmarshal data from dmsgd")
+			return data, err
+		}
+		return data, nil
+	}
 }
 
-func (api *API) arDeregister(keys []string, transport string) {
-	err := api.deregisterRequest(keys, fmt.Sprintf(api.arURL+"/deregister/%s", transport), "address resolver")
+func (api *API) checkingEntries(ctx context.Context, data []string, service, sType string) error {
+	target := service
+	if sType != "" {
+		target = sType
+	}
+	select {
+	case <-ctx.Done():
+		return context.DeadlineExceeded
+	default:
+		for _, entry := range data {
+			_, online := api.utData[entry]
+			if !online {
+				if _, ok := api.pendingDeaths[target][entry]; ok {
+					api.deadEntries[target] = append(api.deadEntries[target], entry)
+					delete(api.pendingDeaths[target], entry)
+					continue
+				}
+				api.pendingDeaths[target][entry] = true
+				continue
+			}
+			delete(api.pendingDeaths[target], entry)
+		}
+		api.liveEntries[target] = len(data) - (len(api.pendingDeaths[target]) + len(api.deadEntries[target]))
+		return nil
+	}
+}
+
+func (api *API) cleaningInfo(ctx context.Context, service, sType string) error {
+	if sType != "" {
+		service = sType
+	}
+	select {
+	case <-ctx.Done():
+		return context.DeadlineExceeded
+	default:
+		api.logger.WithFields(logrus.Fields{
+			"alive":   api.liveEntries[service],
+			"pending": len(api.pendingDeaths[service]),
+			"dead":    len(api.deadEntries[service]),
+		}).Infof("Service %s cleanup stats:", service)
+		return nil
+	}
+}
+
+// tpdCleaning is a routine to clean dead entries in transport discovery
+func (api *API) tpdCleaning(ctx context.Context) error {
+	select {
+	case <-ctx.Done():
+		return context.DeadlineExceeded
+	default:
+		var tpdData []*transport.Entry
+		// get tpd entries
+		res, err := http.Get(api.servicesURLs.TPD + "/all-transports") //nolint
+		if err != nil {
+			api.logger.WithError(err).Errorf("unable to fetch data from tpd")
+			return err
+		}
+
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			api.logger.WithError(err).Errorf("unable to read data from tpd")
+			return err
+		}
+		err = json.Unmarshal(body, &tpdData)
+		if err != nil {
+			api.logger.WithError(err).Errorf("unable to unmarshal data from tpd")
+			return err
+		}
+		// check entries in tpd that are available in UT or not, based on both edges
+		for _, tp := range tpdData {
+			// check edge[0]
+			_, online1 := api.utData[tp.Edges[0].Hex()]
+			_, online2 := api.utData[tp.Edges[1].Hex()]
+			if !online1 || !online2 {
+				if _, ok := api.pendingDeaths["tpd"][tp.ID.String()]; ok {
+					api.deadEntries["tpd"] = append(api.deadEntries["tpd"], tp.ID.String())
+					delete(api.pendingDeaths["tpd"], tp.ID.String())
+					continue
+				}
+				api.pendingDeaths["tpd"][tp.ID.String()] = true
+				continue
+			}
+			delete(api.pendingDeaths["tpd"], tp.ID.String())
+		}
+
+		// deregister entries from tpd
+		if len(api.deadEntries["tpd"]) > 0 {
+			if err := api.deregister(api.deadEntries["tpd"], "tpd", ""); err != nil {
+				api.logger.WithError(err).Errorf("unable to deregister dead entries from %s", "tpd")
+			}
+		}
+
+		api.liveEntries["tpd"] = len(tpdData) - (len(api.deadEntries["tpd"]) + len(api.pendingDeaths["tpd"]))
+		logInfo := make(logrus.Fields)
+		logInfo["alive"] = api.liveEntries["tpd"]
+		logInfo["pending"] = len(api.pendingDeaths["tpd"])
+		logInfo["dead"] = len(api.deadEntries["tpd"])
+		api.logger.WithFields(logInfo).Info("Service tpd cleanup stats:")
+		return nil
+	}
+}
+
+func (api *API) deregister(entries []string, service, sType string) error {
+	var err error
+	switch service {
+	case "tpd":
+		err = api.deregisterRequest(entries, fmt.Sprintf("%s/deregister", api.servicesURLs.TPD), service)
+	case "dmsgd":
+		err = api.deregisterRequest(entries, fmt.Sprintf("%s/deregister", api.servicesURLs.DMSGD), service)
+	case "ar":
+		err = api.deregisterRequest(entries, fmt.Sprintf("%s/deregister/%s", api.servicesURLs.AR, sType), fmt.Sprintf("%s [%s]", service, sType))
+	case "sd":
+		err = api.deregisterRequest(entries, fmt.Sprintf("%s/api/services/deregister/%s", api.servicesURLs.SD, sType), fmt.Sprintf("%s [%s]", service, sType))
+	}
 	if err != nil {
-		api.logger.Warn(err)
-		return
+		return err
 	}
-	api.logger.Info("Deregister request send to AR")
-}
-
-type arChekerConfig struct {
-	ctx     context.Context
-	wg      *sync.WaitGroup
-	key     cipher.PubKey
-	details visorDetails
-	uptimes map[string]bool
-}
-
-type arCheckerResult struct {
-	deadStcpr *[]string
-	deadSudph *[]string
+	api.logger.Infof("deregister request send to sd for %s entries", sType)
+	return nil
 }
 
 // deregisterRequest is dereigstration handler for all services
 func (api *API) deregisterRequest(keys []string, rawReqURL, service string) error {
 	reqURL, err := url.Parse(rawReqURL)
 	if err != nil {
-		return fmt.Errorf("Error on parsing deregistration URL : %v", err)
+		return fmt.Errorf("error on parsing deregistration URL : %v", err)
 	}
 
 	jsonData, err := json.Marshal(keys)
 	if err != nil {
-		return fmt.Errorf("Error on parsing deregistration keys : %v", err)
+		return fmt.Errorf("error on marshaling deregistration keys : %v", err)
 	}
 	body := bytes.NewReader(jsonData)
 
@@ -411,186 +553,64 @@ func (api *API) deregisterRequest(keys []string, rawReqURL, service string) erro
 		Method: "DELETE",
 		URL:    reqURL,
 		Header: map[string][]string{
-			"NM-PK":   {api.nmPk.Hex()},
-			"NM-Sign": {api.nmSign.Hex()},
+			"NM-PK":   {api.config.PublicKey.Hex()},
+			"NM-Sign": {api.config.Signature.Hex()},
 		},
 		Body: io.NopCloser(body),
 	}
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("Error on send deregistration request : %s", err)
+		return fmt.Errorf("error on send deregistration request : %s", err)
 	}
 	defer res.Body.Close() //nolint
 
 	if res.StatusCode != http.StatusOK {
-		return fmt.Errorf("Error deregister keys from %s : %s", service, err)
+		return fmt.Errorf("error on deregister keys from %s : %s", service, err)
 	}
 
 	return nil
 }
 
 type visorTransports struct {
-	Sudph []cipher.PubKey `json:"sudph"`
-	Stcpr []cipher.PubKey `json:"stcpr"`
+	Sudph []string `json:"sudph"`
+	Stcpr []string `json:"stcpr"`
 }
 
-func getVisors(arURL string) (data visorTransports, err error) {
-	res, err := http.Get(arURL + "/transports") //nolint
+func (api *API) fetchUTData(ctx context.Context) error {
+	select {
+	case <-ctx.Done():
+		return context.DeadlineExceeded
+	default:
+		response := make(map[string]bool)
+		res, err := http.Get(api.servicesURLs.UT + "/uptimes?status=on") //nolint
+		if err != nil {
+			return err
+		}
 
-	if err != nil {
-		return visorTransports{}, err
-	}
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			return err
+		}
+		var data []uptimes
+		err = json.Unmarshal(body, &data)
+		if err != nil {
+			return err
+		}
 
-	body, err := io.ReadAll(res.Body)
+		for _, visor := range data {
+			response[visor.Key] = visor.Online
+		}
+		if len(response) == 0 {
+			return fmt.Errorf("empty ut data fetched")
+		}
 
-	if err != nil {
-		return visorTransports{}, err
+		api.utData = response
+		return nil
 	}
-	err = json.Unmarshal(body, &data)
-	if err != nil {
-		return visorTransports{}, err
-	}
-	return data, err
-}
-
-func getUptimeTracker(utURL string) (map[string]bool, error) {
-	response := make(map[string]bool)
-	res, err := http.Get(utURL) //nolint
-	if err != nil {
-		return response, err
-	}
-
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		return response, err
-	}
-	var data []uptimes
-	err = json.Unmarshal(body, &data)
-	if err != nil {
-		return response, err
-	}
-
-	for _, visor := range data {
-		response[visor.Key] = visor.Online
-	}
-
-	return response, nil
 }
 
 type uptimes struct {
 	Key    string `json:"key"`
 	Online bool   `json:"online"`
-}
-
-func (api *API) getVisorKeys() {
-	api.visorDetails = make(map[cipher.PubKey]visorDetails)
-	visorTs, err := getVisors(api.arURL)
-	if err != nil {
-		api.logger.Warnf("Error while fetching visors: %v", err)
-		return
-	}
-	if len(visorTs.Stcpr) == 0 && len(visorTs.Sudph) == 0 {
-		api.logger.Warn("No visors found... Will try again")
-	}
-	for _, visorPk := range visorTs.Stcpr {
-		if visorPk != api.nmPk {
-			detail := api.visorDetails[visorPk]
-			detail.IsStcpr = true
-			api.visorDetails[visorPk] = detail
-		}
-	}
-	for _, visorPk := range visorTs.Sudph {
-		if visorPk != api.nmPk {
-			detail := api.visorDetails[visorPk]
-			detail.IsOnline = true
-			api.visorDetails[visorPk] = detail
-		}
-	}
-
-	api.logger.WithField("visors", len(api.visorDetails)).Info("Visor keys updated.")
-	api.metrics.SetTotalVisorCount(int64(len(api.visorDetails)))
-}
-
-func (api *API) startVisor(ctx context.Context, conf *visorconfig.V1) {
-	conf.SetLogger(logging.NewMasterLogger())
-	v, ok := visor.NewVisor(ctx, conf)
-	if !ok {
-		api.logger.Fatal("Failed to start visor.")
-	}
-	api.Visor = v
-}
-
-// InitConfig to initilise config
-func InitConfig(confPath string, mLog *logging.MasterLogger) *visorconfig.V1 {
-	log := mLog.PackageLogger("network_monitor:config")
-	log.Info("Reading config from file.")
-	log.WithField("filepath", confPath).Info()
-
-	oldConf, err := visorconfig.ReadFile(confPath)
-	if err != nil {
-		log.WithError(err).Fatal("Failed to read config file.")
-	}
-	var testEnv bool
-	if oldConf.Dmsg.Discovery == utilenv.TestDmsgDiscAddr {
-		testEnv = true
-	}
-	// have same services as old config
-	services := &visorconfig.Services{
-		DmsgDiscovery:      oldConf.Dmsg.Discovery,
-		TransportDiscovery: oldConf.Transport.Discovery,
-		AddressResolver:    oldConf.Transport.AddressResolver,
-		RouteFinder:        oldConf.Routing.RouteFinder,
-		RouteSetupNodes:    oldConf.Routing.RouteSetupNodes,
-		UptimeTracker:      oldConf.UptimeTracker.Addr,
-		ServiceDiscovery:   oldConf.Launcher.ServiceDisc,
-	}
-	// update oldconfig
-	conf, err := visorconfig.MakeDefaultConfig(mLog, &oldConf.SK, false, false, testEnv, false, false, confPath, "", services)
-	if err != nil {
-		log.WithError(err).Fatal("Failed to create config.")
-	}
-
-	// have the same apps that the old config had
-	var newConfLauncherApps []appserver.AppConfig
-	for _, app := range conf.Launcher.Apps {
-		for _, oldApp := range oldConf.Launcher.Apps {
-			if app.Name == oldApp.Name {
-				newConfLauncherApps = append(newConfLauncherApps, app)
-			}
-		}
-	}
-	conf.Launcher.Apps = newConfLauncherApps
-
-	conf.Version = oldConf.Version
-	conf.LocalPath = oldConf.LocalPath
-	conf.Launcher.BinPath = oldConf.Launcher.BinPath
-	conf.Launcher.ServerAddr = oldConf.Launcher.ServerAddr
-	conf.CLIAddr = oldConf.CLIAddr
-	conf.Transport.TransportSetupPKs = oldConf.Transport.TransportSetupPKs
-
-	// following services are not needed
-	conf.STCP = nil
-	conf.Dmsgpty = nil
-	conf.Transport.PublicAutoconnect = false
-
-	// save the config file
-	if err := conf.Flush(); err != nil {
-		log.WithError(err).Fatal("Failed to flush config to file.")
-	}
-
-	return conf
-}
-
-func whitelistedPKs() map[string]bool {
-	whitelistedPKs := make(map[string]bool)
-	for _, pk := range strings.Split(utilenv.NetworkMonitorPKs, ",") {
-		whitelistedPKs[pk] = true
-	}
-	for _, pk := range strings.Split(utilenv.TestNetworkMonitorPKs, ",") {
-		whitelistedPKs[pk] = true
-	}
-	whitelistedPKs[utilenv.RouteSetupPKs] = true
-	whitelistedPKs[utilenv.TestRouteSetupPKs] = true
-	return whitelistedPKs
 }

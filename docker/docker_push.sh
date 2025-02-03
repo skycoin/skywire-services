@@ -23,12 +23,7 @@ declare -a images_arr=(
   "network-monitor"
   "node-visualizer"
   "config-bootstrapper"
-  "vpn-monitor"
-  "public-visor-monitor"
-  "dmsg-monitor"
-  "tpd-monitor"
   "transport-setup"
-  "skysocks-monitor"
 )
 
 echo "Pushing to $registry using tag: $tag"

@@ -18,8 +18,7 @@ We currently run two instances of service deployments - production and test. Bot
 
 3. ```network-monitor``` https://github.com/skycoin/skywire-services/tree/develop/pkg/network-monitor
 
-- it runs a ```lite``` version of a ```visor``` along with a ```lite vpn-client``` in order to check and keep track of visors.
-- it is used to check if the ```stcpr``` and ```sudph``` entries in the ar are working or not and also the vpn entries in sd
+- it is used to check if the entries in the tpd, ar, dmsgd, sd are alive or dead and clean dead entries
 
 4. ```node-visualizer``` https://github.com/skycoin/skywire-services/tree/develop/pkg/node-visualizer
 

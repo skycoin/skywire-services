@@ -303,12 +303,6 @@ func (a *API) resolve(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err != nil {
-		a.logger(r).Errorf("Failed to resolve PK:%v (%v): %v", senderPK, tpType, err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
 	if sameIP(receiverVisorData.RemoteAddr, remoteAddr) {
 		a.logger(r).Infof("Visors have the same remote address: %v, %v", receiverVisorData.RemoteAddr, remoteAddr)
 		receiverVisorData.IsLocal = true

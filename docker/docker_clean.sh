@@ -19,12 +19,7 @@ declare -a images_arr=(
   "skycoin/network-monitor:${image_tag}"
   "skycoin/node-visualizer:${image_tag}"
   "skycoin/config-bootstrapper:${image_tag}"
-  "skycoin/vpn-monitor:${image_tag}"
-  "skycoin/public-visor-monitor:${image_tag}"
-  "skycoin/dmsg-monitor:${image_tag}"
-  "skycoin/tpd-monitor:${image_tag}"
   "skycoin/transport-setup:${image_tag}"
-  "skycoin/skysocks-monitor:${image_tag}"
 )
 
 for i in "${images_arr[@]}"; do
