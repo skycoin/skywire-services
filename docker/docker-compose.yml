@@ -97,20 +97,6 @@ services:
     depends_on:
       - hoster
 
-  nm-redis:
-    image: "redis:alpine"
-    networks:
-      srv:
-        ipv4_address: 175.0.0.254
-      intra:
-        ipv4_address: 174.0.0.254
-    ports:
-      - "6383:6379"
-    container_name: "nm-redis"
-    hostname: nm-redis
-    depends_on:
-      - hoster
-
   ut-redis:
     image: "redis:alpine"
     networks:
@@ -463,9 +449,8 @@ services:
         ipv4_address: 174.0.0.30
     ports:
       - "9080:9080"
-    entrypoint: /release/network-monitor --redis redis://nm-redis:6379 --config /release/network-monitor.json
+    entrypoint: /release/network-monitor --config /release/network-monitor.json
     depends_on:
-      - nm-redis
       - visor-c
     volumes:
       - type: bind

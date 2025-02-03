@@ -76,7 +76,7 @@ var RootCmd = &cobra.Command{
 
 		s, err := store.New(storeConfig)
 		if err != nil {
-			log.Fatal("failed to initialize redis store: ", err)
+			log.Fatal("failed to initialize store: ", err)
 		}
 
 		mLogger := logging.NewMasterLogger()
