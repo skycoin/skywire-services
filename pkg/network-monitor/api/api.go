@@ -63,9 +63,7 @@ type ServicesURLs struct {
 }
 
 const (
-	cleanInterval   = 30 * time.Second
-	httpTimeout     = 10 * time.Second
-	shutdownTimeout = 5 * time.Second
+	httpTimeout = 10 * time.Second
 )
 
 // HealthCheckResponse is struct of /health endpoint
@@ -337,7 +335,8 @@ func (api *API) fetchSdData(ctx context.Context, sType string) ([]string, error)
 		var sdData []struct {
 			Address string `json:"address"`
 		}
-		res, err := http.Get(fmt.Sprintf("%s/api/services?type=%s", api.servicesURLs.SD, sType)) //nolint
+
+		res, err := api.httpClient.Get(fmt.Sprintf("%s/api/services?type=%s", api.servicesURLs.SD, sType))
 		if err != nil {
 			api.logger.WithError(err).Errorf("unable to fetch data from sd")
 			return data, err
@@ -367,7 +366,7 @@ func (api *API) fetchArData(ctx context.Context, sType string) ([]string, error)
 	default:
 		// Fetch Data from AR
 		var arEntries visorTransports
-		res, err := http.Get(api.servicesURLs.AR + "/transports") //nolint
+		res, err := api.httpClient.Get(api.servicesURLs.AR + "/transports") //nolint
 		if err != nil {
 			return data, err
 		}
@@ -395,7 +394,7 @@ func (api *API) fetchDmsgdData(ctx context.Context) ([]string, error) {
 		return data, context.DeadlineExceeded
 	default:
 		// get dmsgd entries
-		res, err := http.Get(api.servicesURLs.DMSGD + "/dmsg-discovery/visorEntries") //nolint
+		res, err := api.httpClient.Get(api.servicesURLs.DMSGD + "/dmsg-discovery/visorEntries") //nolint
 		if err != nil {
 			api.logger.WithError(err).Errorf("unable to fetch data from dmsgd")
 			return data, err
@@ -467,7 +466,7 @@ func (api *API) tpdCleaning(ctx context.Context) error {
 	default:
 		var tpdData []*transport.Entry
 		// get tpd entries
-		res, err := http.Get(api.servicesURLs.TPD + "/all-transports") //nolint
+		res, err := api.httpClient.Get(api.servicesURLs.TPD + "/all-transports") //nolint
 		if err != nil {
 			api.logger.WithError(err).Errorf("unable to fetch data from tpd")
 			return err
@@ -583,7 +582,7 @@ func (api *API) fetchUTData(ctx context.Context) error {
 		return context.DeadlineExceeded
 	default:
 		response := make(map[string]bool)
-		res, err := http.Get(api.servicesURLs.UT + "/uptimes?status=on") //nolint
+		res, err := api.httpClient.Get(api.servicesURLs.UT + "/uptimes?status=on") //nolint
 		if err != nil {
 			return err
 		}
