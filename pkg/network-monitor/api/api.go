@@ -451,9 +451,9 @@ func (api *API) cleaningInfo(ctx context.Context, service, sType string) error {
 		return context.DeadlineExceeded
 	default:
 		api.logger.WithFields(logrus.Fields{
-			"alive":     api.liveEntries[service],
-			"pending":   len(api.pendingDeaths[service]),
-			"confirmed": len(api.deadEntries[service]),
+			"alive":   api.liveEntries[service],
+			"pending": len(api.pendingDeaths[service]),
+			"dead":    len(api.deadEntries[service]),
 		}).Infof("Service %s cleanup stats:", service)
 		return nil
 	}

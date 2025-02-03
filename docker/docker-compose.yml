@@ -449,14 +449,9 @@ services:
         ipv4_address: 174.0.0.30
     ports:
       - "9080:9080"
-    entrypoint: /release/network-monitor --config /release/network-monitor.json
+    entrypoint: /release/network-monitor
     depends_on:
       - visor-c
-    volumes:
-      - type: bind
-        source: ../docker/config/network-monitor.json
-        target: /release/network-monitor.json
-        read_only: false
     stdin_open: true # docker run -i
     tty: true        # docker run -t
 
