@@ -20,7 +20,6 @@ import (
 	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/cipher"
 	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/httputil"
 	"github.com/skycoin/skywire/pkg/skywire-utilities/pkg/logging"
-	utilenv "github.com/skycoin/skywire/pkg/skywire-utilities/pkg/skyenv"
 	"github.com/skycoin/skywire/pkg/transport"
 
 	"github.com/skycoin/skywire-services/internal/nm"
@@ -32,39 +31,26 @@ import (
 type API struct {
 	http.Handler
 
-	sdURL     string
-	arURL     string
-	utURL     string
-	tpdURL    string
-	dmsgdURL  string
-	logger    logging.Logger
-	store     store.Store
-	mu        sync.RWMutex
-	dMu       sync.RWMutex
-	startedAt time.Time
+	servicesURLs ServicesURLs
+	logger       logging.Logger
+	store        store.Store
+	httpClient   *http.Client
+	config       NetworkMonitorConfig
 
-	utData map[string]bool
-
-	nmPk           cipher.PubKey
-	nmSk           cipher.SecKey
-	nmSign         cipher.Sig
-	batchSize      int
-	whitelistedPKs map[string]bool
-
-	cleaningDelay          time.Duration
-	liveEntries            map[string]int
-	deadEntries            map[string][]string
-	potentiallyDeadEntries map[string]map[string]bool
-	status                 nm.Status
+	mu            sync.RWMutex
+	startedAt     time.Time
+	utData        map[string]bool
+	liveEntries   map[string]int
+	deadEntries   map[string][]string
+	pendingDeaths map[string]map[string]bool
 }
 
-// NetworkMonitorConfig is struct for Keys and Sign value of NM
+// NetworkMonitorConfig contains configuration for network monitoring.
 type NetworkMonitorConfig struct {
 	CleaningDelay int
-	PK            cipher.PubKey
-	SK            cipher.SecKey
-	Sign          cipher.Sig
-	BatchSize     int
+	PublicKey     cipher.PubKey
+	SecretKey     cipher.SecKey
+	Signature     cipher.Sig
 }
 
 // ServicesURLs is struct for organize URL of services
@@ -75,6 +61,12 @@ type ServicesURLs struct {
 	AR    string
 	UT    string
 }
+
+const (
+	cleanInterval   = 30 * time.Second
+	httpTimeout     = 10 * time.Second
+	shutdownTimeout = 5 * time.Second
+)
 
 // HealthCheckResponse is struct of /health endpoint
 type HealthCheckResponse struct {
@@ -87,40 +79,34 @@ type Error struct {
 	Error string `json:"error"`
 }
 
-var services = [4]string{"tpd", "dmsgd", "ar", "sd"}
+var mainServices = [4]string{"tpd", "dmsgd", "ar", "sd"}
 var sdSubServices = [3]string{"vpn", "visor", "skysocks"}
 var arSubServices = [2]string{"sudph", "stcpr"}
 
 // New returns a new *chi.Mux object, which can be started as a server
-func New(s store.Store, logger *logging.Logger, srvURLs ServicesURLs, nmConfig NetworkMonitorConfig) *API {
+func New(s store.Store, logger *logging.Logger, urls ServicesURLs, config NetworkMonitorConfig) *API {
 
 	api := &API{
-		sdURL:                  srvURLs.SD,
-		arURL:                  srvURLs.AR,
-		utURL:                  srvURLs.UT,
-		tpdURL:                 srvURLs.TPD,
-		dmsgdURL:               srvURLs.DMSGD,
-		logger:                 *logger,
-		store:                  s,
-		startedAt:              time.Now(),
-		nmPk:                   nmConfig.PK,
-		nmSk:                   nmConfig.SK,
-		nmSign:                 nmConfig.Sign,
-		batchSize:              nmConfig.BatchSize,
-		whitelistedPKs:         whitelistedPKs(),
-		potentiallyDeadEntries: make(map[string]map[string]bool),
-		deadEntries:            make(map[string][]string),
-		liveEntries:            make(map[string]int),
-		status:                 nm.Status{LastCleaning: &nm.LastCleaningSummary{}},
-		cleaningDelay:          time.Duration(nmConfig.CleaningDelay) * time.Second,
+		servicesURLs: urls,
+		logger:       *logger,
+		store:        s,
+		httpClient: &http.Client{
+			Timeout: httpTimeout,
+		},
+		startedAt:     time.Now(),
+		config:        config,
+		pendingDeaths: make(map[string]map[string]bool),
+		deadEntries:   make(map[string][]string),
+		liveEntries:   make(map[string]int),
 	}
 	r := chi.NewRouter()
-
-	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
-	r.Use(httputil.SetLoggerMiddleware(logger))
+	r.Use(
+		middleware.RequestID,
+		middleware.RealIP,
+		middleware.Logger,
+		middleware.Recoverer,
+		httputil.SetLoggerMiddleware(logger),
+	)
 	r.Get("/status", api.getStatus)
 	r.Get("/health", api.health)
 	api.Handler = r
@@ -207,76 +193,75 @@ func (api *API) InitCleaningLoop(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		default:
-			if err := api.cleaning(ctx); err != nil {
-				api.logger.WithError(err).Warn("cleaning routine interrupted")
+			if err := api.cleanNetwork(ctx); err != nil {
+				api.logger.WithError(err).Warn("Cleaning cycle failed")
 			}
-			if err := api.storeNetworkStatus(); err != nil {
-				api.logger.WithError(err).Warn("unable to update network status")
+			if err := api.updateNetworkStatus(); err != nil {
+				api.logger.WithError(err).Warn("Failed to update network status")
 			}
-			time.Sleep(api.cleaningDelay)
+			time.Sleep(30 * time.Second)
 		}
 	}
 }
 
-func (api *API) storeNetworkStatus() error {
+func (api *API) updateNetworkStatus() error {
+	var status = nm.Status{LastUpdate: time.Now().UTC(), LastCleaning: &nm.LastCleaningSummary{}}
 	// alive info
-	api.status.Transports = api.liveEntries["tpd"]
-	api.status.VPN = api.liveEntries["vpn"]
-	api.status.PublicVisor = api.liveEntries["visor"]
-	api.status.Skysocks = api.liveEntries["skysocks"]
-
+	status.Transports = api.liveEntries["tpd"]
+	status.VPN = api.liveEntries["vpn"]
+	status.PublicVisor = api.liveEntries["visor"]
+	status.Skysocks = api.liveEntries["skysocks"]
 	// last cleaning info
-	api.status.LastCleaning.Dmsgd = len(api.deadEntries["dmsgd"])
-	api.status.LastCleaning.Tpd = len(api.deadEntries["tpd"])
-	api.status.LastCleaning.Ar.SUDPH = len(api.deadEntries["sudph"])
-	api.status.LastCleaning.Ar.STCPR = len(api.deadEntries["stcpr"])
-	api.status.LastCleaning.VPN = len(api.deadEntries["vpn"])
-	api.status.LastCleaning.PublicVisor = len(api.deadEntries["visor"])
-	api.status.LastCleaning.Skysocks = len(api.deadEntries["skysocks"])
+	status.LastCleaning.Dmsgd = len(api.deadEntries["dmsgd"])
+	status.LastCleaning.Tpd = len(api.deadEntries["tpd"])
+	status.LastCleaning.Ar.SUDPH = len(api.deadEntries["sudph"])
+	status.LastCleaning.Ar.STCPR = len(api.deadEntries["stcpr"])
+	status.LastCleaning.VPN = len(api.deadEntries["vpn"])
+	status.LastCleaning.PublicVisor = len(api.deadEntries["visor"])
+	status.LastCleaning.Skysocks = len(api.deadEntries["skysocks"])
 	for _, service := range api.deadEntries {
-		api.status.LastCleaning.AllDeadEntriesCleaned += len(service)
+		status.LastCleaning.AllDeadEntriesCleaned += len(service)
 	}
-
-	return api.store.SetNetworkStatus(api.status)
+	status.OnlineVisors = len(api.utData)
+	return api.store.SetNetworkStatus(status)
 }
 
 func (api *API) initCleaning() {
-	for _, service := range services {
+	for _, service := range mainServices {
 		if service != "ar" && service != "sd" {
-			api.potentiallyDeadEntries[service] = make(map[string]bool)
+			api.pendingDeaths[service] = make(map[string]bool)
 		}
 	}
 	for _, subService := range sdSubServices {
-		api.potentiallyDeadEntries[subService] = make(map[string]bool)
+		api.pendingDeaths[subService] = make(map[string]bool)
 	}
 	for _, subService := range arSubServices {
-		api.potentiallyDeadEntries[subService] = make(map[string]bool)
+		api.pendingDeaths[subService] = make(map[string]bool)
 	}
 }
 
 // cleaning use as routine to cleaning old/dead entries in the network
-func (api *API) cleaning(ctx context.Context) error {
-	api.logger.Info("cleaning routine start.")
-	defer api.dMu.Unlock()
-	api.dMu.Lock()
+func (api *API) cleanNetwork(ctx context.Context) error {
+	api.logger.Info("Cleanup started.")
+	defer api.mu.Unlock()
+	api.mu.Lock()
 
-	api.status.LastUpdate = time.Now().UTC()
-	// get uptime tracker in each itterate
-	if err := api.getUptimeTracker(ctx); err != nil {
+	// fetch uptime tracker in each itterate
+	if err := api.fetchUTData(ctx); err != nil {
 		api.logger.WithError(err).Warn("unable to fetch UT data")
 		return err
 	}
-	// cleaning services
-	for _, service := range services {
+	// cleaning main services
+	for _, service := range mainServices {
 		api.clean(ctx, service)
-		time.Sleep(api.cleaningDelay)
+		time.Sleep(time.Second * time.Duration(api.config.CleaningDelay))
 	}
-	api.logger.Info("cleaning routine done.")
+	api.logger.Info("Cleanup process terminated.")
 	return nil
 }
 
 func (api *API) clean(ctx context.Context, service string) {
-	api.logger.Infof("%s cleaning process start.", service)
+	api.logger.Infof("Service %s cleanup process start.", service)
 	switch service {
 	case "tpd":
 		api.deadEntries[service] = []string{}
@@ -303,7 +288,7 @@ func (api *API) clean(ctx context.Context, service string) {
 			}
 		}
 	}
-	api.logger.Infof("%s cleaning process done.", service)
+	api.logger.Infof("Service %s cleanup process done.", service)
 }
 
 func (api *API) cleaningService(ctx context.Context, service, sType string) error {
@@ -352,7 +337,7 @@ func (api *API) fetchSdData(ctx context.Context, sType string) ([]string, error)
 		var sdData []struct {
 			Address string `json:"address"`
 		}
-		res, err := http.Get(fmt.Sprintf("%s/api/services?type=%s", api.sdURL, sType)) //nolint
+		res, err := http.Get(fmt.Sprintf("%s/api/services?type=%s", api.servicesURLs.SD, sType)) //nolint
 		if err != nil {
 			api.logger.WithError(err).Errorf("unable to fetch data from sd")
 			return data, err
@@ -382,7 +367,7 @@ func (api *API) fetchArData(ctx context.Context, sType string) ([]string, error)
 	default:
 		// Fetch Data from AR
 		var arEntries visorTransports
-		res, err := http.Get(api.arURL + "/transports") //nolint
+		res, err := http.Get(api.servicesURLs.AR + "/transports") //nolint
 		if err != nil {
 			return data, err
 		}
@@ -410,7 +395,7 @@ func (api *API) fetchDmsgdData(ctx context.Context) ([]string, error) {
 		return data, context.DeadlineExceeded
 	default:
 		// get dmsgd entries
-		res, err := http.Get(api.dmsgdURL + "/dmsg-discovery/visorEntries") //nolint
+		res, err := http.Get(api.servicesURLs.DMSGD + "/dmsg-discovery/visorEntries") //nolint
 		if err != nil {
 			api.logger.WithError(err).Errorf("unable to fetch data from dmsgd")
 			return data, err
@@ -442,17 +427,17 @@ func (api *API) checkingEntries(ctx context.Context, data []string, service, sTy
 		for _, entry := range data {
 			_, online := api.utData[entry]
 			if !online {
-				if _, ok := api.potentiallyDeadEntries[target][entry]; ok {
+				if _, ok := api.pendingDeaths[target][entry]; ok {
 					api.deadEntries[target] = append(api.deadEntries[target], entry)
-					delete(api.potentiallyDeadEntries[target], entry)
+					delete(api.pendingDeaths[target], entry)
 					continue
 				}
-				api.potentiallyDeadEntries[target][entry] = true
+				api.pendingDeaths[target][entry] = true
 				continue
 			}
-			delete(api.potentiallyDeadEntries[target], entry)
+			delete(api.pendingDeaths[target], entry)
 		}
-		api.liveEntries[target] = len(data) - (len(api.potentiallyDeadEntries[service]) + len(api.deadEntries[service]))
+		api.liveEntries[target] = len(data) - (len(api.pendingDeaths[target]) + len(api.deadEntries[target]))
 		return nil
 	}
 }
@@ -465,11 +450,11 @@ func (api *API) cleaningInfo(ctx context.Context, service, sType string) error {
 	case <-ctx.Done():
 		return context.DeadlineExceeded
 	default:
-		logInfo := make(logrus.Fields)
-		logInfo["alive"] = api.liveEntries[service]
-		logInfo["candidate"] = len(api.potentiallyDeadEntries[service])
-		logInfo["dead"] = len(api.deadEntries[service])
-		api.logger.WithFields(logInfo).Infof("%s cleaning info:", service)
+		api.logger.WithFields(logrus.Fields{
+			"alive":     api.liveEntries[service],
+			"pending":   len(api.pendingDeaths[service]),
+			"confirmed": len(api.deadEntries[service]),
+		}).Infof("Service %s cleanup stats:", service)
 		return nil
 	}
 }
@@ -482,7 +467,7 @@ func (api *API) tpdCleaning(ctx context.Context) error {
 	default:
 		var tpdData []*transport.Entry
 		// get tpd entries
-		res, err := http.Get(api.tpdURL + "/all-transports") //nolint
+		res, err := http.Get(api.servicesURLs.TPD + "/all-transports") //nolint
 		if err != nil {
 			api.logger.WithError(err).Errorf("unable to fetch data from tpd")
 			return err
@@ -504,15 +489,15 @@ func (api *API) tpdCleaning(ctx context.Context) error {
 			_, online1 := api.utData[tp.Edges[0].Hex()]
 			_, online2 := api.utData[tp.Edges[1].Hex()]
 			if !online1 || !online2 {
-				if _, ok := api.potentiallyDeadEntries["tpd"][tp.ID.String()]; ok {
+				if _, ok := api.pendingDeaths["tpd"][tp.ID.String()]; ok {
 					api.deadEntries["tpd"] = append(api.deadEntries["tpd"], tp.ID.String())
-					delete(api.potentiallyDeadEntries["tpd"], tp.ID.String())
+					delete(api.pendingDeaths["tpd"], tp.ID.String())
 					continue
 				}
-				api.potentiallyDeadEntries["tpd"][tp.ID.String()] = true
+				api.pendingDeaths["tpd"][tp.ID.String()] = true
 				continue
 			}
-			delete(api.potentiallyDeadEntries["tpd"], tp.ID.String())
+			delete(api.pendingDeaths["tpd"], tp.ID.String())
 		}
 
 		// deregister entries from tpd
@@ -522,12 +507,12 @@ func (api *API) tpdCleaning(ctx context.Context) error {
 			}
 		}
 
-		api.liveEntries["tpd"] = len(tpdData) - (len(api.deadEntries["tpd"]) + len(api.potentiallyDeadEntries["tpd"]))
+		api.liveEntries["tpd"] = len(tpdData) - (len(api.deadEntries["tpd"]) + len(api.pendingDeaths["tpd"]))
 		logInfo := make(logrus.Fields)
 		logInfo["alive"] = api.liveEntries["tpd"]
-		logInfo["candidate"] = len(api.potentiallyDeadEntries["tpd"])
+		logInfo["pending"] = len(api.pendingDeaths["tpd"])
 		logInfo["dead"] = len(api.deadEntries["tpd"])
-		api.logger.WithFields(logInfo).Info("tpd deregistration info:")
+		api.logger.WithFields(logInfo).Info("Service tpd cleanup stats:")
 		return nil
 	}
 }
@@ -536,13 +521,13 @@ func (api *API) deregister(entries []string, service, sType string) error {
 	var err error
 	switch service {
 	case "tpd":
-		err = api.deregisterRequest(entries, fmt.Sprintf("%s/deregister", api.tpdURL), service)
+		err = api.deregisterRequest(entries, fmt.Sprintf("%s/deregister", api.servicesURLs.TPD), service)
 	case "dmsgd":
-		err = api.deregisterRequest(entries, fmt.Sprintf("%s/deregister", api.dmsgdURL), service)
+		err = api.deregisterRequest(entries, fmt.Sprintf("%s/deregister", api.servicesURLs.DMSGD), service)
 	case "ar":
-		err = api.deregisterRequest(entries, fmt.Sprintf("%s/deregister/%s", api.arURL, sType), fmt.Sprintf("%s [%s]", service, sType))
+		err = api.deregisterRequest(entries, fmt.Sprintf("%s/deregister/%s", api.servicesURLs.AR, sType), fmt.Sprintf("%s [%s]", service, sType))
 	case "sd":
-		err = api.deregisterRequest(entries, fmt.Sprintf("%s/api/services/deregister/%s", api.sdURL, sType), fmt.Sprintf("%s [%s]", service, sType))
+		err = api.deregisterRequest(entries, fmt.Sprintf("%s/api/services/deregister/%s", api.servicesURLs.SD, sType), fmt.Sprintf("%s [%s]", service, sType))
 	}
 	if err != nil {
 		return err
@@ -568,8 +553,8 @@ func (api *API) deregisterRequest(keys []string, rawReqURL, service string) erro
 		Method: "DELETE",
 		URL:    reqURL,
 		Header: map[string][]string{
-			"NM-PK":   {api.nmPk.Hex()},
-			"NM-Sign": {api.nmSign.Hex()},
+			"NM-PK":   {api.config.PublicKey.Hex()},
+			"NM-Sign": {api.config.Signature.Hex()},
 		},
 		Body: io.NopCloser(body),
 	}
@@ -592,13 +577,13 @@ type visorTransports struct {
 	Stcpr []string `json:"stcpr"`
 }
 
-func (api *API) getUptimeTracker(ctx context.Context) error {
+func (api *API) fetchUTData(ctx context.Context) error {
 	select {
 	case <-ctx.Done():
 		return context.DeadlineExceeded
 	default:
 		response := make(map[string]bool)
-		res, err := http.Get(api.utURL + "/uptimes?status=on") //nolint
+		res, err := http.Get(api.servicesURLs.UT + "/uptimes?status=on") //nolint
 		if err != nil {
 			return err
 		}
@@ -619,7 +604,7 @@ func (api *API) getUptimeTracker(ctx context.Context) error {
 		if len(response) == 0 {
 			return fmt.Errorf("empty ut data fetched")
 		}
-		api.status.OnlineVisors = len(response)
+
 		api.utData = response
 		return nil
 	}
@@ -628,17 +613,4 @@ func (api *API) getUptimeTracker(ctx context.Context) error {
 type uptimes struct {
 	Key    string `json:"key"`
 	Online bool   `json:"online"`
-}
-
-func whitelistedPKs() map[string]bool {
-	whitelistedPKs := make(map[string]bool)
-	for _, pk := range strings.Split(utilenv.NetworkMonitorPKs, ",") {
-		whitelistedPKs[pk] = true
-	}
-	for _, pk := range strings.Split(utilenv.TestNetworkMonitorPKs, ",") {
-		whitelistedPKs[pk] = true
-	}
-	whitelistedPKs[utilenv.RouteSetupPKs] = true
-	whitelistedPKs[utilenv.TestRouteSetupPKs] = true
-	return whitelistedPKs
 }

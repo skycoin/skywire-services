@@ -96,7 +96,7 @@ var RootCmd = &cobra.Command{
 
 		logger := mLogger.PackageLogger("network_monitor")
 
-		logger.WithField("addr", addr).Info("serving discovery api...")
+		logger.WithField("addr", addr).Info("Serving Network Monitor API...")
 
 		pubKey := cipher.PubKey{}
 		pubKey.Set(pk) //nolint
@@ -107,10 +107,9 @@ var RootCmd = &cobra.Command{
 
 		var nmConfig api.NetworkMonitorConfig
 		nmConfig.CleaningDelay = cleaningDelay
-		nmConfig.PK = pubKey
-		nmConfig.SK = secKey
-		nmConfig.Sign = nmSign
-		nmConfig.BatchSize = batchSize
+		nmConfig.PublicKey = pubKey
+		nmConfig.SecretKey = secKey
+		nmConfig.Signature = nmSign
 
 		nmAPI := api.New(s, logger, srvURLs, nmConfig)
 
