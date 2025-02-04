@@ -543,7 +543,11 @@ func (api *API) deregister(entries []string, service, sType string) error {
 	if err != nil {
 		return err
 	}
-	api.logger.Infof("deregister request send to sd for %s entries", sType)
+	if sType != "" {
+		api.logger.Infof("deregister request send to %s for %s entries", service, sType)
+		return nil
+	}
+	api.logger.Infof("deregister request send to %s", service)
 	return nil
 }
 
