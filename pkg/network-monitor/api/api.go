@@ -520,9 +520,9 @@ func (api *API) deregister(entries []string, service, sType string) error {
 	var err error
 	switch service {
 	case "tpd":
-		err = api.deregisterRequest(entries, fmt.Sprintf("%s/deregister", api.servicesURLs.TPD), service)
+		err = api.deregisterRequest(entries, fmt.Sprintf("%s/transports/deregister", api.servicesURLs.TPD), service)
 	case "dmsgd":
-		err = api.deregisterRequest(entries, fmt.Sprintf("%s/deregister", api.servicesURLs.DMSGD), service)
+		err = api.deregisterRequest(entries, fmt.Sprintf("%s/dmsg-discovery/deregister", api.servicesURLs.DMSGD), service)
 	case "ar":
 		err = api.deregisterRequest(entries, fmt.Sprintf("%s/deregister/%s", api.servicesURLs.AR, sType), fmt.Sprintf("%s [%s]", service, sType))
 	case "sd":
