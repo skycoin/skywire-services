@@ -583,7 +583,7 @@ func (env *TestEnv) checkAppStatus(app AppToRun) (bool, error) {
 	for _, appState := range appStates {
 		if appState.App == app.AppName {
 			if appState.Status == "errored" {
-				return false, fmt.Errorf(appState.Status)
+				return false, fmt.Errorf(appState.Status) //nolint
 			}
 			if appState.Status == "running" {
 				return true, nil
@@ -599,7 +599,7 @@ func (env *TestEnv) checkVPNClientStatus(app AppToRun) (bool, error) {
 		return false, err
 	}
 	if appState.Status == "errored" {
-		return false, fmt.Errorf(appState.Status)
+		return false, fmt.Errorf(appState.Status) //nolint
 	}
 	if appState.Status == "running" {
 		return true, nil
