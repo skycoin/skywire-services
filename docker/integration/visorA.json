@@ -79,7 +79,7 @@
 					"app",
 					"vpn-server"
 				],
-				"auto_start": false,
+				"auto_start": true,
 				"port": 44
 			}
 		],
