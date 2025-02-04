@@ -335,7 +335,6 @@ func (api *API) fetchSdData(ctx context.Context, sType string) ([]string, error)
 		var sdData []struct {
 			Address string `json:"address"`
 		}
-
 		res, err := api.httpClient.Get(fmt.Sprintf("%s/api/services?type=%s", api.servicesURLs.SD, sType))
 		if err != nil {
 			api.logger.WithError(err).Errorf("unable to fetch data from sd")
@@ -346,6 +345,11 @@ func (api *API) fetchSdData(ctx context.Context, sType string) ([]string, error)
 			api.logger.WithError(err).Errorf("unable to read data from sd")
 			return data, err
 		}
+		defer func() {
+			if err := res.Body.Close(); err != nil {
+				api.logger.WithError(err).Warnf("error on close resp.Body")
+			}
+		}()
 		err = json.Unmarshal(body, &sdData)
 		if err != nil {
 			api.logger.WithError(err).Errorf("unable to unmarshal data from sd")
@@ -364,18 +368,20 @@ func (api *API) fetchArData(ctx context.Context, sType string) ([]string, error)
 	case <-ctx.Done():
 		return data, context.DeadlineExceeded
 	default:
-		// Fetch Data from AR
 		var arEntries visorTransports
-		res, err := api.httpClient.Get(api.servicesURLs.AR + "/transports") //nolint
+		res, err := api.httpClient.Get(fmt.Sprintf("%s/transports", api.servicesURLs.AR))
 		if err != nil {
 			return data, err
 		}
-
 		body, err := io.ReadAll(res.Body)
-
 		if err != nil {
 			return data, err
 		}
+		defer func() {
+			if err := res.Body.Close(); err != nil {
+				api.logger.WithError(err).Warnf("error on close resp.Body")
+			}
+		}()
 		err = json.Unmarshal(body, &arEntries)
 		if err != nil {
 			return data, err
@@ -393,18 +399,21 @@ func (api *API) fetchDmsgdData(ctx context.Context) ([]string, error) {
 	case <-ctx.Done():
 		return data, context.DeadlineExceeded
 	default:
-		// get dmsgd entries
-		res, err := api.httpClient.Get(api.servicesURLs.DMSGD + "/dmsg-discovery/visorEntries") //nolint
+		res, err := api.httpClient.Get(fmt.Sprintf("%s/dmsg-discovery/visorEntries", api.servicesURLs.DMSGD))
 		if err != nil {
 			api.logger.WithError(err).Errorf("unable to fetch data from dmsgd")
 			return data, err
 		}
-
 		body, err := io.ReadAll(res.Body)
 		if err != nil {
 			api.logger.WithError(err).Errorf("unable to read data from dmsgd")
 			return data, err
 		}
+		defer func() {
+			if err := res.Body.Close(); err != nil {
+				api.logger.WithError(err).Warnf("error on close resp.Body")
+			}
+		}()
 		err = json.Unmarshal(body, &data)
 		if err != nil {
 			api.logger.WithError(err).Errorf("unable to unmarshal data from dmsgd")
@@ -465,18 +474,21 @@ func (api *API) tpdCleaning(ctx context.Context) error {
 		return context.DeadlineExceeded
 	default:
 		var tpdData []*transport.Entry
-		// get tpd entries
-		res, err := api.httpClient.Get(api.servicesURLs.TPD + "/all-transports") //nolint
+		res, err := api.httpClient.Get(fmt.Sprintf("%s/all-transports", api.servicesURLs.TPD))
 		if err != nil {
 			api.logger.WithError(err).Errorf("unable to fetch data from tpd")
 			return err
 		}
-
 		body, err := io.ReadAll(res.Body)
 		if err != nil {
 			api.logger.WithError(err).Errorf("unable to read data from tpd")
 			return err
 		}
+		defer func() {
+			if err := res.Body.Close(); err != nil {
+				api.logger.WithError(err).Warnf("error on close resp.Body")
+			}
+		}()
 		err = json.Unmarshal(body, &tpdData)
 		if err != nil {
 			api.logger.WithError(err).Errorf("unable to unmarshal data from tpd")
@@ -562,7 +574,11 @@ func (api *API) deregisterRequest(keys []string, rawReqURL, service string) erro
 	if err != nil {
 		return fmt.Errorf("error on send deregistration request : %s", err)
 	}
-	defer res.Body.Close() //nolint
+	defer func() {
+		if err := res.Body.Close(); err != nil {
+			api.logger.WithError(err).Warnf("error on close resp.Body")
+		}
+	}()
 
 	if res.StatusCode != http.StatusOK {
 		return fmt.Errorf("error on deregister keys from %s : %s", service, err)
@@ -582,15 +598,19 @@ func (api *API) fetchUTData(ctx context.Context) error {
 		return context.DeadlineExceeded
 	default:
 		response := make(map[string]bool)
-		res, err := api.httpClient.Get(api.servicesURLs.UT + "/uptimes?status=on") //nolint
+		res, err := api.httpClient.Get(fmt.Sprintf("%s/uptimes?status=on", api.servicesURLs.UT))
 		if err != nil {
 			return err
 		}
-
 		body, err := io.ReadAll(res.Body)
 		if err != nil {
 			return err
 		}
+		defer func() {
+			if err := res.Body.Close(); err != nil {
+				api.logger.WithError(err).Warnf("error on close resp.Body")
+			}
+		}()
 		var data []uptimes
 		err = json.Unmarshal(body, &data)
 		if err != nil {
