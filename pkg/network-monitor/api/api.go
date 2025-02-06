@@ -442,9 +442,7 @@ func (api *API) checkingEntries(ctx context.Context, data []string, service, sTy
 					continue
 				}
 				newPendingDeaths[entry] = true
-				continue
 			}
-			delete(api.pendingDeaths[target], entry)
 		}
 		api.pendingDeaths[target] = newPendingDeaths
 		api.liveEntries[target] = len(data) - (len(api.pendingDeaths[target]) + len(api.deadEntries[target]))
@@ -509,9 +507,7 @@ func (api *API) tpdCleaning(ctx context.Context) error {
 					continue
 				}
 				newPendingDeaths[tp.ID.String()] = true
-				continue
 			}
-			delete(api.pendingDeaths["tpd"], tp.ID.String())
 		}
 		api.pendingDeaths["tpd"] = newPendingDeaths
 		// deregister entries from tpd
