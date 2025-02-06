@@ -373,7 +373,7 @@ func (env *TestEnv) visorTpExec(cmd string) ([]*skyvisor.TransportSummary, error
 }
 
 func (env *TestEnv) VPNList(visor string) ([]servicedisc.Service, error) {
-	cmd := fmt.Sprintf("/release/skywire cli vpn --rpc %v:3435 list --sdurl http://service-discovery:9098 -r", visor)
+	cmd := fmt.Sprintf("/release/skywire cli vpn --rpc %v:3435 list --sdurl http://service-discovery:9098 --json", visor)
 	cliOutput := struct {
 		Output []servicedisc.Service `json:"output,omitempty"`
 		Err    *string               `json:"error,omitempty"`
@@ -583,7 +583,7 @@ func (env *TestEnv) checkAppStatus(app AppToRun) (bool, error) {
 	for _, appState := range appStates {
 		if appState.App == app.AppName {
 			if appState.Status == "errored" {
-				return false, fmt.Errorf(appState.Status) //nolint
+				return false, fmt.Errorf("%s", appState.Status)
 			}
 			if appState.Status == "running" {
 				return true, nil
@@ -599,7 +599,7 @@ func (env *TestEnv) checkVPNClientStatus(app AppToRun) (bool, error) {
 		return false, err
 	}
 	if appState.Status == "errored" {
-		return false, fmt.Errorf(appState.Status) //nolint
+		return false, fmt.Errorf("%s", appState.Status)
 	}
 	if appState.Status == "running" {
 		return true, nil
