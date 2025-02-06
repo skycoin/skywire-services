@@ -432,6 +432,7 @@ func (api *API) checkingEntries(ctx context.Context, data []string, service, sTy
 	case <-ctx.Done():
 		return context.DeadlineExceeded
 	default:
+		newPendingDeaths := make(map[string]bool)
 		for _, entry := range data {
 			_, online := api.utData[entry]
 			if !online {
@@ -440,11 +441,10 @@ func (api *API) checkingEntries(ctx context.Context, data []string, service, sTy
 					delete(api.pendingDeaths[target], entry)
 					continue
 				}
-				api.pendingDeaths[target][entry] = true
-				continue
+				newPendingDeaths[entry] = true
 			}
-			delete(api.pendingDeaths[target], entry)
 		}
+		api.pendingDeaths[target] = newPendingDeaths
 		api.liveEntries[target] = len(data) - (len(api.pendingDeaths[target]) + len(api.deadEntries[target]))
 		return nil
 	}
@@ -494,6 +494,7 @@ func (api *API) tpdCleaning(ctx context.Context) error {
 			api.logger.WithError(err).Errorf("unable to unmarshal data from tpd")
 			return err
 		}
+		newPendingDeaths := make(map[string]bool)
 		// check entries in tpd that are available in UT or not, based on both edges
 		for _, tp := range tpdData {
 			// check edge[0]
@@ -505,12 +506,10 @@ func (api *API) tpdCleaning(ctx context.Context) error {
 					delete(api.pendingDeaths["tpd"], tp.ID.String())
 					continue
 				}
-				api.pendingDeaths["tpd"][tp.ID.String()] = true
-				continue
+				newPendingDeaths[tp.ID.String()] = true
 			}
-			delete(api.pendingDeaths["tpd"], tp.ID.String())
 		}
-
+		api.pendingDeaths["tpd"] = newPendingDeaths
 		// deregister entries from tpd
 		if len(api.deadEntries["tpd"]) > 0 {
 			if err := api.deregister(api.deadEntries["tpd"], "tpd", ""); err != nil {

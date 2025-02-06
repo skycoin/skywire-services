@@ -22,9 +22,7 @@
 		"discovery": "http://transport-discovery:9091",
 		"address_resolver": "http://address-resolver:9093",
 		"public_autoconnect": false,
-		"transport_setup_nodes": [
- 			"0277dda8a284d43b4d5ee2a4152771e76131e9437c47be5d8e835aafe02c45a9ae"
- 		],
+		"transport_setup": null,
 		"log_store": {
 			"type": "file",
 			"location": "./local/transport_logs",
@@ -55,7 +53,7 @@
 					"vpn-client",
 					"--srv",
 					"024ec47420176680816e0406250e7156465e4531f5b26057c9f6297bb0303558c7",
-					"--killswitch=false"
+					"-killswitch=false"
 				],
 				"auto_start": false,
 				"port": 43

@@ -162,21 +162,21 @@ func TestVPN(t *testing.T) {
 			},
 			Case: testVPNRemoveTransport,
 		},
-		// TODO: mrpalide, 0pcom | this test temporary command because of new changes on its subcommand
-		// {
-		// 	Name:                         "test vpn subcommand list",
-		// 	ParticipatingVisorsHostNames: []string{visorVPNServer},
-		// 	AppsToRun: []AppToRun{
-		// 		{
-		// 			VisorHostName:   visorVPNServer,
-		// 			AppName:         skyenv.VPNServerName,
-		// 			VisorServerName: "",
-		// 		},
-		// 	},
-		// 	AppArgsToSet:    []AppArg{},
-		// 	TransportsToAdd: []Transport{},
-		// 	Case:            testVPNList,
-		// },
+
+		{
+			Name:                         "test vpn subcommand list",
+			ParticipatingVisorsHostNames: []string{visorVPNServer},
+			AppsToRun: []AppToRun{
+				{
+					VisorHostName:   visorVPNServer,
+					AppName:         skyenv.VPNServerName,
+					VisorServerName: "",
+				},
+			},
+			AppArgsToSet:    []AppArg{},
+			TransportsToAdd: []Transport{},
+			Case:            testVPNList,
+		},
 	}
 
 	RunIntegrationTestCase(t, tt)
@@ -220,12 +220,11 @@ func testVPNRemoveTransport(t *testing.T, env *TestEnv) {
 	}
 }
 
-// TODO: mrpalide, 0pcom | this test temporary command because of new changes on its subcommand
-// func testVPNList(t *testing.T, env *TestEnv) {
-// 	vpns, err := env.VPNList(visorVPNServer)
-// 	require.NoError(t, err)
-// 	require.Equal(t, env.visorPKs[visorVPNServer], vpns[0].Addr.PubKey().Hex())
-// }
+func testVPNList(t *testing.T, env *TestEnv) {
+	vpns, err := env.VPNList(visorVPNServer)
+	require.NoError(t, err)
+	require.Equal(t, env.visorPKs[visorVPNServer], vpns[0].Addr.PubKey().Hex())
+}
 
 func testVPNCanRouteThroughSUDPH(t *testing.T, env *TestEnv) {
 	t.Run("traffic goes through VPN SUDPH", func(t *testing.T) {
