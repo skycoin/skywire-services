@@ -26,10 +26,6 @@ ifneq (,$(findstring 64,$(GOARCH)))
     TEST_OPTS:=$(TEST_OPTS) $(RACE_FLAG)
 endif
 
-PROJECT_BASE := github.com/skycoin/skywire-services
-SKYWIRE_UTILITIES_REPO := github.com/skycoin/skywire/pkg/skywire-utilities
-BUILDINFO_PATH := $(SKYWIRE_UTILITIES_REPO)/pkg/buildinfo
-
 BUILDINFO_VERSION := -X $(BUILDINFO_PATH).version=$(VERSION)
 BUILDINFO_DATE := -X $(BUILDINFO_PATH).date=$(DATE)
 BUILDINFO_COMMIT := -X $(BUILDINFO_PATH).commit=$(COMMIT)
@@ -86,11 +82,6 @@ lint: ## Run linters. Use make install-linters first.
 	golangci-lint version
 	${OPTS}	golangci-lint run -c .golangci.yml ./...
 	${OPTS} go vet -all -mod=vendor ./...
-
-lint-windows-appveyor: ## Run linters. Use make install-linters first.
-	C:\Users\appveyor\go\bin\golangci-lint run -c .golangci.yml ./...
-	# The govet version in golangci-lint is out of date and has spurious warnings, run it separately
-	go vet -all -mod=vendor ./...
 
 lint-extra: ## Run linters with extra checks.
 	golangci-lint run --no-config --enable-all ./...
@@ -229,15 +220,6 @@ integration-env-stop: reset-forwarding #stop
 integration-env-clean: #clean
 	bash -c "DOCKER_TAG=integration docker compose -f ${COMPOSE_FILE} down"
 	bash ./docker/docker_clean.sh integration
-
-mod-comm: ## Comments the 'replace' rule in go.mod
-	./ci_scripts/go_mod_replace.sh comment go.mod
-
-mod-uncomm: ## Uncomments the 'replace' rule in go.mod
-	./ci_scripts/go_mod_replace.sh uncomment go.mod
-
-vendor-integration-check: ## Check compatibility of master@skywire-services with last vendored packages
-	./ci_scripts/vendor-integration-check.sh
 
 ## : ## _ [Other]
 

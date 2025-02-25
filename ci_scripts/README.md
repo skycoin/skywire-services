@@ -4,7 +4,6 @@
 
 ```sh
 ./ci_scripts                                
-├── go_mod_replace.sh             # 
 ├── install-docker-compose.sh     #  Installation of docker-compose
 ├── install-golangci-lint.sh      #  Installation of linters
 └── vendor-integration-check.sh   #  Check compatibility of master@skywire-services with last versions of vendored packages
