@@ -5,15 +5,9 @@ go 1.23
 toolchain go1.23.4
 
 require (
-	github.com/bitfield/script v0.23.0
 	github.com/docker/docker v1.13.1
 	github.com/flopp/go-staticmaps v0.0.0-20240606055734-0bdd9c1c1478
 	github.com/go-chi/chi/v5 v5.2.0
-	github.com/go-chi/httprate v0.14.1
-	github.com/go-echarts/go-echarts/v2 v2.4.3
-	github.com/go-playground/validator/v10 v10.22.1
-	github.com/go-redis/redis v6.15.9+incompatible
-	github.com/go-redis/redis/v8 v8.11.5
 	github.com/golang/geo v0.0.0-20230421003525-6adc56603217
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/yamux v0.1.2
@@ -21,16 +15,11 @@ require (
 	github.com/james-barrow/golang-ipc v1.2.4
 	github.com/rs/cors v1.11.1
 	github.com/sirupsen/logrus v1.9.3
-	github.com/skycoin/dmsg v1.3.29-0.20241218010226-56d92f2ef624
 	github.com/skycoin/skywire v1.3.29-rc4
 	github.com/songgao/water v0.0.0-20200317203138-2b4b6d7c09d8
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.10.0
-	github.com/tidwall/pretty v1.2.1
-	github.com/xtaci/kcp-go v5.4.20+incompatible
 	golang.org/x/net v0.32.0
-	gorm.io/driver/postgres v1.5.11
-	gorm.io/gorm v1.25.12
 )
 
 require (
@@ -40,18 +29,17 @@ require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/StackExchange/wmi v1.2.1 // indirect
 	github.com/VictoriaMetrics/metrics v1.35.1 // indirect
+	github.com/bitfield/script v0.23.0 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/bytedance/sonic v1.12.3 // indirect
 	github.com/bytedance/sonic/loader v0.2.0 // indirect
 	github.com/ccding/go-stun/stun v0.0.0-20200514191101-4dc67bcdb029 // indirect
-	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/chen3feng/safecast v0.0.0-20220908170618-81b2ecd47937 // indirect
 	github.com/cloudwego/base64x v0.1.4 // indirect
 	github.com/cloudwego/iasm v0.2.0 // indirect
 	github.com/coder/websocket v1.8.12 // indirect
 	github.com/creack/pty v1.1.23 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
@@ -65,6 +53,7 @@ require (
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
+	github.com/go-playground/validator/v10 v10.22.1 // indirect
 	github.com/go-task/slim-sprig/v3 v3.0.0 // indirect
 	github.com/gocarina/gocsv v0.0.0-20240520201108-78e41c74b4b1 // indirect
 	github.com/goccy/go-json v0.10.3 // indirect
@@ -76,14 +65,8 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/itchyny/gojq v0.12.16 // indirect
 	github.com/itchyny/timefmt-go v0.1.6 // indirect
-	github.com/jackc/pgpassfile v1.0.0 // indirect
-	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
-	github.com/jackc/pgx/v5 v5.7.1 // indirect
-	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/jaypipes/ghw v0.13.0 // indirect
 	github.com/jaypipes/pcidb v1.0.1 // indirect
-	github.com/jinzhu/inflection v1.0.0 // indirect
-	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.9 // indirect
 	github.com/klauspost/reedsolomon v1.12.4 // indirect
@@ -100,10 +83,10 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/orandin/lumberjackrus v1.0.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.3 // indirect
-	github.com/pires/go-proxyproto v0.8.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/quic-go/quic-go v0.48.2 // indirect
+	github.com/skycoin/dmsg v1.3.29-0.20241218010226-56d92f2ef624 // indirect
 	github.com/skycoin/noise v0.0.0-20180327030543-2492fe189ae6 // indirect
 	github.com/skycoin/skycoin v0.28.1-0.20241105130348-39b49a2d0a7f // indirect
 	github.com/skycoin/systray v1.10.0 // indirect
@@ -119,6 +102,7 @@ require (
 	github.com/ugorji/go/codec v1.2.12 // indirect
 	github.com/valyala/fastrand v1.1.0 // indirect
 	github.com/valyala/histogram v1.2.0 // indirect
+	github.com/xtaci/kcp-go v5.4.20+incompatible // indirect
 	github.com/zcalusic/sysinfo v1.1.2 // indirect
 	go.etcd.io/bbolt v1.3.11 // indirect
 	go.uber.org/mock v0.5.0 // indirect
